@@ -2,5 +2,9 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://gitxgpwxxutrdvdirdke.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdHhncHd4eHV0cmR2ZGlyZGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwMjQ0NjMsImV4cCI6MjA2NTYwMDQ2M30.Xibm9POBM-NR8dO5h8N5fCAaz1MhlH-ZTb9ltuHAwFE"
+  }
 }
