@@ -63,7 +63,6 @@ const MarketingKitForm: React.FC = () => {
                   <span>Upload a file</span>
                   <input
                     id="file-upload"
-                    name="file-upload"
                     type="file"
                     className="sr-only"
                     {...register('marketingKitFile')}
