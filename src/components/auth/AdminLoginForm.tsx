@@ -22,16 +22,33 @@ const AdminLoginForm: React.FC = () => {
         return;
       }
       
+      console.log('Auth data:', authData);
+      
       // Check if user is admin
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
-        .eq('email', data.email)
+        .select('*')
+        .eq('id', authData?.user?.id)
         .single();
       
-      if (profileError || !profile || profile.role !== 'admin') {
-        console.log('Profile data:', profile);
-        setError('You are not authorized as an admin');
+      console.log('Profile query result:', profile);
+      console.log('Profile error:', profileError);
+      
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        setError('Error checking admin status: ' + profileError.message);
+        return;
+      }
+      
+      if (!profile) {
+        setError('Profile not found. Please contact support.');
+        return;
+      }
+      
+      console.log('Profile role:', profile.role);
+      
+      if (profile.role !== 'admin') {
+        setError('You are not authorized as an admin. Your role is: ' + profile.role);
         await supabase.auth.signOut();
         return;
       }
@@ -39,8 +56,8 @@ const AdminLoginForm: React.FC = () => {
       // Redirect to admin dashboard
       router.push('/admin/dashboard');
     } catch (err) {
+      console.error('Unexpected error:', err);
       setError('An unexpected error occurred');
-      console.error(err);
     } finally {
       setLoading(false);
     }
