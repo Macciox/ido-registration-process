@@ -23,13 +23,13 @@ const ProjectOwnerLoginForm: React.FC = () => {
       }
       
       // Check if user has a project
-      const { data: project } = await supabase
+      const { data: project, error: projectError } = await supabase
         .from('projects')
         .select('id')
         .eq('owner_email', data.email)
         .single();
       
-      if (!project) {
+      if (projectError || !project) {
         setError('No project found for this email. Please contact an admin.');
         await supabase.auth.signOut();
         return;
@@ -47,7 +47,7 @@ const ProjectOwnerLoginForm: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6 text-center">Project Owner Login</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center text-secondary">Project Access</h2>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -60,13 +60,21 @@ const ProjectOwnerLoginForm: React.FC = () => {
           <label className="form-label" htmlFor="owner-email">
             Email
           </label>
-          <input
-            id="owner-email"
-            type="email"
-            className="form-input"
-            placeholder="project@example.com"
-            {...register('email', { required: 'Email is required' })}
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+              </svg>
+            </div>
+            <input
+              id="owner-email"
+              type="email"
+              className="form-input pl-10"
+              placeholder="project@example.com"
+              {...register('email', { required: 'Email is required' })}
+            />
+          </div>
           {errors.email && (
             <p className="text-red-500 text-sm mt-1">
               {errors.email.message as string}
@@ -78,12 +86,19 @@ const ProjectOwnerLoginForm: React.FC = () => {
           <label className="form-label" htmlFor="owner-password">
             Password
           </label>
-          <input
-            id="owner-password"
-            type="password"
-            className="form-input"
-            {...register('password', { required: 'Password is required' })}
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input
+              id="owner-password"
+              type="password"
+              className="form-input pl-10"
+              {...register('password', { required: 'Password is required' })}
+            />
+          </div>
           {errors.password && (
             <p className="text-red-500 text-sm mt-1">
               {errors.password.message as string}
@@ -93,10 +108,25 @@ const ProjectOwnerLoginForm: React.FC = () => {
         
         <button
           type="submit"
-          className="btn btn-primary w-full"
+          className="btn btn-secondary w-full flex items-center justify-center"
           disabled={loading}
         >
-          {loading ? 'Logging in...' : 'Login as Project Owner'}
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Logging in...
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+              </svg>
+              Login as Project Owner
+            </>
+          )}
         </button>
       </form>
     </div>
