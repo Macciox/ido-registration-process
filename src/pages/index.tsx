@@ -1,46 +1,41 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import Tabs from '@/components/ui/Tabs';
-import PublicRoundForm from '@/components/forms/PublicRoundForm';
-import TokenInfoForm from '@/components/forms/TokenInfoForm';
-import PlatformSetupForm from '@/components/forms/PlatformSetupForm';
-import FAQForm from '@/components/forms/FAQForm';
-import L2EQuizForm from '@/components/forms/L2EQuizForm';
-import MarketingKitForm from '@/components/forms/MarketingKitForm';
-
-const tabs = [
-  { id: 'public-round', label: 'Public Round' },
-  { id: 'token-info', label: 'Token Info' },
-  { id: 'platform-setup', label: 'Platform Setup' },
-  { id: 'faq', label: 'FAQ' },
-  { id: 'l2e-quiz', label: 'L2E Quiz' },
-  { id: 'marketing-kit', label: 'Marketing Kit' },
-];
+import { getCurrentUser } from '@/lib/auth';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('public-round');
+  const router = useRouter();
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        
+        if (user) {
+          // User is logged in, redirect to dashboard
+          router.push('/dashboard');
+        } else {
+          // User is not logged in, redirect to login
+          router.push('/login');
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        router.push('/login');
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   return (
     <Layout>
-      <div className="py-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Project Registration</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Complete the following information for your IDO project.
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">Decubate IDO Registration Platform</h1>
+          <p className="text-xl text-gray-600 mb-8">
+            A secure platform for managing Web3 project launches
           </p>
-        </div>
-        
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6">
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-          
-          <div className="mt-6">
-            {activeTab === 'public-round' && <PublicRoundForm />}
-            {activeTab === 'token-info' && <TokenInfoForm />}
-            {activeTab === 'platform-setup' && <PlatformSetupForm />}
-            {activeTab === 'faq' && <FAQForm />}
-            {activeTab === 'l2e-quiz' && <L2EQuizForm />}
-            {activeTab === 'marketing-kit' && <MarketingKitForm />}
-          </div>
+          <div className="animate-pulse">Loading...</div>
         </div>
       </div>
     </Layout>
