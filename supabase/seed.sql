@@ -4,6 +4,6 @@
 -- Replace 'admin@example.com' with your actual admin email
 UPDATE profiles 
 SET role = 'admin' 
-WHERE email = 'admin@example.com';
+WHERE email = 'piero@decubate.com';
 
 -- You can add more seed data here if needed
