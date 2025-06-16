@@ -155,7 +155,8 @@ const ProjectPage = () => {
                 ...tab,
                 completion: tabCompletions[tab.id] || 0
               }))} 
-              renderContent={renderTabContent} 
+              renderContent={renderTabContent}
+              defaultTab="token-info"
             />
           </>
         )}
