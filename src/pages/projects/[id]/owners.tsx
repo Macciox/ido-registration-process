@@ -86,8 +86,13 @@ const ProjectOwnersPage: React.FC = () => {
               {error}
             </div>
             <button
-              onClick={() => router.push('/admin/dashboard')}
-              className="px-4 py-2 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
+              onClick={() => {
+                setLoading(true);
+                setTimeout(() => {
+                  window.location.href = '/admin/dashboard';
+                }, 100);
+              }}
+              className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300"
             >
               Back to Dashboard
             </button>
@@ -107,14 +112,24 @@ const ProjectOwnersPage: React.FC = () => {
             </h1>
             <div className="flex space-x-4">
               <button
-                onClick={() => router.push(`/projects/${id}`)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  setLoading(true);
+                  setTimeout(() => {
+                    window.location.href = `/projects/${id}`;
+                  }, 100);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 View Project
               </button>
               <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  setLoading(true);
+                  setTimeout(() => {
+                    window.location.href = '/admin/dashboard';
+                  }, 100);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Back to Dashboard
               </button>

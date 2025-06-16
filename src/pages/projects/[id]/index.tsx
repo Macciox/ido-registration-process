@@ -159,14 +159,24 @@ const ProjectPage = () => {
                 <div className="flex space-x-4">
                   {isAdmin && (
                     <button
-                      onClick={() => router.push(`/projects/${id}/owners`)}
+                      onClick={() => {
+                        setLoading(true);
+                        setTimeout(() => {
+                          window.location.href = `/projects/${id}/owners`;
+                        }, 100);
+                      }}
                       className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors"
                     >
                       Manage Owners
                     </button>
                   )}
                   <button
-                    onClick={() => router.push('/admin/dashboard')}
+                    onClick={() => {
+                      setLoading(true);
+                      setTimeout(() => {
+                        window.location.href = '/admin/dashboard';
+                      }, 100);
+                    }}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Back to Dashboard
