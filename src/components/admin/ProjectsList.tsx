@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getProjects } from '@/lib/projects';
 import { Project } from '@/types/database.types';
+import { supabase } from '@/lib/supabase';
 
 const ProjectsList: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -11,7 +12,10 @@ const ProjectsList: React.FC = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const { data, error } = await getProjects();
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
         
         if (error) {
           setError(error.message);
@@ -83,10 +87,10 @@ const ProjectsList: React.FC = () => {
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <Link href={`/admin/projects/${project.id}`} className="text-primary hover:text-primary-dark mr-4">
+                <Link href={`/projects/${project.id}`} className="text-primary hover:text-primary-dark mr-4">
                   View
                 </Link>
-                <Link href={`/admin/projects/${project.id}/edit`} className="text-primary hover:text-primary-dark">
+                <Link href={`/projects/${project.id}`} className="text-primary hover:text-primary-dark">
                   Edit
                 </Link>
               </td>
