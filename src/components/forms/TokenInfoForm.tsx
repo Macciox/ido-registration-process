@@ -1,127 +1,256 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { supabase } from '@/lib/supabase';
 
-const TokenInfoForm: React.FC = () => {
-  const { register, handleSubmit } = useForm();
+interface TokenInfoFormProps {
+  projectId: string;
+  onCompletionUpdate?: (tabId: string, percentage: number) => void;
+}
+
+interface FormField {
+  value: string;
+  status: 'Confirmed' | 'Not Confirmed' | 'Might Still Change';
+}
+
+interface FormData {
+  [key: string]: FormField;
+}
+
+const TokenInfoForm: React.FC<TokenInfoFormProps> = ({ projectId, onCompletionUpdate }) => {
+  const { register, setValue, watch } = useForm<FormData>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
+  const formValues = watch();
   
-  const onSubmit = (data: any) => {
-    console.log(data);
-    // Will be connected to Supabase in the future
+  // Fields for this form
+  const fields = [
+    { id: 'initialMarketCapExLiquidity', label: 'Initial Market Cap (ex. liquidity)', type: 'text', placeholder: 'e.g. $1,000,000' },
+    { id: 'initialMarketCap', label: 'Initial Market Cap (total)', type: 'text', placeholder: 'e.g. $1,200,000' },
+    { id: 'fullyDilutedMarketCap', label: 'Fully Diluted Market Cap', type: 'text', placeholder: 'e.g. $10,000,000' },
+    { id: 'circulatingSupplyAtTge', label: 'Circulating Supply at TGE', type: 'text', placeholder: 'e.g. 20,000,000' },
+    { id: 'tgeSupplyPercentage', label: 'Circulating Supply at TGE (%)', type: 'text', placeholder: 'e.g. 20%' },
+    { id: 'totalSupply', label: 'Total Supply', type: 'text', placeholder: 'e.g. 100,000,000' },
+  ];
+  
+  // Load existing data
+  useEffect(() => {
+    const loadProjectFields = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('project_fields')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('field_name', fields.map(f => f.id));
+        
+        if (error) {
+          console.error('Error loading project fields:', error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          // Group fields by field_name
+          const fieldData: FormData = {};
+          
+          data.forEach(field => {
+            fieldData[field.field_name] = {
+              value: field.field_value || '',
+              status: field.status as 'Confirmed' | 'Not Confirmed' | 'Might Still Change'
+            };
+          });
+          
+          // Set form values
+          fields.forEach(field => {
+            if (fieldData[field.id]) {
+              setValue(`${field.id}.value`, fieldData[field.id].value);
+              setValue(`${field.id}.status`, fieldData[field.id].status);
+            } else {
+              setValue(`${field.id}.value`, '');
+              setValue(`${field.id}.status`, 'Not Confirmed');
+            }
+          });
+          
+          // Calculate completion percentage
+          calculateCompletionPercentage(fieldData);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (projectId) {
+      loadProjectFields();
+    }
+  }, [projectId, setValue]);
+  
+  // Calculate completion percentage
+  useEffect(() => {
+    if (Object.keys(formValues).length > 0) {
+      calculateCompletionPercentage(formValues);
+    }
+  }, [formValues]);
+  
+  const calculateCompletionPercentage = (data: FormData) => {
+    const totalFields = fields.length;
+    let confirmedFields = 0;
+    
+    fields.forEach(field => {
+      if (data[field.id]?.status === 'Confirmed') {
+        confirmedFields++;
+      }
+    });
+    
+    const percentage = Math.round((confirmedFields / totalFields) * 100);
+    setCompletionPercentage(percentage);
+    
+    // Update parent component with completion percentage
+    if (onCompletionUpdate) {
+      onCompletionUpdate('token-info', percentage);
+    }
+  };
+  
+  const handleStatusChange = async (fieldId: string, status: string) => {
+    try {
+      setLoading(true);
+      
+      // Update the field in the database
+      const { error } = await supabase
+        .from('project_fields')
+        .update({ 
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('project_id', projectId)
+        .eq('field_name', fieldId);
+      
+      if (error) {
+        console.error('Error updating field status:', error);
+        setError('Failed to update status');
+        return;
+      }
+      
+      // Show success message briefly
+      setSuccess(`Status updated to ${status}`);
+      setTimeout(() => setSuccess(null), 2000);
+      
+    } catch (err) {
+      console.error('Error:', err);
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleValueChange = async (fieldId: string, value: string) => {
+    try {
+      // Check if field exists
+      const { data: existingField } = await supabase
+        .from('project_fields')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('field_name', fieldId)
+        .single();
+      
+      if (existingField) {
+        // Update existing field
+        await supabase
+          .from('project_fields')
+          .update({ 
+            field_value: value,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingField.id);
+      } else {
+        // Create new field
+        await supabase
+          .from('project_fields')
+          .insert([{ 
+            project_id: projectId, 
+            field_name: fieldId, 
+            field_value: value, 
+            status: 'Not Confirmed' 
+          }]);
+      }
+    } catch (err) {
+      console.error('Error saving field value:', err);
+    }
   };
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium mb-6">Token Info</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-medium">Token Info</h2>
+        <div className="flex items-center">
+          <div className="mr-3 text-sm font-medium">
+            Completion: {completionPercentage}%
+          </div>
+          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-primary h-2.5 rounded-full" 
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
       
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="form-label" htmlFor="initialMarketCapExLiquidity">
-              Initial Market Cap (ex. liquidity)
-            </label>
-            <input
-              id="initialMarketCapExLiquidity"
-              type="text"
-              className="form-input"
-              placeholder="e.g. $1,000,000"
-              {...register('initialMarketCapExLiquidity')}
-            />
-            <div className="mt-1 flex items-center space-x-2">
-              <select className="text-sm border rounded p-1" {...register('initialMarketCapExLiquidity_status')}>
-                <option value="Not Confirmed">Not Confirmed</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Might Still Change">Might Still Change</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="form-label" htmlFor="initialMarketCap">
-              Initial Market Cap
-            </label>
-            <input
-              id="initialMarketCap"
-              type="text"
-              className="form-input"
-              placeholder="e.g. $1,200,000"
-              {...register('initialMarketCap')}
-            />
-            <div className="mt-1 flex items-center space-x-2">
-              <select className="text-sm border rounded p-1" {...register('initialMarketCap_status')}>
-                <option value="Not Confirmed">Not Confirmed</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Might Still Change">Might Still Change</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="form-label" htmlFor="fullyDilutedMarketCap">
-              Fully Diluted Market Cap
-            </label>
-            <input
-              id="fullyDilutedMarketCap"
-              type="text"
-              className="form-input"
-              placeholder="e.g. $10,000,000"
-              {...register('fullyDilutedMarketCap')}
-            />
-            <div className="mt-1 flex items-center space-x-2">
-              <select className="text-sm border rounded p-1" {...register('fullyDilutedMarketCap_status')}>
-                <option value="Not Confirmed">Not Confirmed</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Might Still Change">Might Still Change</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="form-label" htmlFor="circulatingSupplyAtTge">
-              Circulating Supply at TGE
-            </label>
-            <input
-              id="circulatingSupplyAtTge"
-              type="text"
-              className="form-input"
-              placeholder="e.g. 20,000,000"
-              {...register('circulatingSupplyAtTge')}
-            />
-            <div className="mt-1 flex items-center space-x-2">
-              <select className="text-sm border rounded p-1" {...register('circulatingSupplyAtTge_status')}>
-                <option value="Not Confirmed">Not Confirmed</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Might Still Change">Might Still Change</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="form-label" htmlFor="tgeSupplyPercentage">
-              TGE Supply %
-            </label>
-            <input
-              id="tgeSupplyPercentage"
-              type="text"
-              className="form-input"
-              placeholder="e.g. 20%"
-              {...register('tgeSupplyPercentage')}
-            />
-            <div className="mt-1 flex items-center space-x-2">
-              <select className="text-sm border rounded p-1" {...register('tgeSupplyPercentage_status')}>
-                <option value="Not Confirmed">Not Confirmed</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Might Still Change">Might Still Change</option>
-              </select>
-            </div>
-          </div>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
-        
-        <div className="mt-6">
-          <button type="submit" className="btn btn-primary">
-            Save Changes
-          </button>
+      )}
+      
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          {success}
         </div>
-      </form>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {fields.map((field) => (
+          <div key={field.id} className="border border-gray-200 rounded-md p-4">
+            <label className="form-label" htmlFor={field.id}>
+              {field.label}
+            </label>
+            <input
+              id={field.id}
+              type={field.type}
+              className="form-input"
+              placeholder={field.placeholder}
+              {...register(`${field.id}.value`)}
+              onChange={(e) => handleValueChange(field.id, e.target.value)}
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex space-x-2">
+                {['Not Confirmed', 'Might Still Change', 'Confirmed'].map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={`px-2 py-1 text-xs font-medium rounded ${
+                      formValues[field.id]?.status === status
+                        ? status === 'Confirmed' 
+                          ? 'bg-green-500 text-white' 
+                          : status === 'Might Still Change'
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-gray-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    onClick={() => {
+                      setValue(`${field.id}.status`, status as any);
+                      handleStatusChange(field.id, status);
+                    }}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

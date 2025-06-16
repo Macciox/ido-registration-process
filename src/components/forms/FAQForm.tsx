@@ -1,17 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { supabase } from '@/lib/supabase';
 
-const FAQForm: React.FC = () => {
-  const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>([
-    { question: '', answer: '' },
-  ]);
+interface FAQFormProps {
+  projectId: string;
+}
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
+  const { register, handleSubmit, reset } = useForm();
+  const [faqs, setFaqs] = useState<FAQ[]>([{ question: '', answer: '' }]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   
-  const { register, handleSubmit } = useForm();
-  
-  const onSubmit = (data: any) => {
-    console.log(data);
-    // Will be connected to Supabase in the future
-  };
+  // Load existing FAQs
+  useEffect(() => {
+    const loadFAQs = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('faqs')
+          .select('*')
+          .eq('project_id', projectId);
+        
+        if (error) {
+          console.error('Error loading FAQs:', error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const loadedFaqs = data.map(faq => ({
+            question: faq.question,
+            answer: faq.answer
+          }));
+          setFaqs(loadedFaqs);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (projectId) {
+      loadFAQs();
+    }
+  }, [projectId]);
   
   const addFAQ = () => {
     if (faqs.length < 5) {
@@ -26,10 +65,72 @@ const FAQForm: React.FC = () => {
       setFaqs(newFaqs);
     }
   };
+  
+  const onSubmit = async (data: any) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      // Extract FAQs from form data
+      const faqsToSave = [];
+      for (let i = 0; i < faqs.length; i++) {
+        if (data[`faqs[${i}].question`] && data[`faqs[${i}].answer`]) {
+          faqsToSave.push({
+            project_id: projectId,
+            question: data[`faqs[${i}].question`],
+            answer: data[`faqs[${i}].answer`]
+          });
+        }
+      }
+      
+      // Delete existing FAQs
+      await supabase
+        .from('faqs')
+        .delete()
+        .eq('project_id', projectId);
+      
+      // Insert new FAQs
+      if (faqsToSave.length > 0) {
+        const { error } = await supabase
+          .from('faqs')
+          .insert(faqsToSave);
+        
+        if (error) {
+          setError(error.message);
+          return;
+        }
+      }
+      
+      setSuccess('FAQs saved successfully!');
+    } catch (err) {
+      console.error('Error saving FAQs:', err);
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium mb-6">FAQ (up to 5 entries)</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-medium">FAQ (up to 5 entries)</h2>
+        <div className="text-sm text-gray-500">
+          {faqs.length}/5 FAQs
+        </div>
+      </div>
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          {success}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit(onSubmit)}>
         {faqs.map((faq, index) => (
@@ -56,6 +157,7 @@ const FAQForm: React.FC = () => {
                 type="text"
                 className="form-input"
                 placeholder="Enter question"
+                defaultValue={faq.question}
                 {...register(`faqs[${index}].question`)}
               />
             </div>
@@ -69,6 +171,7 @@ const FAQForm: React.FC = () => {
                 rows={4}
                 className="form-input"
                 placeholder="Enter answer"
+                defaultValue={faq.answer}
                 {...register(`faqs[${index}].answer`)}
               />
             </div>
@@ -88,8 +191,8 @@ const FAQForm: React.FC = () => {
         )}
         
         <div className="mt-6">
-          <button type="submit" className="btn btn-primary">
-            Save Changes
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </form>

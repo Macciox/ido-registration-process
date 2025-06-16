@@ -11,9 +11,10 @@ import MarketingKitForm from '@/components/forms/MarketingKitForm';
 import { getCurrentUser } from '@/lib/auth';
 import { getProjectById, getProjectByOwnerEmail } from '@/lib/projects';
 import { User, Project } from '@/types/database.types';
+import { supabase } from '@/lib/supabase';
 
 const tabs = [
-  { id: 'public-round', label: 'Public Round' },
+  { id: 'public-round', label: 'IDO Metrics' },
   { id: 'token-info', label: 'Token Info' },
   { id: 'platform-setup', label: 'Platform Setup' },
   { id: 'faq', label: 'FAQ' },
@@ -27,6 +28,16 @@ const ProjectPage: React.FC = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tabCompletionPercentages, setTabCompletionPercentages] = useState<{[key: string]: number}>({
+    'public-round': 0,
+    'token-info': 0,
+    'platform-setup': 0,
+    'faq': 0,
+    'l2e-quiz': 0,
+    'marketing-kit': 0
+  });
+  const [overallCompletion, setOverallCompletion] = useState(0);
+  
   const router = useRouter();
   const { id } = router.query;
   
@@ -46,7 +57,11 @@ const ProjectPage: React.FC = () => {
         setUser(currentUser);
         
         // Load project
-        const { data: projectData, error: projectError } = await getProjectById(id as string);
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', id as string)
+          .single();
         
         if (projectError) {
           setError(projectError.message);
@@ -76,6 +91,20 @@ const ProjectPage: React.FC = () => {
     
     checkAuthAndLoadProject();
   }, [id, router]);
+  
+  // Handle completion percentage updates from child components
+  const handleCompletionUpdate = (tabId: string, percentage: number) => {
+    setTabCompletionPercentages(prev => {
+      const newPercentages = { ...prev, [tabId]: percentage };
+      
+      // Calculate overall completion
+      const totalPercentage = Object.values(newPercentages).reduce((sum, value) => sum + value, 0);
+      const overallPercentage = Math.round(totalPercentage / tabs.length);
+      setOverallCompletion(overallPercentage);
+      
+      return newPercentages;
+    });
+  };
   
   if (loading) {
     return (
@@ -107,7 +136,20 @@ const ProjectPage: React.FC = () => {
     <Layout>
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-semibold text-gray-900">{project?.name}</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold text-gray-900">{project?.name}</h1>
+            <div className="flex items-center">
+              <div className="mr-3 text-sm font-medium">
+                Overall Completion: {overallCompletion}%
+              </div>
+              <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-secondary h-2.5 rounded-full" 
+                  style={{ width: `${overallCompletion}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
           <p className="mt-1 text-sm text-gray-500">
             Complete the following information for your IDO project.
           </p>
@@ -117,12 +159,42 @@ const ProjectPage: React.FC = () => {
           <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
           
           <div className="mt-6">
-            {activeTab === 'public-round' && <PublicRoundForm />}
-            {activeTab === 'token-info' && <TokenInfoForm />}
-            {activeTab === 'platform-setup' && <PlatformSetupForm />}
-            {activeTab === 'faq' && <FAQForm />}
-            {activeTab === 'l2e-quiz' && <L2EQuizForm />}
-            {activeTab === 'marketing-kit' && <MarketingKitForm />}
+            {activeTab === 'public-round' && 
+              <PublicRoundForm 
+                projectId={id as string} 
+                onCompletionUpdate={handleCompletionUpdate} 
+              />
+            }
+            {activeTab === 'token-info' && 
+              <TokenInfoForm 
+                projectId={id as string} 
+                onCompletionUpdate={handleCompletionUpdate} 
+              />
+            }
+            {activeTab === 'platform-setup' && 
+              <PlatformSetupForm 
+                projectId={id as string} 
+                onCompletionUpdate={handleCompletionUpdate} 
+              />
+            }
+            {activeTab === 'faq' && 
+              <FAQForm 
+                projectId={id as string} 
+                onCompletionUpdate={handleCompletionUpdate} 
+              />
+            }
+            {activeTab === 'l2e-quiz' && 
+              <L2EQuizForm 
+                projectId={id as string} 
+                onCompletionUpdate={handleCompletionUpdate} 
+              />
+            }
+            {activeTab === 'marketing-kit' && 
+              <MarketingKitForm 
+                projectId={id as string} 
+                onCompletionUpdate={handleCompletionUpdate} 
+              />
+            }
           </div>
         </div>
       </div>
