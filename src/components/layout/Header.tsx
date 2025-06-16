@@ -57,19 +57,25 @@ const Header: React.FC = () => {
             <div className="flex items-center">
               <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
                 {user.role === 'admin' && (
-                  <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                    Admin Dashboard
-                  </Link>
+                  <>
+                    <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                      Admin Dashboard
+                    </Link>
+                    <Link href="/admin/settings" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                      Admin Settings
+                    </Link>
+                  </>
                 )}
                 <Link href="/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                   Dashboard
                 </Link>
-                <button
+                <Link 
+                  href="/login" 
                   onClick={handleLogout}
                   className="px-3 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
                 >
                   Logout
-                </button>
+                </Link>
               </div>
               
               <div className="flex items-center md:hidden">
@@ -117,19 +123,25 @@ const Header: React.FC = () => {
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
           {user?.role === 'admin' && (
-            <Link href="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-              Admin Dashboard
-            </Link>
+            <>
+              <Link href="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+                Admin Dashboard
+              </Link>
+              <Link href="/admin/settings" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+                Admin Settings
+              </Link>
+            </>
           )}
           <Link href="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
             Dashboard
           </Link>
-          <button
+          <Link
+            href="/login"
             onClick={handleLogout}
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
           >
             Logout
-          </button>
+          </Link>
         </div>
       </div>
     </header>
