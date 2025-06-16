@@ -367,6 +367,52 @@ CREATE TABLE media_kit (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
+-- Create project_owners table
+CREATE TABLE project_owners (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Create unique constraint to prevent duplicate owners
+ALTER TABLE project_owners ADD CONSTRAINT unique_project_owner UNIQUE (project_id, email);
+
+-- Enable RLS for project_owners
+ALTER TABLE project_owners ENABLE ROW LEVEL SECURITY;
+
+-- Only admins can view project owners
+CREATE POLICY "Admin users can view project owners"
+  ON project_owners FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can insert project owners
+CREATE POLICY "Admin users can insert project owners"
+  ON project_owners FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can delete project owners
+CREATE POLICY "Admin users can delete project owners"
+  ON project_owners FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
 -- Media kit policies
 ALTER TABLE media_kit ENABLE ROW LEVEL SECURITY;
 
@@ -439,9 +485,58 @@ INSERT INTO media_kit (
 ) VALUES (
   NULL, -- Replace with specific project_id or NULL for global default
   'https://storage.googleapis.com/your-bucket/decuabte-logo.png', -- Replace with actual logo URL
-  '#3B82F6', -- Primary color (blue)
-  '#10B981', -- Secondary color (green)
-  'Inter, sans-serif',
+  '#8A2BE2', -- Primary color (violet)
+  '#9370DB', -- Secondary color (medium purple)
+  'Poppins, sans-serif',
   'https://storage.googleapis.com/your-bucket/decuabte-background.jpg', -- Replace with actual background URL
-  'rounded-md' -- Default button style
+  'rounded-lg' -- Default button style
 );
+
+-- Create admin_invitations table
+CREATE TABLE admin_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL UNIQUE,
+  token TEXT NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  used_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Enable RLS for admin_invitations
+ALTER TABLE admin_invitations ENABLE ROW LEVEL SECURITY;
+
+-- Only admins can view invitations
+CREATE POLICY "Admin users can view invitations"
+  ON admin_invitations FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can create invitations
+CREATE POLICY "Admin users can create invitations"
+  ON admin_invitations FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Only admins can update invitations
+CREATE POLICY "Admin users can update invitations"
+  ON admin_invitations FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Create indexes for faster lookups
+CREATE INDEX admin_invitations_email_idx ON admin_invitations (email);
+CREATE INDEX admin_invitations_token_idx ON admin_invitations (token);
+CREATE INDEX project_owners_project_id_idx ON project_owners (project_id);
+CREATE INDEX project_owners_email_idx ON project_owners (email);

@@ -25,7 +25,7 @@ const ProjectOwnersPage: React.FC = () => {
         }
         
         if (currentUser.role !== 'admin') {
-          router.push('/dashboard');
+          router.push('/admin/dashboard');
           return;
         }
         

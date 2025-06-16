@@ -25,16 +25,53 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const loadProjectOwners = async () => {
     try {
       setLoading(true);
+      
+      // First check if the project exists
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .select('owner_email')
+        .eq('id', projectId)
+        .single();
+      
+      if (projectError) {
+        console.error('Error loading project:', projectError);
+        setOwners([]);
+        return;
+      }
+      
+      // Try to get project owners from project_owners table
       const { data, error } = await supabase
         .from('project_owners')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
       
-      if (error) throw error;
-      setOwners(data || []);
+      if (error) {
+        // If table doesn't exist yet, use the owner_email from projects table
+        if (error.code === '42P01') { // undefined_table error
+          setOwners([{
+            id: 'default',
+            email: project.owner_email,
+            created_at: new Date().toISOString()
+          }]);
+        } else {
+          throw error;
+        }
+      } else {
+        // If no owners in the table yet, use the owner_email from projects table
+        if (!data || data.length === 0) {
+          setOwners([{
+            id: 'default',
+            email: project.owner_email,
+            created_at: new Date().toISOString()
+          }]);
+        } else {
+          setOwners(data);
+        }
+      }
     } catch (err) {
       console.error('Error loading project owners:', err);
+      setOwners([]);
     } finally {
       setLoading(false);
     }
@@ -52,15 +89,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       setAddingOwner(true);
       setMessage(null);
       
-      // Check if owner already exists
-      const { data: existingOwner } = await supabase
-        .from('project_owners')
-        .select('id')
-        .eq('project_id', projectId)
-        .eq('email', newEmail.trim())
-        .single();
-      
-      if (existingOwner) {
+      // Check if the email is already in the owners list
+      if (owners.some(owner => owner.email === newEmail.trim())) {
         setMessage({ text: 'This email is already an owner of this project', type: 'error' });
         return;
       }
@@ -73,7 +103,30 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           email: newEmail.trim()
         }]);
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') { // undefined_table error
+          // If the table doesn't exist, update the project's owner_email directly
+          const { error: updateError } = await supabase
+            .from('projects')
+            .update({ owner_email: newEmail.trim() })
+            .eq('id', projectId);
+            
+          if (updateError) throw updateError;
+          
+          // Add the new owner to the local state
+          setOwners([{
+            id: 'default',
+            email: newEmail.trim(),
+            created_at: new Date().toISOString()
+          }]);
+          
+          setMessage({ text: 'Project owner updated successfully', type: 'success' });
+          setNewEmail('');
+          return;
+        } else {
+          throw error;
+        }
+      }
       
       setMessage({ text: 'Project owner added successfully', type: 'success' });
       setNewEmail('');
@@ -92,13 +145,26 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       return;
     }
     
+    // If this is the default owner (from projects table), don't allow removal
+    if (ownerId === 'default') {
+      setMessage({ text: 'Cannot remove the primary project owner', type: 'error' });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('project_owners')
         .delete()
         .eq('id', ownerId);
       
-      if (error) throw error;
+      if (error) {
+        // If table doesn't exist, show a more helpful error
+        if (error.code === '42P01') { // undefined_table error
+          throw new Error('Project owners feature is not fully set up. Please run the database migrations.');
+        } else {
+          throw error;
+        }
+      }
       
       setMessage({ text: 'Project owner removed successfully', type: 'success' });
       loadProjectOwners();
@@ -134,7 +200,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                   <button
                     onClick={() => removeOwner(owner.id)}
                     className="text-red-600 hover:text-red-800"
-                    disabled={owners.length <= 1}
+                    disabled={owners.length <= 1 || owner.id === 'default'}
                   >
                     Remove
                   </button>
