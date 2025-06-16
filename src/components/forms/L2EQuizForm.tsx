@@ -16,7 +16,7 @@ interface QuizQuestion {
 const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate }) => {
   const { register } = useForm();
   const [questions, setQuestions] = useState<QuizQuestion[]>([
-    { question: '', options: ['', '', '', ''], correctAnswer: 'A' }
+    { question: '', options: ['', '', '', ''] as [string, string, string, string], correctAnswer: 'A' }
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +82,7 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
     if (questions.length < 5) {
       const newQuestions = [
         ...questions, 
-        { question: '', options: ['', '', '', ''], correctAnswer: 'A' }
+        { question: '', options: ['', '', '', ''] as [string, string, string, string], correctAnswer: 'A' }
       ];
       setQuestions(newQuestions);
     }
@@ -115,7 +115,9 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
     } else if (field === 'correctAnswer') {
       newQuestions[index].correctAnswer = value as 'A' | 'B' | 'C' | 'D';
     } else if (field === 'option' && optionIndex !== undefined) {
-      newQuestions[index].options[optionIndex] = value;
+      const newOptions = [...newQuestions[index].options];
+      newOptions[optionIndex] = value;
+      newQuestions[index].options = newOptions as [string, string, string, string];
     }
     
     setQuestions(newQuestions);
