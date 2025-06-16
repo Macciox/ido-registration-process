@@ -176,6 +176,62 @@ CREATE POLICY "Admin users can insert all project fields"
 ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
 
+-- Create media_kit table for branding
+CREATE TABLE media_kit (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  logo_url TEXT,
+  primary_color TEXT,
+  secondary_color TEXT,
+  font_family TEXT,
+  banner_image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Media kit policies
+ALTER TABLE media_kit ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Project owners can view their project media kit"
+  ON media_kit FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = media_kit.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Admin users can view all media kits"
+  ON media_kit FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can update media kits"
+  ON media_kit FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can insert media kits"
+  ON media_kit FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
 -- Create functions and triggers
 
 -- Function to handle user creation
@@ -192,3 +248,20 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Insert default Decuabte Launchpad branding
+INSERT INTO media_kit (
+  project_id,
+  logo_url,
+  primary_color,
+  secondary_color,
+  font_family,
+  banner_image_url
+) VALUES (
+  NULL, -- Replace with specific project_id or NULL for global default
+  'https://storage.googleapis.com/your-bucket/decuabte-logo.png', -- Replace with actual logo URL
+  '#3B82F6', -- Primary color (blue)
+  '#10B981', -- Secondary color (green)
+  'Inter, sans-serif',
+  'https://storage.googleapis.com/your-bucket/decuabte-background.jpg' -- Replace with actual background URL
+);
