@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
+import Toast from '@/components/ui/Toast';
 
 interface PublicRoundFormProps {
   projectId: string;
@@ -17,31 +18,30 @@ interface FormData {
 }
 
 const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompletionUpdate }) => {
-  const { register, handleSubmit, setValue, watch } = useForm<FormData>();
+  const { register, setValue, watch } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const formValues = watch();
   
   // Fields for this form
   const fields = [
-    { id: 'whitelistingStartTime', label: 'Whitelisting Opens', type: 'datetime-local' },
-    { id: 'idoLaunchDate', label: 'IDO Date', type: 'datetime-local' },
-    { id: 'tokenClaimingDate', label: 'Claiming Date', type: 'datetime-local' },
-    { id: 'cexDexListingDate', label: 'CEX/DEX Listing Date', type: 'datetime-local' },
-    { id: 'allocationUSD', label: 'Allocation in USD', type: 'text', placeholder: 'e.g. $500' },
-    { id: 'allocationTokenAmount', label: 'Allocation in Tokens', type: 'text', placeholder: 'e.g. 10,000' },
-    { id: 'tokenPrice', label: 'Token Price', type: 'text', placeholder: 'e.g. $0.05' },
-    { id: 'tgeUnlockPercentage', label: 'TGE Unlock %', type: 'text', placeholder: 'e.g. 20%' },
-    { id: 'cliffLock', label: 'Cliff / Lock', type: 'text', placeholder: 'e.g. 1 month' },
-    { id: 'vestingDuration', label: 'Vesting Duration', type: 'text', placeholder: 'e.g. 6 months' },
-    { id: 'tokenTicker', label: 'Token Ticker', type: 'text', placeholder: 'e.g. $XYZ' },
-    { id: 'network', label: 'Network', type: 'text', placeholder: 'e.g. Ethereum' },
-    { id: 'gracePeriod', label: 'Grace Period', type: 'text', placeholder: 'e.g. 24 hours' },
-    { id: 'minimumTier', label: 'Minimum Tier', type: 'text', placeholder: 'e.g. Bronze' },
-    { id: 'tokenContractAddress', label: 'Token Contract Address', type: 'text', placeholder: 'e.g. 0x...' },
-    { id: 'tokenTransferTxId', label: 'Token Transfer TX-ID', type: 'text', placeholder: 'e.g. 0x...' },
+    { id: 'whitelistingStartTime', label: 'Whitelisting Opens', type: 'datetime-local', required: true },
+    { id: 'idoLaunchDate', label: 'IDO Date', type: 'datetime-local', required: true },
+    { id: 'tokenClaimingDate', label: 'Claiming Date', type: 'datetime-local', required: true },
+    { id: 'cexDexListingDate', label: 'CEX/DEX Listing Date', type: 'datetime-local', required: true },
+    { id: 'allocationUSD', label: 'Allocation in USD', type: 'text', placeholder: 'e.g. $500', required: true },
+    { id: 'allocationTokenAmount', label: 'Allocation in Tokens', type: 'text', placeholder: 'e.g. 10,000', required: true },
+    { id: 'tokenPrice', label: 'Token Price', type: 'text', placeholder: 'e.g. $0.05', required: true },
+    { id: 'tgeUnlockPercentage', label: 'TGE Unlock %', type: 'text', placeholder: 'e.g. 20%', required: true },
+    { id: 'cliffLock', label: 'Cliff / Lock', type: 'text', placeholder: 'e.g. 1 month', required: true },
+    { id: 'vestingDuration', label: 'Vesting Duration', type: 'text', placeholder: 'e.g. 6 months', required: true },
+    { id: 'tokenTicker', label: 'Token Ticker', type: 'text', placeholder: 'e.g. $XYZ', required: true },
+    { id: 'network', label: 'Network', type: 'text', placeholder: 'e.g. Ethereum', required: true },
+    { id: 'gracePeriod', label: 'Grace Period', type: 'text', placeholder: 'e.g. 24 hours', required: true },
+    { id: 'minimumTier', label: 'Minimum Tier', type: 'text', placeholder: 'e.g. Bronze', required: true },
+    { id: 'tokenContractAddress', label: 'Token Contract Address', type: 'text', placeholder: 'e.g. 0x...', required: true },
+    { id: 'tokenTransferTxId', label: 'Token Transfer TX-ID', type: 'text', placeholder: 'e.g. 0x...', required: false },
   ];
   
   // Load existing data
@@ -84,6 +84,12 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
           
           // Calculate completion percentage
           calculateCompletionPercentage(fieldData);
+        } else {
+          // Initialize all fields with Not Confirmed status
+          fields.forEach(field => {
+            setValue(`${field.id}.value`, '');
+            setValue(`${field.id}.status`, 'Not Confirmed');
+          });
         }
       } catch (err) {
         console.error('Error:', err);
@@ -105,10 +111,12 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
   }, [formValues]);
   
   const calculateCompletionPercentage = (data: FormData) => {
-    const totalFields = fields.length;
+    // Filter out optional fields
+    const requiredFields = fields.filter(field => field.required);
+    const totalFields = requiredFields.length;
     let confirmedFields = 0;
     
-    fields.forEach(field => {
+    requiredFields.forEach(field => {
       if (data[field.id]?.status === 'Confirmed') {
         confirmedFields++;
       }
@@ -139,17 +147,16 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
       
       if (error) {
         console.error('Error updating field status:', error);
-        setError('Failed to update status');
+        setToast({ message: 'Failed to update status', type: 'error' });
         return;
       }
       
       // Show success message briefly
-      setSuccess(`Status updated to ${status}`);
-      setTimeout(() => setSuccess(null), 2000);
+      setToast({ message: `Status updated to ${status}`, type: 'success' });
       
     } catch (err) {
       console.error('Error:', err);
-      setError('An unexpected error occurred');
+      setToast({ message: 'An unexpected error occurred', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -207,23 +214,12 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
         </div>
       </div>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
-        </div>
-      )}
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {fields.map((field) => (
           <div key={field.id} className="border border-gray-200 rounded-md p-4">
             <label className="form-label" htmlFor={field.id}>
               {field.label}
+              {field.required ? '' : ' (Optional)'}
             </label>
             <input
               id={field.id}
@@ -261,6 +257,14 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
           </div>
         ))}
       </div>
+      
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 };
