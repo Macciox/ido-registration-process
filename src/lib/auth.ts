@@ -11,9 +11,11 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
-  // First, clear any cached data
-  localStorage.removeItem('supabase.auth.token');
-  sessionStorage.clear();
+  // First, clear any cached data (safely for SSR)
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
+  }
   
   // Then sign out from Supabase
   const { error } = await supabase.auth.signOut();
@@ -30,7 +32,7 @@ export async function getCurrentUser(): Promise<User | null> {
   const { data } = await supabase
     .from('profiles')
     .select('role')
-    .eq('email', user.email)
+    .eq('id', user.id)
     .single();
   
   if (!data) return null;

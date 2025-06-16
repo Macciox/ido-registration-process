@@ -95,7 +95,33 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
-      // Add new owner
+      // First check if project_owners table exists
+      const { count, error: checkError } = await supabase
+        .from('project_owners')
+        .select('*', { count: 'exact', head: true });
+      
+      if (checkError && checkError.code === '42P01') {
+        // If the table doesn't exist, update the project's owner_email directly
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({ owner_email: newEmail.trim() })
+          .eq('id', projectId);
+          
+        if (updateError) throw updateError;
+        
+        // Add the new owner to the local state
+        setOwners([{
+          id: 'default',
+          email: newEmail.trim(),
+          created_at: new Date().toISOString()
+        }]);
+        
+        setMessage({ text: 'Project owner updated successfully', type: 'success' });
+        setNewEmail('');
+        return;
+      }
+      
+      // Add new owner to project_owners table
       const { error } = await supabase
         .from('project_owners')
         .insert([{ 
@@ -104,28 +130,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         }]);
       
       if (error) {
-        if (error.code === '42P01') { // undefined_table error
-          // If the table doesn't exist, update the project's owner_email directly
-          const { error: updateError } = await supabase
-            .from('projects')
-            .update({ owner_email: newEmail.trim() })
-            .eq('id', projectId);
-            
-          if (updateError) throw updateError;
-          
-          // Add the new owner to the local state
-          setOwners([{
-            id: 'default',
-            email: newEmail.trim(),
-            created_at: new Date().toISOString()
-          }]);
-          
-          setMessage({ text: 'Project owner updated successfully', type: 'success' });
-          setNewEmail('');
-          return;
-        } else {
-          throw error;
-        }
+        throw error;
       }
       
       setMessage({ text: 'Project owner added successfully', type: 'success' });
