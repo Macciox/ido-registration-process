@@ -8,6 +8,7 @@ import PublicRoundForm from '@/components/forms/PublicRoundForm';
 import MarketingKitForm from '@/components/forms/MarketingKitForm';
 import FAQForm from '@/components/forms/FAQForm';
 import L2EQuizForm from '@/components/forms/L2EQuizForm';
+import ProjectCompletionBar from '@/components/ui/ProjectCompletionBar';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/auth';
 import { initializeFormFields } from '@/lib/formDefaults';
@@ -150,25 +151,28 @@ const ProjectPage = () => {
           <>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
               <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900">{projectName}</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{projectName}</h1>
+                  <p className="text-gray-600">Complete the following information for your project</p>
+                  {id && <ProjectCompletionBar projectId={id as string} />}
+                </div>
                 <div className="flex space-x-4">
                   {isAdmin && (
                     <button
                       onClick={() => router.push(`/projects/${id}/owners`)}
-                      className="px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-dark transition-colors"
+                      className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors"
                     >
                       Manage Owners
                     </button>
                   )}
                   <button
                     onClick={() => router.push('/admin/dashboard')}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Back to Dashboard
                   </button>
                 </div>
               </div>
-              <p className="text-gray-600">Complete the following information for your project</p>
             </div>
             
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 :root {
   --color-primary: #8A2BE2;
   --color-primary-dark: #7B1FA2;
@@ -9,8 +11,6 @@
   --color-secondary-dark: #7E57C2;
   --font-family: 'Poppins, sans-serif';
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 body {
   font-family: 'Poppins', sans-serif;
@@ -119,4 +119,20 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(20, 20);
     opacity: 0;
   }
+}
+
+/* Toast animations */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
 }

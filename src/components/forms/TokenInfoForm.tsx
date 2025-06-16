@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface TokenInfoFormProps {
   projectId: string;
@@ -20,9 +21,9 @@ const TokenInfoForm: React.FC<TokenInfoFormProps> = ({ projectId, onCompletionUp
   const { register, setValue, watch } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const formValues = watch();
+  const { showToast } = useToast();
   
   // Fields for this form
   const fields = [
@@ -129,17 +130,16 @@ const TokenInfoForm: React.FC<TokenInfoFormProps> = ({ projectId, onCompletionUp
       
       if (error) {
         console.error('Error updating field status:', error);
-        setError('Failed to update status');
+        showToast('Failed to update status', 'error');
         return;
       }
       
-      // Show success message briefly
-      setSuccess(`Status updated to ${status}`);
-      setTimeout(() => setSuccess(null), 2000);
+      // Show toast notification
+      showToast(`Status updated to ${status}`, 'success');
       
     } catch (err) {
       console.error('Error:', err);
-      setError('An unexpected error occurred');
+      showToast('An unexpected error occurred', 'error');
     } finally {
       setLoading(false);
     }
@@ -200,12 +200,6 @@ const TokenInfoForm: React.FC<TokenInfoFormProps> = ({ projectId, onCompletionUp
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
         </div>
       )}
       
