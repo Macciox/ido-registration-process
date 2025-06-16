@@ -151,7 +151,7 @@ const Dashboard: React.FC = () => {
               </p>
               {user?.role === 'admin' && (
                 <button
-                  onClick={() => router.push('/admin/settings')}
+                  onClick={() => router.push('/admin/projects/new')}
                   className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
                 >
                   Create New Project

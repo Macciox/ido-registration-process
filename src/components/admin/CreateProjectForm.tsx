@@ -1,30 +1,63 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { createProject } from '@/lib/projects';
+import { supabase } from '@/lib/supabase';
+
+interface FormData {
+  name: string;
+  ownerEmails: string;
+}
 
 const CreateProjectForm: React.FC = () => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
-  
-  const onSubmit = async (data: any) => {
+  const [message, setMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
-    setError(null);
-    setSuccess(null);
+    setMessage(null);
     
     try {
-      const { data: project, error } = await createProject(data.name, data.ownerEmail);
+      // Parse emails (comma or newline separated)
+      const emails = data.ownerEmails
+        .split(/[\s,]+/)
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
       
-      if (error) {
-        setError(error.message);
-      } else {
-        setSuccess(`Project "${data.name}" created successfully!`);
-        reset();
+      if (emails.length === 0) {
+        setMessage({ text: 'Please enter at least one owner email', type: 'error' });
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
-      console.error(err);
+      
+      // Create the project
+      const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .insert([{ 
+          name: data.name,
+          owner_email: emails[0] // Keep the first email as the primary for backward compatibility
+        }])
+        .select('id')
+        .single();
+      
+      if (projectError) throw projectError;
+      
+      // Add all emails to project_owners table
+      const projectOwners = emails.map(email => ({
+        project_id: projectData.id,
+        email
+      }));
+      
+      const { error: ownersError } = await supabase
+        .from('project_owners')
+        .insert(projectOwners);
+      
+      if (ownersError) throw ownersError;
+      
+      setMessage({ text: 'Project created successfully', type: 'success' });
+      reset(); // Clear the form
+    } catch (err: any) {
+      console.error('Error creating project:', err);
+      setMessage({ text: err.message || 'Failed to create project', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -34,65 +67,55 @@ const CreateProjectForm: React.FC = () => {
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-lg font-medium mb-6">Create New Project</h2>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
+      {message && (
+        <div className={`p-4 mb-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message.text}
         </div>
       )}
       
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mb-4">
-          <label className="form-label" htmlFor="name">
+          <label className="form-label" htmlFor="project-name">
             Project Name
           </label>
           <input
-            id="name"
+            id="project-name"
             type="text"
             className="form-input"
+            placeholder="Enter project name"
             {...register('name', { required: 'Project name is required' })}
           />
           {errors.name && (
             <p className="text-red-500 text-sm mt-1">
-              {errors.name.message as string}
+              {errors.name.message}
             </p>
           )}
         </div>
         
         <div className="mb-6">
-          <label className="form-label" htmlFor="ownerEmail">
-            Project Owner Email
+          <label className="form-label" htmlFor="owner-emails">
+            Project Owner Emails
           </label>
-          <input
-            id="ownerEmail"
-            type="email"
+          <textarea
+            id="owner-emails"
+            rows={4}
             className="form-input"
-            {...register('ownerEmail', { 
-              required: 'Project owner email is required',
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address'
-              }
-            })}
+            placeholder="Enter email addresses (comma or line separated)"
+            {...register('ownerEmails', { required: 'At least one owner email is required' })}
           />
-          {errors.ownerEmail && (
+          <p className="text-sm text-gray-500 mt-1">
+            Enter multiple emails separated by commas or new lines
+          </p>
+          {errors.ownerEmails && (
             <p className="text-red-500 text-sm mt-1">
-              {errors.ownerEmail.message as string}
+              {errors.ownerEmails.message}
             </p>
           )}
-          <p className="mt-2 text-sm text-gray-500">
-            This email will be used to grant access to the project owner.
-          </p>
         </div>
         
         <button
           type="submit"
-          className="btn btn-primary"
+          className="btn btn-primary w-full"
           disabled={loading}
         >
           {loading ? 'Creating...' : 'Create Project'}
