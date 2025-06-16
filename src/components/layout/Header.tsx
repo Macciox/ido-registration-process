@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { getCurrentUser, signOut } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { User } from '@/types/database.types';
+import LogoutButton from './LogoutButton';
 
 const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -25,14 +26,7 @@ const Header: React.FC = () => {
     loadUser();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/login');
-    } catch (err) {
-      console.error('Error signing out:', err);
-    }
-  };
+  // Logout is now handled by the LogoutButton component
 
   return (
     <header className="bg-white shadow">
@@ -56,28 +50,15 @@ const Header: React.FC = () => {
           {!loading && user && (
             <div className="flex items-center">
               <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-                {user.role === 'admin' && (
-                  <>
-                    <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                      Admin Dashboard
-                    </Link>
-                    <Link href="/admin/settings" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                      Admin Settings
-                    </Link>
-                  </>
-                )}
                 <Link href="/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                   Dashboard
                 </Link>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleLogout();
-                  }}
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
-                >
-                  Logout
-                </button>
+                {user.role === 'admin' && (
+                  <Link href="/admin/settings" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                    Admin Settings
+                  </Link>
+                )}
+                <LogoutButton />
               </div>
               
               <div className="flex items-center md:hidden">
@@ -124,28 +105,15 @@ const Header: React.FC = () => {
       {/* Mobile menu */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
-          {user?.role === 'admin' && (
-            <>
-              <Link href="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                Admin Dashboard
-              </Link>
-              <Link href="/admin/settings" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                Admin Settings
-              </Link>
-            </>
-          )}
           <Link href="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
             Dashboard
           </Link>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              handleLogout();
-            }}
-            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
-          >
-            Logout
-          </button>
+          {user?.role === 'admin' && (
+            <Link href="/admin/settings" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+              Admin Settings
+            </Link>
+          )}
+          <LogoutButton mobile={true} />
         </div>
       </div>
     </header>

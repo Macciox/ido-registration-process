@@ -11,18 +11,14 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    // Clear any cached data
-    localStorage.removeItem('supabase.auth.token');
-    
-    return { error: null };
-  } catch (error) {
-    console.error('Error during sign out:', error);
-    return { error };
-  }
+  // First, clear any cached data
+  localStorage.removeItem('supabase.auth.token');
+  sessionStorage.clear();
+  
+  // Then sign out from Supabase
+  const { error } = await supabase.auth.signOut();
+  
+  return { error };
 }
 
 export async function getCurrentUser(): Promise<User | null> {
