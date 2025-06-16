@@ -69,13 +69,15 @@ const Header: React.FC = () => {
                 <Link href="/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                   Dashboard
                 </Link>
-                <Link 
-                  href="/login" 
-                  onClick={handleLogout}
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleLogout();
+                  }}
                   className="px-3 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
                 >
                   Logout
-                </Link>
+                </button>
               </div>
               
               <div className="flex items-center md:hidden">
@@ -135,13 +137,15 @@ const Header: React.FC = () => {
           <Link href="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
             Dashboard
           </Link>
-          <Link
-            href="/login"
-            onClick={handleLogout}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              handleLogout();
+            }}
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
           >
             Logout
-          </Link>
+          </button>
         </div>
       </div>
     </header>

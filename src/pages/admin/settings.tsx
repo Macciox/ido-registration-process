@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import AdminManagement from '@/components/admin/AdminManagement';
+import AdminInvite from '@/components/admin/AdminInvite';
 import PasswordReset from '@/components/auth/PasswordReset';
 import { getCurrentUser } from '@/lib/auth';
 import { User } from '@/types/database.types';
@@ -54,7 +54,7 @@ const AdminSettingsPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Settings</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AdminManagement />
+          <AdminInvite />
           <PasswordReset />
         </div>
       </div>

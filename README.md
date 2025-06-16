@@ -1,77 +1,73 @@
-# Decubate IDO Registration Platform
+# IDO Registration Process
 
-A modern web application for managing IDO project onboarding and preparation, replacing the manual Google Docs workflow.
+A secure platform for managing Web3 project launches and IDO registrations.
 
-## Overview
+## Features
 
-This platform allows:
-- **Decubate (Admin users)** to create dedicated onboarding pages for each project launching with them
-- **Project teams (Project Owners)** to log in securely and update their project details for upcoming IDOs
+- **User Roles**: Admin and Project Owner roles with appropriate permissions
+- **Project Management**: Create and manage IDO projects
+- **Form Management**: Track project details with status indicators
+- **Authentication**: Secure login and registration system
+- **Admin Invitations**: Secure system for adding new administrators
 
 ## Tech Stack
 
-- **Frontend**: Next.js with TypeScript
-- **Styling**: Tailwind CSS
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Authentication, Storage)
 - **Deployment**: Vercel
-- **Backend**: Supabase (Authentication and Database)
-
-## Project Structure
-
-The application is organized into the following main sections:
-
-- **Public Round (IDO) | Metrics**: Launch dates, token details, allocation information
-- **Token Info**: Market cap, supply details
-- **Platform Setup**: Project description, social media links
-- **FAQ**: Customizable FAQ entries
-- **L2E Quiz**: Learn-to-earn quiz questions
-- **Marketing Kit**: Upload or link to marketing materials
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js (v14 or later)
+- npm or yarn
+- Supabase account and project
+
+### Installation
+
 1. Clone the repository
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Set up environment variables:
-   - Create a `.env.local` file with your Supabase credentials:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   ```
-4. Run the development server:
-   ```
-   npm run dev
-   ```
+```bash
+git clone https://github.com/yourusername/ido-registration-process.git
+cd ido-registration-process
+```
+
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up environment variables
+Create a `.env.local` file in the root directory with the following variables:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. Run the development server
+```bash
+npm run dev
+# or
+yarn dev
+```
+
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Supabase Setup
+## Database Setup
 
-1. Create a new Supabase project
-2. Run the SQL schema in `supabase/schema.sql` to set up the database tables and policies
-3. Configure authentication:
-   - Enable Email/Password sign-in
-   - Set up email templates for verification
-4. Create an admin user:
-   - Sign up a user through the Supabase authentication
-   - In the Supabase SQL editor, run:
-   ```sql
-   UPDATE profiles SET role = 'admin' WHERE email = 'your-admin-email@example.com';
-   ```
+1. Run the schema migrations in the `supabase/migrations` directory
+2. Set up initial admin user through the Supabase dashboard
 
-## User Roles
+## Project Structure
 
-### Admin
-- Can create new projects
-- Can assign project owners by email
-- Has access to all projects
-- Can edit all project fields
+- `/src/components`: React components
+- `/src/pages`: Next.js pages
+- `/src/lib`: Utility functions and API clients
+- `/src/types`: TypeScript type definitions
+- `/supabase`: Supabase schema and migrations
 
-### Project Owner
-- Can only access their assigned project
-- Can update all fields for their project
-- Can set status for each field: Confirmed, Not Confirmed, Might Still Change
+## License
 
-## Deployment
-
-This project is configured for deployment on Vercel. Connect your GitHub repository to Vercel for automatic deployments.
+This project is licensed under the MIT License - see the LICENSE file for details.
