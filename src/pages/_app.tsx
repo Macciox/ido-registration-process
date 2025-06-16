@@ -1,10 +1,13 @@
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
+import { ThemeProvider } from '@/components/ui/ThemeProvider';
 
-export default function App({ Component, pageProps }: AppProps) {
+function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <main>
+    <ThemeProvider>
       <Component {...pageProps} />
-    </main>
+    </ThemeProvider>
   );
 }
+
+export default MyApp;

@@ -50,11 +50,11 @@ const Header: React.FC = () => {
           {!loading && user && (
             <div className="flex items-center">
               <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-                <Link href="/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                   Dashboard
                 </Link>
                 {user.role === 'admin' && (
-                  <Link href="/admin/settings" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                  <Link href="/admin/dashboard?tab=settings" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                     Admin Settings
                   </Link>
                 )}
@@ -105,11 +105,11 @@ const Header: React.FC = () => {
       {/* Mobile menu */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
-          <Link href="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+          <Link href="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
             Dashboard
           </Link>
           {user?.role === 'admin' && (
-            <Link href="/admin/settings" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+            <Link href="/admin/dashboard?tab=settings" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
               Admin Settings
             </Link>
           )}

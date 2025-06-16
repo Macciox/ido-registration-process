@@ -33,9 +33,9 @@ const AdminDashboard: React.FC = () => {
           return;
         }
         
-        if (currentUser.role !== 'admin') {
-          router.push('/dashboard');
-          return;
+        // Set active tab from URL query parameter if available
+        if (router.query.tab === 'settings') {
+          setActiveTab('settings');
         }
         
         setUser(currentUser);
@@ -49,7 +49,7 @@ const AdminDashboard: React.FC = () => {
     };
     
     checkAuth();
-  }, [router]);
+  }, [router, router.query.tab]);
 
   const loadProjects = async () => {
     try {
@@ -139,6 +139,15 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Update URL when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    router.push({
+      pathname: router.pathname,
+      query: { tab }
+    }, undefined, { shallow: true });
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -159,7 +168,7 @@ const AdminDashboard: React.FC = () => {
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex space-x-8">
               <button
-                onClick={() => setActiveTab('projects')}
+                onClick={() => handleTabChange('projects')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'projects'
                     ? 'border-primary text-primary'
@@ -168,16 +177,18 @@ const AdminDashboard: React.FC = () => {
               >
                 Projects
               </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'settings'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Admin Settings
-              </button>
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => handleTabChange('settings')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'settings'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Admin Settings
+                </button>
+              )}
             </nav>
           </div>
           
@@ -186,12 +197,14 @@ const AdminDashboard: React.FC = () => {
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium">All Projects</h2>
-                <button
-                  onClick={() => router.push('/admin/projects/new')}
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-                >
-                  Create New Project
-                </button>
+                {user?.role === 'admin' && (
+                  <button
+                    onClick={() => router.push('/admin/projects/new')}
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                  >
+                    Create New Project
+                  </button>
+                )}
               </div>
               
               {projects.length === 0 ? (
@@ -251,7 +264,7 @@ const AdminDashboard: React.FC = () => {
           )}
           
           {/* Admin Settings Tab */}
-          {activeTab === 'settings' && (
+          {activeTab === 'settings' && user?.role === 'admin' && (
             <div className="grid grid-cols-1 gap-6">
               {/* Admin Invitation */}
               <div className="bg-white shadow rounded-lg p-6">

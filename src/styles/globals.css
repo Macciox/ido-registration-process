@@ -3,52 +3,68 @@
 @tailwind utilities;
 
 :root {
-  --primary: #4f46e5;
-  --primary-dark: #4338ca;
-  --secondary: #7c3aed;
-  --secondary-dark: #6d28d9;
+  --color-primary: #3B82F6;
+  --color-primary-dark: #2563EB;
+  --color-secondary: #10B981;
+  --color-secondary-dark: #059669;
+  --font-family: 'Inter, sans-serif';
 }
 
-@layer base {
-  body {
-    @apply bg-gray-50;
-  }
+body {
+  font-family: var(--font-family);
 }
 
 @layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-medium transition-colors;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary-dark;
+  }
+  
   .form-label {
     @apply block text-sm font-medium text-gray-700 mb-1;
   }
   
   .form-input {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm;
+    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50;
   }
-  
-  .btn {
-    @apply px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors;
-  }
-  
-  .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-dark focus:ring-primary;
-  }
-  
-  .btn-secondary {
-    @apply bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary;
-  }
-  
-  .tab {
-    @apply whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm;
-  }
-  
-  .tab-active {
-    @apply border-secondary text-secondary;
-  }
-  
-  .tab-inactive {
-    @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
-  }
-  
-  .login-gradient {
-    @apply bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50;
-  }
+}
+
+/* Custom theme colors for Tailwind */
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-primary-dark {
+  background-color: var(--color-primary-dark);
+}
+
+.bg-secondary {
+  background-color: var(--color-secondary);
+}
+
+.bg-secondary-dark {
+  background-color: var(--color-secondary-dark);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-secondary {
+  color: var(--color-secondary);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.border-secondary {
+  border-color: var(--color-secondary);
 }

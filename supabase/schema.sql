@@ -174,7 +174,184 @@ CREATE POLICY "Admin users can insert all project fields"
 
 -- Similar policies for FAQs and quiz_questions tables
 ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Project owners can view their project FAQs"
+  ON faqs FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = faqs.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Project owners can update their project FAQs"
+  ON faqs FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = faqs.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Project owners can insert their project FAQs"
+  ON faqs FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = faqs.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Project owners can delete their project FAQs"
+  ON faqs FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = faqs.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Admin users can view all FAQs"
+  ON faqs FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can update all FAQs"
+  ON faqs FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can insert all FAQs"
+  ON faqs FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can delete all FAQs"
+  ON faqs FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
 ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Project owners can view their project quiz questions"
+  ON quiz_questions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = quiz_questions.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Project owners can update their project quiz questions"
+  ON quiz_questions FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = quiz_questions.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Project owners can insert their project quiz questions"
+  ON quiz_questions FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = quiz_questions.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Project owners can delete their project quiz questions"
+  ON quiz_questions FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = quiz_questions.project_id
+      AND projects.owner_email = (
+        SELECT email FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Admin users can view all quiz questions"
+  ON quiz_questions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can update all quiz questions"
+  ON quiz_questions FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can insert all quiz questions"
+  ON quiz_questions FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admin users can delete all quiz questions"
+  ON quiz_questions FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
 
 -- Create media_kit table for branding
 CREATE TABLE media_kit (
@@ -185,6 +362,7 @@ CREATE TABLE media_kit (
   secondary_color TEXT,
   font_family TEXT,
   banner_image_url TEXT,
+  button_style TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
@@ -256,12 +434,14 @@ INSERT INTO media_kit (
   primary_color,
   secondary_color,
   font_family,
-  banner_image_url
+  banner_image_url,
+  button_style
 ) VALUES (
   NULL, -- Replace with specific project_id or NULL for global default
   'https://storage.googleapis.com/your-bucket/decuabte-logo.png', -- Replace with actual logo URL
   '#3B82F6', -- Primary color (blue)
   '#10B981', -- Secondary color (green)
   'Inter, sans-serif',
-  'https://storage.googleapis.com/your-bucket/decuabte-background.jpg' -- Replace with actual background URL
+  'https://storage.googleapis.com/your-bucket/decuabte-background.jpg', -- Replace with actual background URL
+  'rounded-md' -- Default button style
 );

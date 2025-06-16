@@ -86,7 +86,7 @@ const ProjectOwnersPage: React.FC = () => {
               {error}
             </div>
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/admin/dashboard')}
               className="px-4 py-2 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300"
             >
               Back to Dashboard
@@ -113,7 +113,7 @@ const ProjectOwnersPage: React.FC = () => {
                 View Project
               </button>
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/admin/dashboard')}
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Back to Dashboard
