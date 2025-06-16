@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import AdminInvite from '@/components/admin/AdminInvite';
 import PasswordReset from '@/components/auth/PasswordReset';
+import CreateProjectForm from '@/components/admin/CreateProjectForm';
 import { getCurrentUser } from '@/lib/auth';
 import { User } from '@/types/database.types';
 
@@ -53,9 +54,12 @@ const AdminSettingsPage: React.FC = () => {
       <div className="py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Settings</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AdminInvite />
-          <PasswordReset />
+        <div className="grid grid-cols-1 gap-6">
+          <CreateProjectForm />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AdminInvite />
+            <PasswordReset />
+          </div>
         </div>
       </div>
     </Layout>

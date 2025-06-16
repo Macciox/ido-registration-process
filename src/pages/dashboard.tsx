@@ -163,9 +163,19 @@ const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium mb-4">
-                {user?.role === 'admin' ? 'All Projects' : 'Your Projects'}
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-medium">
+                  {user?.role === 'admin' ? 'All Projects' : 'Your Projects'}
+                </h2>
+                {user?.role === 'admin' && (
+                  <button
+                    onClick={() => router.push('/admin/projects/new')}
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                  >
+                    Create New Project
+                  </button>
+                )}
+              </div>
               
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
