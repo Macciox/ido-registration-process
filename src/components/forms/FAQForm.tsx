@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 interface FAQFormProps {
   projectId: string;
+  onCompletionUpdate?: (tabId: string, percentage: number) => void;
 }
 
 interface FAQ {
@@ -11,12 +12,13 @@ interface FAQ {
   answer: string;
 }
 
-const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
+const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
   const { register, handleSubmit, reset } = useForm();
   const [faqs, setFaqs] = useState<FAQ[]>([{ question: '', answer: '' }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
   
   // Load existing FAQs
   useEffect(() => {
@@ -39,6 +41,9 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
             answer: faq.answer
           }));
           setFaqs(loadedFaqs);
+          
+          // Calculate completion percentage
+          calculateCompletionPercentage(loadedFaqs);
         }
       } catch (err) {
         console.error('Error:', err);
@@ -52,6 +57,19 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
     }
   }, [projectId]);
   
+  const calculateCompletionPercentage = (faqsData: FAQ[]) => {
+    // For FAQs, we consider it complete if there's at least one FAQ with both question and answer
+    const validFaqs = faqsData.filter(faq => faq.question && faq.answer);
+    const percentage = validFaqs.length > 0 ? 100 : 0;
+    
+    setCompletionPercentage(percentage);
+    
+    // Update parent component with completion percentage
+    if (onCompletionUpdate) {
+      onCompletionUpdate('faq', percentage);
+    }
+  };
+  
   const addFAQ = () => {
     if (faqs.length < 5) {
       setFaqs([...faqs, { question: '', answer: '' }]);
@@ -63,51 +81,48 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
       const newFaqs = [...faqs];
       newFaqs.splice(index, 1);
       setFaqs(newFaqs);
+      calculateCompletionPercentage(newFaqs);
     }
   };
   
-  const onSubmit = async (data: any) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+  const handleFAQChange = async (index: number, field: 'question' | 'answer', value: string) => {
+    const newFaqs = [...faqs];
+    newFaqs[index][field] = value;
+    setFaqs(newFaqs);
     
     try {
-      // Extract FAQs from form data
-      const faqsToSave = [];
-      for (let i = 0; i < faqs.length; i++) {
-        if (data[`faqs[${i}].question`] && data[`faqs[${i}].answer`]) {
-          faqsToSave.push({
-            project_id: projectId,
-            question: data[`faqs[${i}].question`],
-            answer: data[`faqs[${i}].answer`]
-          });
-        }
-      }
-      
-      // Delete existing FAQs
-      await supabase
+      // Get existing FAQs
+      const { data: existingFaqs } = await supabase
         .from('faqs')
-        .delete()
+        .select('*')
         .eq('project_id', projectId);
       
-      // Insert new FAQs
-      if (faqsToSave.length > 0) {
-        const { error } = await supabase
+      // Delete existing FAQs
+      if (existingFaqs && existingFaqs.length > 0) {
+        await supabase
           .from('faqs')
-          .insert(faqsToSave);
-        
-        if (error) {
-          setError(error.message);
-          return;
-        }
+          .delete()
+          .eq('project_id', projectId);
       }
       
-      setSuccess('FAQs saved successfully!');
+      // Insert updated FAQs
+      const faqsToSave = newFaqs.filter(faq => faq.question || faq.answer).map(faq => ({
+        project_id: projectId,
+        question: faq.question,
+        answer: faq.answer
+      }));
+      
+      if (faqsToSave.length > 0) {
+        await supabase
+          .from('faqs')
+          .insert(faqsToSave);
+      }
+      
+      // Calculate completion percentage
+      calculateCompletionPercentage(newFaqs);
+      
     } catch (err) {
       console.error('Error saving FAQs:', err);
-      setError('An unexpected error occurred');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -115,8 +130,16 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium">FAQ (up to 5 entries)</h2>
-        <div className="text-sm text-gray-500">
-          {faqs.length}/5 FAQs
+        <div className="flex items-center">
+          <div className="mr-3 text-sm font-medium">
+            Completion: {completionPercentage}%
+          </div>
+          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-primary h-2.5 rounded-full" 
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
         </div>
       </div>
       
@@ -132,7 +155,7 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
         {faqs.map((faq, index) => (
           <div key={index} className="mb-6 p-4 border border-gray-200 rounded-md">
             <div className="flex justify-between items-center mb-4">
@@ -157,8 +180,8 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
                 type="text"
                 className="form-input"
                 placeholder="Enter question"
-                defaultValue={faq.question}
-                {...register(`faqs[${index}].question`)}
+                value={faq.question}
+                onChange={(e) => handleFAQChange(index, 'question', e.target.value)}
               />
             </div>
             
@@ -171,8 +194,8 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
                 rows={4}
                 className="form-input"
                 placeholder="Enter answer"
-                defaultValue={faq.answer}
-                {...register(`faqs[${index}].answer`)}
+                value={faq.answer}
+                onChange={(e) => handleFAQChange(index, 'answer', e.target.value)}
               />
             </div>
           </div>
@@ -189,13 +212,7 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId }) => {
             </button>
           </div>
         )}
-        
-        <div className="mt-6">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

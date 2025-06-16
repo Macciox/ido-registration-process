@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 interface PlatformSetupFormProps {
   projectId: string;
+  onCompletionUpdate?: (tabId: string, percentage: number) => void;
 }
 
 interface FormField {
@@ -15,8 +16,8 @@ interface FormData {
   [key: string]: FormField;
 }
 
-const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId }) => {
-  const { register, handleSubmit, setValue, watch } = useForm<FormData>();
+const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId, onCompletionUpdate }) => {
+  const { register, setValue, watch } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -109,45 +110,77 @@ const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId }) => {
     
     const percentage = Math.round((confirmedFields / totalFields) * 100);
     setCompletionPercentage(percentage);
+    
+    // Update parent component with completion percentage
+    if (onCompletionUpdate) {
+      onCompletionUpdate('platform-setup', percentage);
+    }
   };
   
-  const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    
+  const handleStatusChange = async (fieldId: string, status: string) => {
     try {
-      // Prepare data for saving
-      const fieldsToSave = fields.map(field => ({
-        project_id: projectId,
-        field_name: field.id,
-        field_value: data[field.id]?.value || '',
-        status: data[field.id]?.status || 'Not Confirmed'
-      }));
+      setLoading(true);
       
-      // Delete existing fields first
-      await supabase
-        .from('project_fields')
-        .delete()
-        .eq('project_id', projectId)
-        .in('field_name', fields.map(f => f.id));
-      
-      // Insert new fields
+      // Update the field in the database
       const { error } = await supabase
         .from('project_fields')
-        .insert(fieldsToSave);
+        .update({ 
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('project_id', projectId)
+        .eq('field_name', fieldId);
       
       if (error) {
-        setError(error.message);
+        console.error('Error updating field status:', error);
+        setError('Failed to update status');
         return;
       }
       
-      setSuccess('Platform Setup saved successfully!');
+      // Show success message briefly
+      setSuccess(`Status updated to ${status}`);
+      setTimeout(() => setSuccess(null), 2000);
+      
     } catch (err) {
-      console.error('Error saving data:', err);
+      console.error('Error:', err);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleValueChange = async (fieldId: string, value: string) => {
+    try {
+      // Check if field exists
+      const { data: existingField } = await supabase
+        .from('project_fields')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('field_name', fieldId)
+        .single();
+      
+      if (existingField) {
+        // Update existing field
+        await supabase
+          .from('project_fields')
+          .update({ 
+            field_value: value,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingField.id);
+      } else {
+        // Create new field
+        await supabase
+          .from('project_fields')
+          .insert([{ 
+            project_id: projectId, 
+            field_name: fieldId, 
+            field_value: value, 
+            status: 'Not Confirmed' 
+          }]);
+      }
+    } catch (err) {
+      console.error('Error saving field value:', err);
     }
   };
 
@@ -180,50 +213,59 @@ const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 gap-6">
-          {fields.map((field) => (
-            <div key={field.id}>
-              <label className="form-label" htmlFor={field.id}>
-                {field.label}
-              </label>
-              {field.type === 'textarea' ? (
-                <textarea
-                  id={field.id}
-                  rows={4}
-                  className="form-input"
-                  placeholder={field.placeholder}
-                  {...register(`${field.id}.value`)}
-                />
-              ) : (
-                <input
-                  id={field.id}
-                  type={field.type}
-                  className="form-input"
-                  placeholder={field.placeholder}
-                  {...register(`${field.id}.value`)}
-                />
-              )}
-              <div className="mt-1 flex items-center space-x-2">
-                <select 
-                  className="text-sm border rounded p-1" 
-                  {...register(`${field.id}.status`)}
-                >
-                  <option value="Not Confirmed">Not Confirmed</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Might Still Change">Might Still Change</option>
-                </select>
+      <div className="grid grid-cols-1 gap-6">
+        {fields.map((field) => (
+          <div key={field.id} className="border border-gray-200 rounded-md p-4">
+            <label className="form-label" htmlFor={field.id}>
+              {field.label}
+            </label>
+            {field.type === 'textarea' ? (
+              <textarea
+                id={field.id}
+                rows={4}
+                className="form-input"
+                placeholder={field.placeholder}
+                {...register(`${field.id}.value`)}
+                onChange={(e) => handleValueChange(field.id, e.target.value)}
+              />
+            ) : (
+              <input
+                id={field.id}
+                type={field.type}
+                className="form-input"
+                placeholder={field.placeholder}
+                {...register(`${field.id}.value`)}
+                onChange={(e) => handleValueChange(field.id, e.target.value)}
+              />
+            )}
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex space-x-2">
+                {['Not Confirmed', 'Might Still Change', 'Confirmed'].map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={`px-2 py-1 text-xs font-medium rounded ${
+                      formValues[field.id]?.status === status
+                        ? status === 'Confirmed' 
+                          ? 'bg-green-500 text-white' 
+                          : status === 'Might Still Change'
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-gray-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    onClick={() => {
+                      setValue(`${field.id}.status`, status as any);
+                      handleStatusChange(field.id, status);
+                    }}
+                  >
+                    {status}
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-        
-        <div className="mt-6">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

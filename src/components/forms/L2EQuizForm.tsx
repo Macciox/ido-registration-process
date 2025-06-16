@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 interface L2EQuizFormProps {
   projectId: string;
+  onCompletionUpdate?: (tabId: string, percentage: number) => void;
 }
 
 interface QuizQuestion {
@@ -12,14 +13,15 @@ interface QuizQuestion {
   correctAnswer: 'A' | 'B' | 'C' | 'D';
 }
 
-const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
-  const { register, handleSubmit } = useForm();
+const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate }) => {
+  const { register } = useForm();
   const [questions, setQuestions] = useState<QuizQuestion[]>([
     { question: '', options: ['', '', '', ''], correctAnswer: 'A' }
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
   
   // Load existing quiz questions
   useEffect(() => {
@@ -43,6 +45,9 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
             correctAnswer: q.correct_answer as 'A' | 'B' | 'C' | 'D'
           }));
           setQuestions(loadedQuestions);
+          
+          // Calculate completion percentage
+          calculateCompletionPercentage(loadedQuestions);
         }
       } catch (err) {
         console.error('Error:', err);
@@ -56,69 +61,106 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
     }
   }, [projectId]);
   
-  const addQuestion = () => {
-    if (questions.length < 5) {
-      setQuestions([
-        ...questions, 
-        { question: '', options: ['', '', '', ''], correctAnswer: 'A' }
-      ]);
+  const calculateCompletionPercentage = (questionsData: QuizQuestion[]) => {
+    // For quiz questions, we consider it complete if there's at least one question with all fields filled
+    const validQuestions = questionsData.filter(q => 
+      q.question && 
+      q.options.every(option => option) && 
+      q.correctAnswer
+    );
+    
+    const percentage = validQuestions.length > 0 ? 100 : 0;
+    setCompletionPercentage(percentage);
+    
+    // Update parent component with completion percentage
+    if (onCompletionUpdate) {
+      onCompletionUpdate('l2e-quiz', percentage);
     }
   };
   
-  const removeQuestion = (index: number) => {
-    if (questions.length > 1) {
-      const newQuestions = [...questions];
-      newQuestions.splice(index, 1);
+  const addQuestion = () => {
+    if (questions.length < 5) {
+      const newQuestions = [
+        ...questions, 
+        { question: '', options: ['', '', '', ''], correctAnswer: 'A' }
+      ];
       setQuestions(newQuestions);
     }
   };
   
-  const onSubmit = async (data: any) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      // Extract quiz questions from form data
-      const questionsToSave = [];
-      for (let i = 0; i < questions.length; i++) {
-        if (data[`questions[${i}].question`]) {
-          questionsToSave.push({
-            project_id: projectId,
-            question: data[`questions[${i}].question`],
-            option_a: data[`questions[${i}].options[0]`] || '',
-            option_b: data[`questions[${i}].options[1]`] || '',
-            option_c: data[`questions[${i}].options[2]`] || '',
-            option_d: data[`questions[${i}].options[3]`] || '',
-            correct_answer: data[`questions[${i}].correctAnswer`] || 'A'
-          });
-        }
-      }
+  const removeQuestion = async (index: number) => {
+    if (questions.length > 1) {
+      const newQuestions = [...questions];
+      newQuestions.splice(index, 1);
+      setQuestions(newQuestions);
       
-      // Delete existing quiz questions
+      // Save to database
+      await saveQuestionsToDatabase(newQuestions);
+      
+      // Update completion percentage
+      calculateCompletionPercentage(newQuestions);
+    }
+  };
+  
+  const handleQuestionChange = async (
+    index: number, 
+    field: 'question' | 'correctAnswer' | 'option', 
+    value: string,
+    optionIndex?: number
+  ) => {
+    const newQuestions = [...questions];
+    
+    if (field === 'question') {
+      newQuestions[index].question = value;
+    } else if (field === 'correctAnswer') {
+      newQuestions[index].correctAnswer = value as 'A' | 'B' | 'C' | 'D';
+    } else if (field === 'option' && optionIndex !== undefined) {
+      newQuestions[index].options[optionIndex] = value;
+    }
+    
+    setQuestions(newQuestions);
+    
+    // Save to database
+    await saveQuestionsToDatabase(newQuestions);
+    
+    // Update completion percentage
+    calculateCompletionPercentage(newQuestions);
+  };
+  
+  const saveQuestionsToDatabase = async (questionsToSave: QuizQuestion[]) => {
+    try {
+      // Delete existing questions
       await supabase
         .from('quiz_questions')
         .delete()
         .eq('project_id', projectId);
       
-      // Insert new quiz questions
-      if (questionsToSave.length > 0) {
-        const { error } = await supabase
+      // Insert new questions
+      const formattedQuestions = questionsToSave
+        .filter(q => q.question) // Only save questions with at least a question
+        .map(q => ({
+          project_id: projectId,
+          question: q.question,
+          option_a: q.options[0],
+          option_b: q.options[1],
+          option_c: q.options[2],
+          option_d: q.options[3],
+          correct_answer: q.correctAnswer
+        }));
+      
+      if (formattedQuestions.length > 0) {
+        await supabase
           .from('quiz_questions')
-          .insert(questionsToSave);
-        
-        if (error) {
-          setError(error.message);
-          return;
-        }
+          .insert(formattedQuestions);
       }
       
-      setSuccess('Quiz questions saved successfully!');
+      // Show success message briefly
+      setSuccess('Quiz questions saved');
+      setTimeout(() => setSuccess(null), 2000);
+      
     } catch (err) {
       console.error('Error saving quiz questions:', err);
-      setError('An unexpected error occurred');
-    } finally {
-      setLoading(false);
+      setError('Failed to save quiz questions');
     }
   };
 
@@ -126,8 +168,16 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium">L2E Quiz Questions (up to 5 entries)</h2>
-        <div className="text-sm text-gray-500">
-          {questions.length}/5 Questions
+        <div className="flex items-center">
+          <div className="mr-3 text-sm font-medium">
+            Completion: {completionPercentage}%
+          </div>
+          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-primary h-2.5 rounded-full" 
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
         </div>
       </div>
       
@@ -143,7 +193,7 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
         {questions.map((question, index) => (
           <div key={index} className="mb-6 p-4 border border-gray-200 rounded-md">
             <div className="flex justify-between items-center mb-4">
@@ -168,66 +218,26 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
                 type="text"
                 className="form-input"
                 placeholder="Enter question"
-                defaultValue={question.question}
-                {...register(`questions[${index}].question`)}
+                value={question.question}
+                onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
               />
             </div>
             
-            <div className="mb-4">
-              <label className="form-label" htmlFor={`question_${index}_option_a`}>
-                Option A
-              </label>
-              <input
-                id={`question_${index}_option_a`}
-                type="text"
-                className="form-input"
-                placeholder="Enter option A"
-                defaultValue={question.options[0]}
-                {...register(`questions[${index}].options[0]`)}
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="form-label" htmlFor={`question_${index}_option_b`}>
-                Option B
-              </label>
-              <input
-                id={`question_${index}_option_b`}
-                type="text"
-                className="form-input"
-                placeholder="Enter option B"
-                defaultValue={question.options[1]}
-                {...register(`questions[${index}].options[1]`)}
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="form-label" htmlFor={`question_${index}_option_c`}>
-                Option C
-              </label>
-              <input
-                id={`question_${index}_option_c`}
-                type="text"
-                className="form-input"
-                placeholder="Enter option C"
-                defaultValue={question.options[2]}
-                {...register(`questions[${index}].options[2]`)}
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="form-label" htmlFor={`question_${index}_option_d`}>
-                Option D
-              </label>
-              <input
-                id={`question_${index}_option_d`}
-                type="text"
-                className="form-input"
-                placeholder="Enter option D"
-                defaultValue={question.options[3]}
-                {...register(`questions[${index}].options[3]`)}
-              />
-            </div>
+            {['A', 'B', 'C', 'D'].map((option, optionIndex) => (
+              <div className="mb-4" key={optionIndex}>
+                <label className="form-label" htmlFor={`question_${index}_option_${option.toLowerCase()}`}>
+                  Option {option}
+                </label>
+                <input
+                  id={`question_${index}_option_${option.toLowerCase()}`}
+                  type="text"
+                  className="form-input"
+                  placeholder={`Enter option ${option}`}
+                  value={question.options[optionIndex]}
+                  onChange={(e) => handleQuestionChange(index, 'option', e.target.value, optionIndex)}
+                />
+              </div>
+            ))}
             
             <div>
               <label className="form-label" htmlFor={`question_${index}_correct`}>
@@ -236,8 +246,8 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
               <select
                 id={`question_${index}_correct`}
                 className="form-input"
-                defaultValue={question.correctAnswer}
-                {...register(`questions[${index}].correctAnswer`)}
+                value={question.correctAnswer}
+                onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
               >
                 <option value="A">A</option>
                 <option value="B">B</option>
@@ -259,13 +269,7 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId }) => {
             </button>
           </div>
         )}
-        
-        <div className="mt-6">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

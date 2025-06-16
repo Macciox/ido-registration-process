@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 interface MarketingKitFormProps {
   projectId: string;
+  onCompletionUpdate?: (tabId: string, percentage: number) => void;
 }
 
 interface FormField {
@@ -15,8 +16,8 @@ interface FormData {
   [key: string]: FormField;
 }
 
-const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId }) => {
-  const { register, handleSubmit, setValue, watch } = useForm<FormData>();
+const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onCompletionUpdate }) => {
+  const { register, setValue, watch } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -100,45 +101,77 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId }) => {
     
     const percentage = Math.round((confirmedFields / totalFields) * 100);
     setCompletionPercentage(percentage);
+    
+    // Update parent component with completion percentage
+    if (onCompletionUpdate) {
+      onCompletionUpdate('marketing-kit', percentage);
+    }
   };
   
-  const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    
+  const handleStatusChange = async (fieldId: string, status: string) => {
     try {
-      // Prepare data for saving
-      const fieldsToSave = fields.map(field => ({
-        project_id: projectId,
-        field_name: field.id,
-        field_value: data[field.id]?.value || '',
-        status: data[field.id]?.status || 'Not Confirmed'
-      }));
+      setLoading(true);
       
-      // Delete existing fields first
-      await supabase
-        .from('project_fields')
-        .delete()
-        .eq('project_id', projectId)
-        .in('field_name', fields.map(f => f.id));
-      
-      // Insert new fields
+      // Update the field in the database
       const { error } = await supabase
         .from('project_fields')
-        .insert(fieldsToSave);
+        .update({ 
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('project_id', projectId)
+        .eq('field_name', fieldId);
       
       if (error) {
-        setError(error.message);
+        console.error('Error updating field status:', error);
+        setError('Failed to update status');
         return;
       }
       
-      setSuccess('Marketing Kit saved successfully!');
+      // Show success message briefly
+      setSuccess(`Status updated to ${status}`);
+      setTimeout(() => setSuccess(null), 2000);
+      
     } catch (err) {
-      console.error('Error saving data:', err);
+      console.error('Error:', err);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleValueChange = async (fieldId: string, value: string) => {
+    try {
+      // Check if field exists
+      const { data: existingField } = await supabase
+        .from('project_fields')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('field_name', fieldId)
+        .single();
+      
+      if (existingField) {
+        // Update existing field
+        await supabase
+          .from('project_fields')
+          .update({ 
+            field_value: value,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingField.id);
+      } else {
+        // Create new field
+        await supabase
+          .from('project_fields')
+          .insert([{ 
+            project_id: projectId, 
+            field_name: fieldId, 
+            field_value: value, 
+            status: 'Not Confirmed' 
+          }]);
+      }
+    } catch (err) {
+      console.error('Error saving field value:', err);
     }
   };
 
@@ -171,76 +204,87 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="mb-6">
-          <label className="form-label" htmlFor="marketingKitUrl">
-            Google Drive Folder URL
-          </label>
-          <input
-            id="marketingKitUrl"
-            type="text"
-            className="form-input"
-            placeholder="https://drive.google.com/..."
-            {...register('marketingKitUrl.value')}
-          />
-          <div className="mt-1 flex items-center space-x-2">
-            <select className="text-sm border rounded p-1" {...register('marketingKitUrl.status')}>
-              <option value="Not Confirmed">Not Confirmed</option>
-              <option value="Confirmed">Confirmed</option>
-              <option value="Might Still Change">Might Still Change</option>
-            </select>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">
-            Please provide a Google Drive folder URL containing all marketing materials.
-          </p>
-        </div>
-        
-        <div className="mb-6">
-          <p className="form-label">Or Upload Files</p>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 48 48"
-                aria-hidden="true"
+      <div className="mb-6 border border-gray-200 rounded-md p-4">
+        <label className="form-label" htmlFor="marketingKitUrl">
+          Google Drive Folder URL
+        </label>
+        <input
+          id="marketingKitUrl"
+          type="text"
+          className="form-input"
+          placeholder="https://drive.google.com/..."
+          {...register('marketingKitUrl.value')}
+          onChange={(e) => handleValueChange('marketingKitUrl', e.target.value)}
+        />
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex space-x-2">
+            {['Not Confirmed', 'Might Still Change', 'Confirmed'].map((status) => (
+              <button
+                key={status}
+                type="button"
+                className={`px-2 py-1 text-xs font-medium rounded ${
+                  formValues.marketingKitUrl?.status === status
+                    ? status === 'Confirmed' 
+                      ? 'bg-green-500 text-white' 
+                      : status === 'Might Still Change'
+                        ? 'bg-yellow-500 text-white'
+                        : 'bg-gray-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => {
+                  setValue('marketingKitUrl.status', status as any);
+                  handleStatusChange('marketingKitUrl', status);
+                }}
               >
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div className="flex text-sm text-gray-600">
-                <label
-                  htmlFor="file-upload"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
-                >
-                  <span>Upload a file</span>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="sr-only"
-                  />
-                </label>
-                <p className="pl-1">or drag and drop</p>
-              </div>
-              <p className="text-xs text-gray-500">ZIP, PNG, JPG up to 10MB</p>
-            </div>
+                {status}
+              </button>
+            ))}
           </div>
-          <p className="mt-2 text-sm text-gray-500">
-            Note: File upload functionality will be implemented in the future with Supabase storage.
-          </p>
         </div>
-        
-        <div className="mt-6">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
+        <p className="mt-2 text-sm text-gray-500">
+          Please provide a Google Drive folder URL containing all marketing materials.
+        </p>
+      </div>
+      
+      <div className="mb-6">
+        <p className="form-label">Or Upload Files</p>
+        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <div className="space-y-1 text-center">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              stroke="currentColor"
+              fill="none"
+              viewBox="0 0 48 48"
+              aria-hidden="true"
+            >
+              <path
+                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div className="flex text-sm text-gray-600">
+              <label
+                htmlFor="file-upload"
+                className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+              >
+                <span>Upload a file</span>
+                <input
+                  id="file-upload"
+                  type="file"
+                  className="sr-only"
+                />
+              </label>
+              <p className="pl-1">or drag and drop</p>
+            </div>
+            <p className="text-xs text-gray-500">ZIP, PNG, JPG up to 10MB</p>
+          </div>
         </div>
-      </form>
+        <p className="mt-2 text-sm text-gray-500">
+          Note: File upload functionality will be implemented in the future with Supabase storage.
+        </p>
+      </div>
     </div>
   );
 };
