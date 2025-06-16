@@ -47,8 +47,6 @@ const ProjectOwnerLoginForm: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6 text-center text-secondary">Project Access</h2>
-      
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -108,7 +106,7 @@ const ProjectOwnerLoginForm: React.FC = () => {
         
         <button
           type="submit"
-          className="btn btn-secondary w-full flex items-center justify-center"
+          className="btn bg-secondary hover:bg-secondary-dark text-white w-full flex items-center justify-center"
           disabled={loading}
         >
           {loading ? (

@@ -1,20 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#6366F1', // Indigo
-          dark: '#4F46E5',
+          DEFAULT: '#4f46e5',
+          dark: '#4338ca',
         },
         secondary: {
-          DEFAULT: '#8B5CF6', // Purple for Decubate branding
-          dark: '#7C3AED',
+          DEFAULT: '#7c3aed',
+          dark: '#6d28d9',
         },
       },
     },
