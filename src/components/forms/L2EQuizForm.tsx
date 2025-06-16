@@ -80,9 +80,13 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
   
   const addQuestion = () => {
     if (questions.length < 5) {
-      const newQuestions = [
+      const newQuestions: QuizQuestion[] = [
         ...questions, 
-        { question: '', options: ['', '', '', ''] as [string, string, string, string], correctAnswer: 'A' }
+        { 
+          question: '', 
+          options: ['', '', '', ''] as [string, string, string, string], 
+          correctAnswer: 'A' 
+        }
       ];
       setQuestions(newQuestions);
     }
