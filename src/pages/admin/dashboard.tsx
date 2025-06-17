@@ -164,9 +164,49 @@ const AdminDashboard: React.FC = () => {
     <Layout>
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
+          {/* Header with navigation */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Admin Dashboard</h1>
+              
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => router.push('/admin/dashboard')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    !router.query.tab
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Projects
+                </button>
+                
+                {user?.role === 'admin' && (
+                  <>
+                    <button
+                      onClick={() => router.push('/admin/projects/new')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm flex items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                      </svg>
+                      New Project
+                    </button>
+                    
+                    <button
+                      onClick={() => handleTabChange('settings')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium ${
+                        router.query.tab === 'settings'
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Admin Settings
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
           
           {/* Projects Section */}
