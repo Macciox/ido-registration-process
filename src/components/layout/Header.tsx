@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getCurrentUser } from '@/lib/auth';
@@ -9,6 +9,8 @@ const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +28,19 @@ const Header: React.FC = () => {
     loadUser();
   }, []);
 
-  // Logout is now handled by the LogoutButton component
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [userMenuRef]);
 
   return (
     <header className="bg-white shadow">
@@ -53,12 +67,35 @@ const Header: React.FC = () => {
                 <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                   Dashboard
                 </Link>
-                {user.role === 'admin' && (
-                  <Link href="/admin/dashboard?tab=settings" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                    Admin Settings
-                  </Link>
-                )}
-                <LogoutButton />
+                
+                {/* User dropdown menu */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    <span>Account</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 ring-1 ring-black ring-opacity-5">
+                      {user.role === 'admin' && (
+                        <Link href="/admin/dashboard?tab=settings" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          Admin Settings
+                        </Link>
+                      )}
+                      <div className="px-4 py-2 text-sm text-gray-700">
+                        <LogoutButton />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="flex items-center md:hidden">
@@ -113,7 +150,9 @@ const Header: React.FC = () => {
               Admin Settings
             </Link>
           )}
-          <LogoutButton mobile={true} />
+          <div className="px-3 py-2">
+            <LogoutButton mobile={true} />
+          </div>
         </div>
       </div>
     </header>
