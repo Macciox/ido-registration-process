@@ -90,6 +90,9 @@ const ProjectPage = () => {
         
         await initializeFormFields(supabase, id as string, allFieldIds);
         
+        // Calculate completion percentages for all tabs
+        await calculateAllTabCompletions(id as string);
+        
       } catch (err) {
         console.error('Error:', err);
         setError('An unexpected error occurred');
@@ -102,6 +105,82 @@ const ProjectPage = () => {
       loadProject();
     }
   }, [id]);
+  
+  // Calculate completion percentages for all tabs
+  const calculateAllTabCompletions = async (projectId: string) => {
+    try {
+      // Get all project fields
+      const { data: allFields, error } = await supabase
+        .from('project_fields')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (error) {
+        console.error('Error loading project fields:', error);
+        return;
+      }
+      
+      // Define fields for each tab
+      const tabFields = {
+        'token-info': [
+          'initialMarketCapExLiquidity', 'initialMarketCap', 'fullyDilutedMarketCap',
+          'circulatingSupplyAtTge', 'tgeSupplyPercentage', 'totalSupply'
+        ],
+        'platform-setup': [
+          'tagline', 'projectDescription', 'telegram', 'twitter', 'discord',
+          'youtube', 'linkedin', 'tokenomicsFile', 'teamPage', 'roadmapPage'
+        ],
+        'public-round': [
+          'whitelistingStartTime', 'idoLaunchDate', 'tokenClaimingDate', 'cexDexListingDate',
+          'allocationUSD', 'allocationTokenAmount', 'tokenPrice', 'tgeUnlockPercentage',
+          'cliffLock', 'vestingDuration', 'tokenTicker', 'network', 'gracePeriod',
+          'minimumTier', 'tokenContractAddress', 'tokenTransferTxId'
+        ],
+        'marketing-kit': ['marketingKitUrl']
+      };
+      
+      // Calculate completion percentage for each tab
+      const newTabCompletions: {[key: string]: number} = {};
+      
+      // Process each tab
+      for (const [tabId, fields] of Object.entries(tabFields)) {
+        const tabFieldsData = allFields?.filter(field => fields.includes(field.field_name)) || [];
+        const confirmedFields = tabFieldsData.filter(field => field.status === 'Confirmed').length;
+        const totalFields = fields.length;
+        const percentage = Math.round((confirmedFields / totalFields) * 100);
+        
+        newTabCompletions[tabId] = percentage;
+      }
+      
+      // Calculate FAQ completion
+      const { data: faqData, error: faqError } = await supabase
+        .from('faqs')
+        .select('count')
+        .eq('project_id', projectId);
+        
+      if (!faqError && faqData) {
+        const faqCount = faqData.length;
+        newTabCompletions['faq'] = faqCount > 0 ? 100 : 0;
+      }
+      
+      // Calculate L2E Quiz completion
+      const { data: quizData, error: quizError } = await supabase
+        .from('quiz_questions')
+        .select('count')
+        .eq('project_id', projectId);
+        
+      if (!quizError && quizData) {
+        const quizCount = quizData.length;
+        newTabCompletions['l2e-quiz'] = quizCount > 0 ? 100 : 0;
+      }
+      
+      // Update tab completions state
+      setTabCompletions(newTabCompletions);
+      
+    } catch (err) {
+      console.error('Error calculating tab completions:', err);
+    }
+  };
   
   const handleTabCompletionUpdate = (tabId: string, percentage: number) => {
     setTabCompletions(prev => ({

@@ -4,6 +4,7 @@ import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
+import AdminInvitationsList from '@/components/admin/AdminInvitationsList';
 
 interface ProjectSummary {
   id: string;
@@ -115,6 +116,7 @@ const AdminDashboard: React.FC = () => {
         .insert([{ 
           email: newAdminEmail, 
           token: token,
+          status: 'pending',
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
         }]);
       
@@ -164,47 +166,38 @@ const AdminDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Dashboard</h1>
           
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => handleTabChange('projects')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'projects'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Projects
-              </button>
-              {user?.role === 'admin' && (
+          {/* Header with actions */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            {user?.role === 'admin' && (
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => router.push('/admin/projects/new')}
+                  className="btn btn-primary flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  New Project
+                </button>
                 <button
                   onClick={() => handleTabChange('settings')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'settings'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className="btn btn-outline flex items-center"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                  </svg>
                   Admin Settings
                 </button>
-              )}
-            </nav>
+              </div>
+            )}
           </div>
           
-          {/* Projects Tab */}
+          {/* Projects Section */}
           {activeTab === 'projects' && (
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium">All Projects</h2>
-                {user?.role === 'admin' && (
-                  <button
-                    onClick={() => router.push('/admin/projects/new')}
-                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-                  >
-                    Create New Project
-                  </button>
-                )}
               </div>
               
               {projects.length === 0 ? (
@@ -247,12 +240,36 @@ const AdminDashboard: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <button
-                              onClick={() => router.push(`/projects/${project.id}`)}
-                              className="text-primary hover:text-primary-dark"
-                            >
-                              View
-                            </button>
+                            <div className="flex space-x-3">
+                              <button
+                                onClick={() => router.push(`/projects/${project.id}`)}
+                                className="text-primary hover:text-primary-dark flex items-center"
+                                title="View Project"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => router.push(`/projects/${project.id}/settings`)}
+                                className="text-gray-500 hover:text-gray-700 flex items-center"
+                                title="Project Settings"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => router.push(`/projects/${project.id}/edit`)}
+                                className="text-blue-500 hover:text-blue-700 flex items-center"
+                                title="Edit Project"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -326,6 +343,9 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Admin Invitations List */}
+              <AdminInvitationsList />
             </div>
           )}
         </div>

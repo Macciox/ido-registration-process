@@ -36,7 +36,7 @@ const ProjectOwnerLoginForm: React.FC = () => {
       }
       
       // Redirect to project page
-      router.push(`/projects/${project.id}`);
+      window.location.href = `/projects/${project.id}`;
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);

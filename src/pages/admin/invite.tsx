@@ -27,7 +27,7 @@ const AdminInvitePage: React.FC = () => {
           .select('*')
           .eq('token', token)
           .eq('email', email)
-          .eq('used', false)
+          .eq('status', 'pending')
           .gt('expires_at', new Date().toISOString())
           .single();
         
@@ -81,10 +81,13 @@ const AdminInvitePage: React.FC = () => {
       
       if (updateError) throw updateError;
       
-      // Mark the invitation as used
+      // Mark the invitation as accepted and used
       await supabase
         .from('admin_invitations')
-        .update({ used: true })
+        .update({ 
+          status: 'accepted',
+          used_at: new Date().toISOString() 
+        })
         .eq('id', invitation.id);
       
       setSuccess(true);
