@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
 
 interface Tab {
@@ -15,11 +15,19 @@ interface TabsProps {
 
 const Tabs: React.FC<TabsProps> = ({ tabs, renderContent, defaultTab }) => {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id || '');
+  const [renderedTabs, setRenderedTabs] = useState<string[]>([]);
+
+  // Quando il componente viene montato, renderizza il contenuto della tab attiva
+  useEffect(() => {
+    if (activeTab && !renderedTabs.includes(activeTab)) {
+      setRenderedTabs(prev => [...prev, activeTab]);
+    }
+  }, [activeTab]);
 
   return (
     <div>
       <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+        <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -35,7 +43,11 @@ const Tabs: React.FC<TabsProps> = ({ tabs, renderContent, defaultTab }) => {
               <div className="flex items-center">
                 {tab.label}
                 {tab.completion !== undefined && (
-                  <span className="ml-2 bg-gray-100 text-gray-700 py-0.5 px-2 rounded-full text-xs">
+                  <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
+                    tab.completion > 0 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
                     {tab.completion}%
                   </span>
                 )}
@@ -46,7 +58,19 @@ const Tabs: React.FC<TabsProps> = ({ tabs, renderContent, defaultTab }) => {
       </div>
       
       <div className="py-4">
+        {/* Renderizza il contenuto della tab attiva */}
         {renderContent(activeTab)}
+        
+        {/* Pre-renderizza il contenuto di tutte le altre tab in modo nascosto */}
+        <div className="hidden">
+          {tabs.map(tab => 
+            tab.id !== activeTab && !renderedTabs.includes(tab.id) && (
+              <div key={tab.id}>
+                {renderContent(tab.id)}
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
