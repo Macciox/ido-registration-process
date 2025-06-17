@@ -14,6 +14,7 @@ interface AdminInvitation {
 const AdminInvitationsList: React.FC = () => {
   const [invitations, setInvitations] = useState<AdminInvitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableExists, setTableExists] = useState(true);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
@@ -29,9 +30,17 @@ const AdminInvitationsList: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        // Check if the error is because the table doesn't exist
+        if (error.code === '42P01') {
+          setTableExists(false);
+          return;
+        }
+        throw error;
+      }
       
       setInvitations(data || []);
+      setTableExists(true);
     } catch (err: any) {
       console.error('Error loading admin invitations:', err);
       setMessage({ text: err.message || 'Failed to load invitations', type: 'error' });
@@ -99,6 +108,18 @@ const AdminInvitationsList: React.FC = () => {
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{status}</span>;
     }
   };
+
+  if (!tableExists) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-medium mb-4">Admin Invitations</h2>
+        <div className="p-4 mb-4 rounded bg-yellow-100 text-yellow-700">
+          <p>The admin invitations feature is not fully set up yet.</p>
+          <p className="mt-2">Please run the database migrations to enable this feature.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white shadow rounded-lg p-6">

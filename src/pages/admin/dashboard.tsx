@@ -123,6 +123,11 @@ const AdminDashboard: React.FC = () => {
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
           setMessage({ text: 'An invitation for this email already exists', type: 'error' });
+        } else if (error.code === '42P01') { // Table doesn't exist
+          setMessage({ 
+            text: 'Admin invitations feature is not fully set up. Please run database migrations.', 
+            type: 'error' 
+          });
         } else {
           throw error;
         }

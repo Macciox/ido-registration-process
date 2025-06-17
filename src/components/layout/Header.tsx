@@ -55,9 +55,12 @@ const Header: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/admin/dashboard" className="text-xl font-bold text-primary">
+              <button 
+                onClick={() => router.push('/admin/dashboard')}
+                className="text-xl font-bold text-primary hover:text-primary-dark transition-colors"
+              >
                 Decubate IDO
-              </Link>
+              </button>
             </div>
           </div>
           
@@ -85,12 +88,15 @@ const Header: React.FC = () => {
                     </div>
                     
                     {user.role === 'admin' && (
-                      <Link href="/admin/dashboard?tab=settings" 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsProfileMenuOpen(false)}
+                      <button
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          router.push('/admin/dashboard?tab=settings');
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Admin Settings
-                      </Link>
+                      </button>
                     )}
                     
                     <button
