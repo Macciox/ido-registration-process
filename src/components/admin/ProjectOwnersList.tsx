@@ -133,56 +133,63 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         .from('profiles')
         .select('email')
         .eq('email', newEmail.trim())
-        .single();
+        .maybeSingle();
       
       const status = profile ? 'verified' : 'pending';
       const verified_at = profile ? new Date().toISOString() : null;
       
-      // First check if project_owners table exists
-      const { count, error: checkError } = await supabase
-        .from('project_owners')
-        .select('*', { count: 'exact', head: true });
-      
-      if (checkError && checkError.code === '42P01') {
-        // If the table doesn't exist, update the project's owner_email directly
-        const { error: updateError } = await supabase
-          .from('projects')
-          .update({ owner_email: newEmail.trim() })
-          .eq('id', projectId);
-          
-        if (updateError) throw updateError;
-        
-        // Add the new owner to the local state
-        setOwners([{
-          id: 'default',
-          email: newEmail.trim(),
-          status,
-          verified_at,
-          created_at: new Date().toISOString()
-        }]);
-        
-        setMessage({ text: 'Project owner updated successfully', type: 'success' });
-        setNewEmail('');
-        return;
+      // Create the project_owners table if it doesn't exist
+      try {
+        await supabase.rpc('create_project_owners_if_not_exists');
+      } catch (createError) {
+        console.log('Table might already exist or RPC not available:', createError);
       }
       
       // Add new owner to project_owners table
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('project_owners')
         .insert([{ 
           project_id: projectId,
           email: newEmail.trim(),
-          status,
-          verified_at
-        }]);
+          status: status || 'pending',
+          verified_at: verified_at
+        }])
+        .select();
       
       if (error) {
-        throw error;
+        // If the table doesn't exist, update the project's owner_email directly
+        if (error.code === '42P01') {
+          const { error: updateError } = await supabase
+            .from('projects')
+            .update({ owner_email: newEmail.trim() })
+            .eq('id', projectId);
+            
+          if (updateError) throw updateError;
+          
+          // Add the new owner to the local state
+          setOwners([{
+            id: 'default',
+            email: newEmail.trim(),
+            status,
+            verified_at,
+            created_at: new Date().toISOString()
+          }]);
+          
+          setMessage({ text: 'Project owner updated successfully', type: 'success' });
+          setNewEmail('');
+          return;
+        } else {
+          throw error;
+        }
+      }
+      
+      // Add the new owner to the local state
+      if (data && data.length > 0) {
+        setOwners([...owners, data[0]]);
       }
       
       setMessage({ text: 'Project owner added successfully', type: 'success' });
       setNewEmail('');
-      loadProjectOwners();
     } catch (err: any) {
       console.error('Error adding project owner:', err);
       setMessage({ text: err.message || 'Failed to add project owner', type: 'error' });
@@ -206,18 +213,23 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     try {
       setRemovingOwnerId(ownerId);
       
+      // First, check if the table exists
+      const { count, error: checkError } = await supabase
+        .from('project_owners')
+        .select('*', { count: 'exact', head: true });
+      
+      if (checkError && checkError.code === '42P01') {
+        throw new Error('Project owners feature is not fully set up. Please run the database migrations.');
+      }
+      
+      // If we get here, the table exists, so proceed with deletion
       const { error } = await supabase
         .from('project_owners')
         .delete()
         .eq('id', ownerId);
       
       if (error) {
-        // If table doesn't exist, show a more helpful error
-        if (error.code === '42P01') { // undefined_table error
-          throw new Error('Project owners feature is not fully set up. Please run the database migrations.');
-        } else {
-          throw error;
-        }
+        throw error;
       }
       
       setMessage({ text: 'Project owner removed successfully', type: 'success' });
@@ -268,25 +280,27 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                     <span className="text-gray-900">{owner.email}</span>
                     {getStatusBadge(owner.status)}
                   </div>
-                  <button
-                    onClick={() => removeOwner(owner.id)}
-                    className={`px-3 py-1 rounded-md text-sm font-medium ${
-                      owners.length <= 1 || owner.id === 'default'
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-red-100 text-red-700 hover:bg-red-200'
-                    }`}
-                    disabled={owners.length <= 1 || owner.id === 'default'}
-                  >
-                    {removingOwnerId === owner.id ? (
-                      <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Removing...
-                      </span>
-                    ) : 'Remove'}
-                  </button>
+                  {owner.id !== 'default' && (
+                    <button
+                      onClick={() => removeOwner(owner.id)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        owners.length <= 1
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-red-100 text-red-700 hover:bg-red-200'
+                      }`}
+                      disabled={owners.length <= 1}
+                    >
+                      {removingOwnerId === owner.id ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Removing...
+                        </span>
+                      ) : 'Remove'}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
