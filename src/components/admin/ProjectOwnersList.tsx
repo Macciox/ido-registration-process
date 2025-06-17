@@ -96,16 +96,29 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
-      // Create the project_owners table if it doesn't exist
-      await supabase.query(`
-        CREATE TABLE IF NOT EXISTS project_owners (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          project_id UUID NOT NULL,
-          email TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'pending',
-          created_at TIMESTAMPTZ DEFAULT NOW()
-        )
-      `);
+      // Try to create the project_owners table if it doesn't exist
+      try {
+        // First check if the table exists by querying it
+        await supabase.from('project_owners').select('count', { count: 'exact', head: true });
+      } catch (err: any) {
+        if (err.code === '42P01') { // Table doesn't exist
+          // Use raw SQL via the REST API to create the table
+          await supabase.rpc('execute_sql', { 
+            sql_query: `
+              CREATE TABLE IF NOT EXISTS project_owners (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                project_id UUID NOT NULL,
+                email TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMPTZ DEFAULT NOW()
+              )
+            `
+          }).catch(e => {
+            console.error('Could not create table:', e);
+            // Continue anyway, the insert might still work if the table exists
+          });
+        }
+      }
       
       // Add the new owner
       const { data, error } = await supabase
