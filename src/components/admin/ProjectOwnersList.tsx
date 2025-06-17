@@ -89,9 +89,11 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     } catch (err: any) {
       if (err.code === '42P01') { // undefined_table error
         // Table doesn't exist, create it
-        await supabase.rpc('create_project_owners_if_not_exists').catch(e => {
+        try {
+          await supabase.rpc('create_project_owners_if_not_exists');
+        } catch (e) {
           console.error('Error creating project_owners table:', e);
-        });
+        }
       }
     }
   };
