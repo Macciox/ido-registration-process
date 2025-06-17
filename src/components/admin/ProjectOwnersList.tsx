@@ -8,6 +8,8 @@ interface ProjectOwnersListProps {
 interface ProjectOwner {
   id: string;
   email: string;
+  status?: string;
+  verified_at?: string | null;
   created_at: string;
 }
 
@@ -16,6 +18,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [addingOwner, setAddingOwner] = useState(false);
+  const [removingOwnerId, setRemovingOwnerId] = useState<string | null>(null);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
@@ -39,6 +42,15 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
+      // Check if the owner email has a verified account
+      const { data: authUsers } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', project.owner_email)
+        .single();
+      
+      const primaryOwnerStatus = authUsers ? 'verified' : 'pending';
+      
       // Try to get project owners from project_owners table
       const { data, error } = await supabase
         .from('project_owners')
@@ -52,6 +64,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           setOwners([{
             id: 'default',
             email: project.owner_email,
+            status: primaryOwnerStatus,
+            verified_at: primaryOwnerStatus === 'verified' ? new Date().toISOString() : null,
             created_at: new Date().toISOString()
           }]);
         } else {
@@ -63,10 +77,29 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           setOwners([{
             id: 'default',
             email: project.owner_email,
+            status: primaryOwnerStatus,
+            verified_at: primaryOwnerStatus === 'verified' ? new Date().toISOString() : null,
             created_at: new Date().toISOString()
           }]);
         } else {
-          setOwners(data);
+          // Check verification status for each owner
+          const ownersWithStatus = await Promise.all(data.map(async (owner) => {
+            if (owner.status) return owner;
+            
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('email', owner.email)
+              .single();
+            
+            return {
+              ...owner,
+              status: profile ? 'verified' : 'pending',
+              verified_at: profile ? new Date().toISOString() : null
+            };
+          }));
+          
+          setOwners(ownersWithStatus);
         }
       }
     } catch (err) {
@@ -95,6 +128,16 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
+      // Check if the email has a verified account
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', newEmail.trim())
+        .single();
+      
+      const status = profile ? 'verified' : 'pending';
+      const verified_at = profile ? new Date().toISOString() : null;
+      
       // First check if project_owners table exists
       const { count, error: checkError } = await supabase
         .from('project_owners')
@@ -113,6 +156,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         setOwners([{
           id: 'default',
           email: newEmail.trim(),
+          status,
+          verified_at,
           created_at: new Date().toISOString()
         }]);
         
@@ -126,7 +171,9 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         .from('project_owners')
         .insert([{ 
           project_id: projectId,
-          email: newEmail.trim()
+          email: newEmail.trim(),
+          status,
+          verified_at
         }]);
       
       if (error) {
@@ -157,6 +204,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     }
     
     try {
+      setRemovingOwnerId(ownerId);
+      
       const { error } = await supabase
         .from('project_owners')
         .delete()
@@ -172,10 +221,24 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       }
       
       setMessage({ text: 'Project owner removed successfully', type: 'success' });
-      loadProjectOwners();
+      // Update the local state to remove the owner
+      setOwners(owners.filter(owner => owner.id !== ownerId));
     } catch (err: any) {
       console.error('Error removing project owner:', err);
       setMessage({ text: err.message || 'Failed to remove project owner', type: 'error' });
+    } finally {
+      setRemovingOwnerId(null);
+    }
+  };
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'verified':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Verified</span>;
+      case 'pending':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>;
+      default:
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Unknown</span>;
     }
   };
 
@@ -201,13 +264,28 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
             <ul className="divide-y divide-gray-200">
               {owners.map((owner) => (
                 <li key={owner.id} className="py-3 flex justify-between items-center">
-                  <span className="text-gray-900">{owner.email}</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-900">{owner.email}</span>
+                    {getStatusBadge(owner.status)}
+                  </div>
                   <button
                     onClick={() => removeOwner(owner.id)}
-                    className="text-red-600 hover:text-red-800"
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      owners.length <= 1 || owner.id === 'default'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-red-100 text-red-700 hover:bg-red-200'
+                    }`}
                     disabled={owners.length <= 1 || owner.id === 'default'}
                   >
-                    Remove
+                    {removingOwnerId === owner.id ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Removing...
+                      </span>
+                    ) : 'Remove'}
                   </button>
                 </li>
               ))}
@@ -231,7 +309,15 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
             className="btn btn-primary rounded-l-none"
             disabled={addingOwner}
           >
-            {addingOwner ? 'Adding...' : 'Add'}
+            {addingOwner ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding...
+              </span>
+            ) : 'Add'}
           </button>
         </div>
       </form>
