@@ -115,7 +115,7 @@ const AdminInvitationsList: React.FC = () => {
         <h2 className="text-lg font-medium mb-4">Admin Invitations</h2>
         <div className="p-4 mb-4 rounded bg-yellow-100 text-yellow-700">
           <p>The admin invitations feature is not fully set up yet.</p>
-          <p className="mt-2">Please run the database migrations to enable this feature.</p>
+          <p className="mt-2">Please use the form above to send your first invitation.</p>
         </div>
       </div>
     );

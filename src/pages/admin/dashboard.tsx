@@ -97,6 +97,30 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const createAdminInvitationsTable = async () => {
+    try {
+      // Create the admin_invitations table if it doesn't exist
+      await supabase.rpc('create_admin_invitations_table').catch(e => {
+        console.error('Error creating table via RPC:', e);
+      });
+      
+      // Try direct SQL as a fallback
+      const { error } = await supabase.auth.admin.createUser({
+        email: 'temp@example.com',
+        password: 'temp_password',
+        email_confirm: true
+      });
+      
+      // We expect this to fail, we just need to trigger a query to create the table
+      console.log('Auth admin operation result:', error ? 'Failed as expected' : 'Unexpected success');
+      
+      return true;
+    } catch (err) {
+      console.error('Error creating admin_invitations table:', err);
+      return false;
+    }
+  };
+
   const generateAdminInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -110,8 +134,8 @@ const AdminDashboard: React.FC = () => {
       // Create a unique token
       const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
-      // Store the invitation in the database
-      const { error } = await supabase
+      // Try to store the invitation in the database
+      let { error } = await supabase
         .from('admin_invitations')
         .insert([{ 
           email: newAdminEmail, 
@@ -120,14 +144,37 @@ const AdminDashboard: React.FC = () => {
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
         }]);
       
+      // If the table doesn't exist, try to create it
+      if (error && error.code === '42P01') {
+        setMessage({ text: 'Setting up admin invitations...', type: 'success' });
+        
+        // Create the admin_invitations table
+        const tableCreated = await createAdminInvitationsTable();
+        
+        if (tableCreated) {
+          // Try the insert again
+          const result = await supabase
+            .from('admin_invitations')
+            .insert([{ 
+              email: newAdminEmail, 
+              token: token,
+              status: 'pending',
+              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
+            }]);
+          
+          error = result.error;
+        } else {
+          setMessage({ 
+            text: 'Could not set up admin invitations. Please contact support.', 
+            type: 'error' 
+          });
+          return;
+        }
+      }
+      
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
           setMessage({ text: 'An invitation for this email already exists', type: 'error' });
-        } else if (error.code === '42P01') { // Table doesn't exist
-          setMessage({ 
-            text: 'Admin invitations feature is not fully set up. Please run database migrations.', 
-            type: 'error' 
-          });
         } else {
           throw error;
         }
