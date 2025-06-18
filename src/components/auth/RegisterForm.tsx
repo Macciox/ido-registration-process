@@ -16,31 +16,33 @@ const RegisterForm: React.FC = () => {
     setError(null);
     
     try {
-      // Check if email is whitelisted
+      // Check if email is whitelisted as project owner
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('id')
         .eq('owner_email', data.email)
         .single();
-      
-      if (projectError || !projectData) {
+      // Check if email is in admin_whitelist
+      const { data: adminWhitelistData, error: adminWhitelistError } = await supabase
+        .from('admin_whitelist')
+        .select('id')
+        .eq('email', data.email)
+        .single();
+      if ((projectError || !projectData) && (adminWhitelistError || !adminWhitelistData)) {
         setError('Your email is not authorized to register. Please contact an admin.');
         setLoading(false);
         return;
       }
-      
       // Register the user
       const { error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
       });
-      
       if (signUpError) {
         setError(signUpError.message);
         setLoading(false);
         return;
       }
-      
       // Success - redirect to login
       router.push('/login?registered=true');
     } catch (err) {
