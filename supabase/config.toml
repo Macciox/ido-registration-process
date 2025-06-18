@@ -40,14 +40,16 @@ file_size_limit = "50MiB"
 [auth]
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://localhost:3000"
+site_url = "https://ido.decubate.com"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://localhost:3000"]
+additional_redirect_urls = ["https://ido.decubate.com", "https://ido-staging.decubate.com"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one
 # week).
 jwt_expiry = 3600
 # Allow/disallow new user signups to your project.
 enable_signup = true
+# Enable email confirmations for new users
+enable_confirmations = true
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -56,12 +58,35 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
+enable_confirmations = true
+
+[auth.sms]
+# Allow/disallow new user signups via SMS to your project.
+enable_signup = false
+# If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 
-# Use an external OAuth provider. The full list of providers are: "apple", "azure", "bitbucket",
-# "discord", "facebook", "github", "gitlab", "google", "keycloak", "linkedin", "notion", "twitch",
-# "twitter", "slack", "spotify", "workos", "zoom".
-[auth.external.apple]
+[auth.external.github]
+enabled = false
+client_id = ""
+secret = ""
+# Overrides the default auth redirectUrl.
+redirect_uri = ""
+# Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
+# or any other third-party OIDC providers.
+url = ""
+
+[auth.external.google]
+enabled = false
+client_id = ""
+secret = ""
+# Overrides the default auth redirectUrl.
+redirect_uri = ""
+# Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
+# or any other third-party OIDC providers.
+url = ""
+
+[auth.external.facebook]
 enabled = false
 client_id = ""
 secret = ""
@@ -76,7 +101,6 @@ enabled = false
 port = 54327
 vector_port = 54328
 # Setup BigQuery project to enable log viewer on local development stack.
-# See: https://supabase.com/docs/guides/getting-started/local-development#enabling-local-logging
 gcp_project_id = ""
 gcp_project_number = ""
 gcp_jwt_path = "supabase/gcloud.json"
