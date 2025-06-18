@@ -5,14 +5,20 @@ interface SimpleProjectOwnersListProps {
   projectId: string;
 }
 
+interface ProjectOwner {
+  id: string;
+  email: string;
+  status: string;
+  verified_at: string | null;
+}
+
 const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ projectId }) => {
-  const [owners, setOwners] = useState<string[]>([]);
+  const [owners, setOwners] = useState<ProjectOwner[]>([]);
   const [primaryOwner, setPrimaryOwner] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [verifiedOwners, setVerifiedOwners] = useState<Record<string, boolean>>({});
 
   // Load project owners
   useEffect(() => {
@@ -39,35 +45,47 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
       
       setPrimaryOwner(project.owner_email);
       
-      // Get additional owners
+      // Get additional owners from project_owners table (waitlist)
       try {
         const { data: additionalOwners, error: ownersError } = await supabase
           .from('project_owners')
-          .select('email')
+          .select('*')
           .eq('project_id', projectId);
         
         if (!ownersError && additionalOwners) {
-          const ownerEmails = additionalOwners.map(owner => owner.email);
-          setOwners([project.owner_email, ...ownerEmails]);
+          // Format owners with primary owner first
+          const formattedOwners: ProjectOwner[] = [
+            {
+              id: 'primary',
+              email: project.owner_email,
+              status: 'primary',
+              verified_at: null
+            },
+            ...additionalOwners.map(owner => ({
+              id: owner.id,
+              email: owner.email,
+              status: owner.status,
+              verified_at: owner.verified_at
+            }))
+          ];
           
-          // Check which owners are registered
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('email');
-          
-          if (profiles) {
-            const verified: Record<string, boolean> = {};
-            [project.owner_email, ...ownerEmails].forEach(email => {
-              verified[email] = profiles.some(p => p.email === email);
-            });
-            setVerifiedOwners(verified);
-          }
+          setOwners(formattedOwners);
         } else {
-          setOwners([project.owner_email]);
+          setOwners([{
+            id: 'primary',
+            email: project.owner_email,
+            status: 'primary',
+            verified_at: null
+          }]);
         }
       } catch (err) {
         console.log('Error loading additional owners, using only primary owner');
-        setOwners([project.owner_email]);
+        setOwners([{
+          id: 'primary',
+          email: project.owner_email,
+          status: 'primary',
+          verified_at: null
+        }]);
       }
     } catch (err: any) {
       console.error('Error loading owners:', err);
@@ -87,40 +105,45 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
       return;
     }
     
-    if (owners.includes(newEmail.trim())) {
+    if (owners.some(owner => owner.email.toLowerCase() === newEmail.trim().toLowerCase())) {
       setError('This email is already an owner of this project');
       return;
     }
     
     try {
-      const { error } = await supabase
+      // Add to project_owners table (waitlist)
+      const { data, error } = await supabase
         .from('project_owners')
         .insert({
           project_id: projectId,
-          email: newEmail.trim()
-        });
+          email: newEmail.trim(),
+          status: 'pending'
+        })
+        .select();
       
       if (error) {
-        if (error.code === '42P01') {
-          setError('Database setup is incomplete. Please contact support.');
-        } else {
-          throw error;
-        }
-        return;
+        throw error;
       }
       
       // Update local state
-      setOwners(prev => [...prev, newEmail.trim()]);
-      setMessage('Project owner added successfully');
-      setNewEmail('');
+      if (data && data.length > 0) {
+        setOwners(prev => [...prev, {
+          id: data[0].id,
+          email: data[0].email,
+          status: data[0].status,
+          verified_at: data[0].verified_at
+        }]);
+        setMessage('Project owner added to waitlist successfully');
+        setNewEmail('');
+      }
     } catch (err: any) {
       console.error('Error adding owner:', err);
       setError(err.message || 'Failed to add project owner');
     }
   };
 
-  const removeOwner = async (email: string) => {
-    if (email === primaryOwner) {
+  const removeOwner = async (id: string) => {
+    if (id === 'primary') {
       setError('Cannot remove the primary project owner');
       return;
     }
@@ -129,17 +152,38 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
       const { error } = await supabase
         .from('project_owners')
         .delete()
-        .eq('project_id', projectId)
-        .eq('email', email);
+        .eq('id', id);
       
       if (error) throw error;
       
       // Update local state
-      setOwners(prev => prev.filter(e => e !== email));
+      setOwners(prev => prev.filter(owner => owner.id !== id));
       setMessage('Project owner removed successfully');
     } catch (err: any) {
       console.error('Error removing owner:', err);
       setError(err.message || 'Failed to remove project owner');
+    }
+  };
+
+  const getStatusBadge = (owner: ProjectOwner) => {
+    if (owner.status === 'primary') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+          Primary
+        </span>
+      );
+    } else if (owner.status === 'verified') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+          Verified
+        </span>
+      );
+    } else {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+          Pending
+        </span>
+      );
     }
   };
 
@@ -166,29 +210,15 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
       ) : (
         <div className="mb-6">
           <ul className="divide-y divide-gray-200">
-            {owners.map((email) => (
-              <li key={email} className="py-3 flex justify-between items-center">
+            {owners.map((owner) => (
+              <li key={owner.id} className="py-3 flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <span className="text-gray-900">{email}</span>
-                  {email === primaryOwner && (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                      Primary
-                    </span>
-                  )}
-                  {verifiedOwners[email] === true && (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Verified
-                    </span>
-                  )}
-                  {verifiedOwners[email] === false && (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                      Not Registered
-                    </span>
-                  )}
+                  <span className="text-gray-900">{owner.email}</span>
+                  {getStatusBadge(owner)}
                 </div>
-                {email !== primaryOwner && (
+                {owner.id !== 'primary' && (
                   <button
-                    onClick={() => removeOwner(email)}
+                    onClick={() => removeOwner(owner.id)}
                     className="px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
                   >
                     Remove
@@ -217,6 +247,9 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
             Add
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          The user will need to register with this email to access the project.
+        </p>
       </form>
     </div>
   );
