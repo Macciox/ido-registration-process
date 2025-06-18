@@ -42,7 +42,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       // Get the project with owner information
       const { data: project, error: projectError } = await supabase
         .from('projects')
-        .select('owner_id, profiles:owner_id(email)')
+        .select('owner_id, owner_email')
         .eq('id', projectId)
         .single();
       
@@ -52,10 +52,24 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
+      // Get the owner's profile information
+      let ownerEmail = project.owner_email;
+      if (project.owner_id) {
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', project.owner_id)
+          .single();
+          
+        if (ownerProfile) {
+          ownerEmail = ownerProfile.email;
+        }
+      }
+      
       // Create a list of owners starting with the primary owner
       const ownersList: ProjectOwner[] = [{
         id: 'primary',
-        email: project.profiles?.email || '',
+        email: ownerEmail,
         owner_id: project.owner_id,
         status: 'primary',
         created_at: new Date().toISOString()
