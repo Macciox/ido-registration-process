@@ -344,10 +344,11 @@ const AdminDashboard: React.FC = () => {
           {/* Admin Settings Tab */}
           {activeTab === 'settings' && user?.role === 'admin' && (
             <div className="grid grid-cols-1 gap-6">
-              {/* Admin Invitation */}
+              {/* Admin Whitelist */}
+              <AdminWhitelistSection />
+              {/* Admin Invitation (legacy, opzionale) */}
               <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium mb-4">Invite New User</h2>
-                
+                <h2 className="text-lg font-medium mb-4">Invite New User (Legacy)</h2>
                 {message && (
                   <div className={`p-4 mb-4 rounded ${
                     message.type === 'success' ? 'bg-green-100 text-green-700' : 
@@ -357,7 +358,6 @@ const AdminDashboard: React.FC = () => {
                     {message.text}
                   </div>
                 )}
-                
                 <form onSubmit={generateAdminInvite}>
                   <div className="mb-4">
                     <label className="form-label" htmlFor="admin-email">
@@ -373,7 +373,6 @@ const AdminDashboard: React.FC = () => {
                       required
                     />
                   </div>
-                  
                   <div className="mb-4">
                     <label className="form-label" htmlFor="invite-role">
                       Role
@@ -391,7 +390,6 @@ const AdminDashboard: React.FC = () => {
                       Admin can manage all projects and users. Project Owner can only manage their own projects.
                     </p>
                   </div>
-                  
                   <button
                     type="submit"
                     className="btn btn-primary"
@@ -399,7 +397,6 @@ const AdminDashboard: React.FC = () => {
                     Generate Invitation Link
                   </button>
                 </form>
-                
                 {inviteLink && (
                   <div className="mt-4">
                     <label className="form-label">Invitation Link</label>
@@ -426,7 +423,6 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
-              
               {/* Admin Invitations List */}
               <AdminInvitationsList />
             </div>

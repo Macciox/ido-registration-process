@@ -23,6 +23,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const [addingOwner, setAddingOwner] = useState(false);
   const [removingOwnerId, setRemovingOwnerId] = useState<string | null>(null);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
+  const [verifiedOwners, setVerifiedOwners] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -38,20 +39,17 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     try {
       setLoading(true);
       setMessage(null);
-      
       // Get the project with owner information
       const { data: project, error: projectError } = await supabase
         .from('projects')
         .select('owner_id, owner_email')
         .eq('id', projectId)
         .single();
-      
       if (projectError) {
         console.error('Error loading project:', projectError);
         setMessage({ text: 'Error loading project data', type: 'error' });
         return;
       }
-      
       // Get the owner's profile information
       let ownerEmail = project.owner_email;
       if (project.owner_id) {
@@ -60,12 +58,10 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           .select('email')
           .eq('id', project.owner_id)
           .single();
-          
         if (ownerProfile) {
           ownerEmail = ownerProfile.email;
         }
       }
-      
       // Create a list of owners starting with the primary owner
       const ownersList: ProjectOwner[] = [{
         id: 'primary',
@@ -74,24 +70,21 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         status: 'primary',
         created_at: new Date().toISOString()
       }];
-      
       // Store the primary owner ID
       setPrimaryOwner(project.owner_id);
-      
       // Try to get additional owners from the database
+      let allOwnerEmails = [ownerEmail];
       try {
         // First check if the table exists
         const { data: tableCheck, error: tableError } = await supabase
           .from('project_owners')
           .select('count', { count: 'exact', head: true });
-        
         // If the table exists, get the owners
         if (!tableError) {
           const { data: additionalOwners, error } = await supabase
             .from('project_owners')
             .select('*, profiles:owner_id(email)')
             .eq('project_id', projectId);
-            
           if (!error && additionalOwners && additionalOwners.length > 0) {
             // Add additional owners to the list
             const formattedOwners = additionalOwners.map(owner => ({
@@ -101,15 +94,31 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
               status: owner.status || 'pending',
               created_at: owner.created_at
             }));
-            
             ownersList.push(...formattedOwners);
+            allOwnerEmails = [ownerEmail, ...formattedOwners.map(o => o.email)];
           }
         }
       } catch (err) {
         console.log('No additional owners found or table does not exist yet');
       }
-      
       setOwners(ownersList);
+      // Verifica per ogni owner se è registrato
+      if (allOwnerEmails.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('email');
+        if (profilesError) {
+          setVerifiedOwners({});
+        } else {
+          const verified: Record<string, boolean> = {};
+          allOwnerEmails.forEach(email => {
+            verified[email] = profiles.some((p: any) => p.email === email);
+          });
+          setVerifiedOwners(verified);
+        }
+      } else {
+        setVerifiedOwners({});
+      }
     } catch (err) {
       console.error('Error loading project data:', err);
       setMessage({ text: 'Failed to load project data', type: 'error' });
@@ -120,56 +129,49 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
 
   const addOwner = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newEmail.trim()) {
       setMessage({ text: 'Please enter an email address', type: 'error' });
       return;
     }
-    
     try {
       setAddingOwner(true);
       setMessage(null);
-      
       // Check if the email is already in the owners list
       if (owners.some(owner => owner.email.toLowerCase() === newEmail.trim().toLowerCase())) {
         setMessage({ text: 'This email is already an owner of this project', type: 'error' });
         return;
       }
-      
-      // Find the user ID for this email
+      // Verifica se l'utente esiste
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', newEmail.trim())
         .maybeSingle();
-      
-      if (!userData?.id) {
-        setMessage({ text: 'User not found. They must register first.', type: 'error' });
-        return;
+      let status = 'pending';
+      let ownerId = null;
+      if (userData?.id) {
+        status = 'verified';
+        ownerId = userData.id;
       }
-      
-      // Try to add the owner directly
+      // Prova ad aggiungere l'owner
       const { data, error } = await supabase
         .from('project_owners')
         .insert({
           project_id: projectId,
-          email: newEmail.trim(), // Keep for backward compatibility
-          owner_id: userData.id,
-          status: 'verified'
+          email: newEmail.trim(),
+          owner_id: ownerId,
+          status: status
         })
         .select();
-      
       if (error) {
         if (error.code === '42P01') { // Table doesn't exist
-          // Add the owner to the local state only
           const newOwner = {
             id: `temp-${Date.now()}`,
             email: newEmail.trim(),
-            owner_id: userData.id,
-            status: 'verified',
+            owner_id: ownerId,
+            status: status,
             created_at: new Date().toISOString()
           };
-          
           setOwners(prev => [...prev, newOwner]);
           setMessage({ 
             text: 'Owner added locally. Database setup is incomplete. Please contact support.', 
@@ -180,8 +182,6 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         }
         throw error;
       }
-      
-      // Add the new owner to the local state
       if (data && data.length > 0) {
         setOwners(prev => [...prev, data[0]]);
         setMessage({ text: 'Project owner added successfully', type: 'success' });
@@ -235,17 +235,17 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'primary':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Primary</span>;
-      case 'verified':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Verified</span>;
-      case 'pending':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>;
-      default:
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{status}</span>;
+  const getStatusBadge = (status: string, email: string) => {
+    if (status === 'primary') {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Primary</span>;
     }
+    if (verifiedOwners[email] === true) {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Verificato</span>;
+    }
+    if (verifiedOwners[email] === false) {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Non registrato</span>;
+    }
+    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{status}</span>;
   };
 
   return (
@@ -276,7 +276,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                 <li key={owner.id} className="py-3 flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <span className="text-gray-900">{owner.email}</span>
-                    {getStatusBadge(owner.status)}
+                    {getStatusBadge(owner.status, owner.email)}
                   </div>
                   {owner.id !== 'primary' && (
                     <button

@@ -12,6 +12,7 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
   const [newEmail, setNewEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [verifiedOwners, setVerifiedOwners] = useState<Record<string, boolean>>({});
 
   // Load project owners
   useEffect(() => {
@@ -21,7 +22,6 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
   const loadOwners = async () => {
     setLoading(true);
     setError(null);
-    
     try {
       // Get primary owner
       const { data: project, error: projectError } = await supabase
@@ -29,25 +29,40 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
         .select('owner_email')
         .eq('id', projectId)
         .single();
-      
       if (projectError) throw projectError;
-      
       setPrimaryOwner(project.owner_email);
-      
       // Get additional owners
       const { data: additionalOwners, error: ownersError } = await supabase
         .from('project_owners')
         .select('email')
         .eq('project_id', projectId);
-      
-      // If table doesn't exist, just use primary owner
+      let allOwners: string[] = [];
       if (ownersError && ownersError.code === '42P01') {
-        setOwners([project.owner_email]);
+        allOwners = [project.owner_email];
+        setOwners(allOwners);
       } else if (ownersError) {
         throw ownersError;
       } else {
         const ownerEmails = additionalOwners?.map(owner => owner.email) || [];
-        setOwners([project.owner_email, ...ownerEmails]);
+        allOwners = [project.owner_email, ...ownerEmails];
+        setOwners(allOwners);
+      }
+      // Verifica per ogni owner se è registrato
+      if (allOwners.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('email');
+        if (profilesError) {
+          setVerifiedOwners({});
+        } else {
+          const verified: Record<string, boolean> = {};
+          allOwners.forEach(email => {
+            verified[email] = profiles.some((p: any) => p.email === email);
+          });
+          setVerifiedOwners(verified);
+        }
+      } else {
+        setVerifiedOwners({});
       }
     } catch (err: any) {
       console.error('Error loading owners:', err);
@@ -99,7 +114,11 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
       setNewEmail('');
     } catch (err: any) {
       console.error('Error adding owner:', err);
-      setError(err.message || 'Failed to add project owner');
+      if (err.code && err.message) {
+        setError(`Errore Supabase [${err.code}]: ${err.message}`);
+      } else {
+        setError(err.message || 'Failed to add project owner');
+      }
     }
   };
 
@@ -157,6 +176,16 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
                   {email === primaryOwner && (
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                       Primary
+                    </span>
+                  )}
+                  {verifiedOwners[email] === true && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      Verificato
+                    </span>
+                  )}
+                  {verifiedOwners[email] === false && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                      Non registrato
                     </span>
                   )}
                 </div>
