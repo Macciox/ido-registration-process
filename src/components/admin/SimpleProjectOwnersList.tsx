@@ -16,12 +16,17 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
 
   // Load project owners
   useEffect(() => {
-    loadOwners();
+    if (projectId) {
+      loadOwners();
+    }
   }, [projectId]);
 
   const loadOwners = async () => {
+    if (!projectId) return;
+    
     setLoading(true);
     setError(null);
+    
     try {
       // Get primary owner
       const { data: project, error: projectError } = await supabase
@@ -29,40 +34,40 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
         .select('owner_email')
         .eq('id', projectId)
         .single();
+      
       if (projectError) throw projectError;
+      
       setPrimaryOwner(project.owner_email);
+      
       // Get additional owners
-      const { data: additionalOwners, error: ownersError } = await supabase
-        .from('project_owners')
-        .select('email')
-        .eq('project_id', projectId);
-      let allOwners: string[] = [];
-      if (ownersError && ownersError.code === '42P01') {
-        allOwners = [project.owner_email];
-        setOwners(allOwners);
-      } else if (ownersError) {
-        throw ownersError;
-      } else {
-        const ownerEmails = additionalOwners?.map(owner => owner.email) || [];
-        allOwners = [project.owner_email, ...ownerEmails];
-        setOwners(allOwners);
-      }
-      // Verifica per ogni owner se è registrato
-      if (allOwners.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('email');
-        if (profilesError) {
-          setVerifiedOwners({});
+      try {
+        const { data: additionalOwners, error: ownersError } = await supabase
+          .from('project_owners')
+          .select('email')
+          .eq('project_id', projectId);
+        
+        if (!ownersError && additionalOwners) {
+          const ownerEmails = additionalOwners.map(owner => owner.email);
+          setOwners([project.owner_email, ...ownerEmails]);
+          
+          // Check which owners are registered
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('email');
+          
+          if (profiles) {
+            const verified: Record<string, boolean> = {};
+            [project.owner_email, ...ownerEmails].forEach(email => {
+              verified[email] = profiles.some(p => p.email === email);
+            });
+            setVerifiedOwners(verified);
+          }
         } else {
-          const verified: Record<string, boolean> = {};
-          allOwners.forEach(email => {
-            verified[email] = profiles.some((p: any) => p.email === email);
-          });
-          setVerifiedOwners(verified);
+          setOwners([project.owner_email]);
         }
-      } else {
-        setVerifiedOwners({});
+      } catch (err) {
+        console.log('Error loading additional owners, using only primary owner');
+        setOwners([project.owner_email]);
       }
     } catch (err: any) {
       console.error('Error loading owners:', err);
@@ -88,24 +93,22 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     }
     
     try {
-      // We can't create tables from the frontend, so we'll just try to use it
-      // If the table doesn't exist, we'll handle the error later
-      // Add the owner
       const { error } = await supabase
         .from('project_owners')
         .insert({
           project_id: projectId,
           email: newEmail.trim()
         });
+      
       if (error) {
-        console.error('Supabase error object:', error);
         if (error.code === '42P01') {
           setError('Database setup is incomplete. Please contact support.');
         } else {
-          setError(`Supabase error [${error.code}]: ${error.message}`);
+          throw error;
         }
         return;
       }
+      
       // Update local state
       setOwners(prev => [...prev, newEmail.trim()]);
       setMessage('Project owner added successfully');
@@ -174,12 +177,12 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
                   )}
                   {verifiedOwners[email] === true && (
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Verificato
+                      Verified
                     </span>
                   )}
                   {verifiedOwners[email] === false && (
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                      Non registrato
+                      Not Registered
                     </span>
                   )}
                 </div>

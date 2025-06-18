@@ -26,8 +26,8 @@ const ProjectSettings: React.FC = () => {
         
         setUser(currentUser);
         
-        if (projectId) {
-          await loadProject(currentUser, projectId as string);
+        if (projectId && typeof projectId === 'string') {
+          await loadProject(currentUser, projectId);
         }
       } catch (err) {
         console.error('Auth check error:', err);
@@ -59,17 +59,22 @@ const ProjectSettings: React.FC = () => {
         project.owner_email === currentUser.email;
       
       if (!hasAccess) {
-        // Check if user is in project_owners
-        const { data: projectOwner, error: ownerError } = await supabase
-          .from('project_owners')
-          .select('*')
-          .eq('project_id', projectId)
-          .eq('email', currentUser.email)
-          .maybeSingle();
-        
-        if (!ownerError && projectOwner) {
-          setHasAccess(true);
-        } else {
+        try {
+          // Check if user is in project_owners
+          const { data: projectOwner, error: ownerError } = await supabase
+            .from('project_owners')
+            .select('*')
+            .eq('project_id', projectId)
+            .eq('email', currentUser.email)
+            .maybeSingle();
+          
+          if (!ownerError && projectOwner) {
+            setHasAccess(true);
+          } else {
+            setError('You do not have permission to access this project');
+          }
+        } catch (err) {
+          // If the table doesn't exist, just deny access
           setError('You do not have permission to access this project');
         }
       } else {
@@ -124,7 +129,7 @@ const ProjectSettings: React.FC = () => {
   }
 
   return (
-    <Layout projectId={projectId as string}>
+    <Layout>
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Project Settings: {project.name}</h1>
         <div className="flex space-x-4">
@@ -145,8 +150,8 @@ const ProjectSettings: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6">
         {/* Project Owners Section */}
-        {hasAccess && (
-          <SimpleProjectOwnersList projectId={projectId as string} />
+        {hasAccess && projectId && typeof projectId === 'string' && (
+          <SimpleProjectOwnersList projectId={projectId} />
         )}
         
         {/* Other settings sections can be added here */}
