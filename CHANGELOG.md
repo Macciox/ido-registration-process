@@ -1,55 +1,34 @@
 # Changelog
 
-All notable changes to the IDO Registration Process project will be documented in this file.
-
 ## [Unreleased]
 
-## [0.1.0] - 2024-05-02
-
 ### Added
-- Initial database schema with profiles, projects, project_fields, FAQs, and quiz_questions tables
-- Row-level security policies for all tables
-- Authentication system with admin and project owner roles
-- Project owner registration with email whitelist verification
-- Admin invitation system with secure unique links
-- Project dashboard for project owners
-- Admin dashboard with project management
-- Form tabs with completion tracking:
-  - Token Info form
-  - Platform Setup form
-  - IDO Metrics form (Public Round)
-  - Marketing Kit form
-  - FAQ management
-  - Learn-to-Earn Quiz management
-- Field status tracking (Confirmed, Not Confirmed, Might Still Change)
-- Default "Not Confirmed" status for all form fields
-- Password reset functionality
-- Logout functionality
-- Mobile-responsive navigation
+- Row-Level Security (RLS) functions for improved security
+  - `is_admin()` function to check if current user is an admin
+  - `is_project_owner(project_id)` function to check if current user is a project owner
+- RLS policies for all tables using these functions
+- Support for localStorage fallback when database tables don't exist
+- Improved navigation with buttons instead of links
+- Back to Dashboard buttons on all project pages
 
 ### Changed
-- Simplified login interface focusing on project owners
-- Improved navigation with clear role indicators
-- Enhanced form UI with status indicators and completion tracking
+- Replaced `owner_email` with `owner_id` in projects table for better data integrity
+- Added `owner_id` to project_owners table
+- Updated RLS functions to use `owner_id` instead of email
+- Added indexes on `created_at`, `project_id`, and `email` fields for better performance
+- Improved error handling for missing tables
+- Enhanced project owners management with better status tracking
 
-### Security
-- Implemented row-level security for all database tables
-- Created secure admin invitation system
-- Added email verification for project owner registration
-- Restricted access to forms based on user roles
-- Added expiration to admin invitation links (7 days)
+### Fixed
+- Navigation issues when clicking on dashboard link
+- Project owners management when table doesn't exist
+- Admin invitations when table doesn't exist
+- Type errors in various components
 
-## Database Schema
+## [0.1.0] - 2023-06-01
 
-### Tables
-- `profiles`: Stores user roles (admin, project_owner)
-- `projects`: Stores project information
-- `project_fields`: Stores all form fields with status tracking
-- `faqs`: Stores project FAQs
-- `quiz_questions`: Stores L2E quiz questions
-- `admin_invitations`: Tracks admin invitation links
-
-### Security
-- Row-level security policies for all tables
-- Automatic role assignment on user creation
-- Role-based access control for all operations
+### Added
+- Initial release with basic functionality
+- Project creation and management
+- Admin dashboard
+- User authentication

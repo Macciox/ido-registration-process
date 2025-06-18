@@ -11,6 +11,7 @@ interface LocalInvitation {
   token: string;
   created_at: string;
   expires_at: string;
+  assigned_role: string;
 }
 
 const AdminInvitePage: React.FC = () => {
@@ -111,30 +112,34 @@ const AdminInvitePage: React.FC = () => {
       
       if (authError) throw authError;
       
-      // Update the user role to admin
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ role: 'admin' })
-        .eq('email', invitation.email);
+      // The handle_new_user trigger will automatically:
+      // 1. Create a profile for the user
+      // 2. Set the role based on the invitation
+      // 3. Mark the invitation as accepted
       
-      if (updateError) throw updateError;
-      
-      // If it's a database invitation, mark it as accepted
-      if (!isLocalInvitation) {
-        await supabase
-          .from('admin_invitations')
-          .update({ 
-            status: 'accepted',
-            used_at: new Date().toISOString() 
-          })
-          .eq('id', invitation.id);
-      } else {
-        // If it's a local invitation, remove it from localStorage
+      // If it's a local invitation, remove it from localStorage
+      if (isLocalInvitation) {
         const localInvitationsStr = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (localInvitationsStr) {
           const localInvitations: LocalInvitation[] = JSON.parse(localInvitationsStr);
           const updatedInvitations = localInvitations.filter(inv => inv.token !== token);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedInvitations));
+        }
+        
+        // Since we can't rely on the trigger for local invitations, manually create the profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData?.user?.id,
+            email: invitation.email,
+            role: invitation.assigned_role || 'project_owner',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+          
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          // Continue anyway, the user is created
         }
       }
       
@@ -146,8 +151,8 @@ const AdminInvitePage: React.FC = () => {
       }, 3000);
       
     } catch (err: any) {
-      console.error('Error creating admin account:', err);
-      setError(err.message || 'Failed to create admin account');
+      console.error('Error creating account:', err);
+      setError(err.message || 'Failed to create account');
     } finally {
       setValidating(false);
     }
@@ -168,7 +173,7 @@ const AdminInvitePage: React.FC = () => {
       <div className="py-12">
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow rounded-lg p-8">
-            <h1 className="text-2xl font-bold text-center text-primary mb-6">Admin Account Setup</h1>
+            <h1 className="text-2xl font-bold text-center text-primary mb-6">Account Setup</h1>
             
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -178,16 +183,20 @@ const AdminInvitePage: React.FC = () => {
             
             {success ? (
               <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                <p>Admin account created successfully!</p>
+                <p>Account created successfully!</p>
                 <p className="mt-2">Redirecting to login page...</p>
               </div>
             ) : invitation ? (
               <>
                 {isLocalInvitation && (
                   <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-                    <p>This is a locally stored invitation. Your admin account will still be created correctly.</p>
+                    <p>This is a locally stored invitation. Your account will still be created correctly.</p>
                   </div>
                 )}
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">You are being invited as:</p>
+                  <p className="font-medium text-gray-900">{invitation.assigned_role || 'project_owner'}</p>
+                </div>
                 <form onSubmit={handleSubmit}>
                   <div className="mb-4">
                     <label className="form-label" htmlFor="email">
@@ -236,7 +245,7 @@ const AdminInvitePage: React.FC = () => {
                     className="btn btn-primary w-full"
                     disabled={validating}
                   >
-                    {validating ? 'Creating Account...' : 'Create Admin Account'}
+                    {validating ? 'Creating Account...' : 'Create Account'}
                   </button>
                 </form>
               </>

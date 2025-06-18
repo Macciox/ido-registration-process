@@ -22,6 +22,7 @@ interface LocalInvitation {
   token: string;
   created_at: string;
   expires_at: string;
+  assigned_role: string;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -30,6 +31,7 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('admin');
   const [inviteLink, setInviteLink] = useState('');
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
   const [activeTab, setActiveTab] = useState('projects');
@@ -127,6 +129,7 @@ const AdminDashboard: React.FC = () => {
           email: newAdminEmail, 
           token: token,
           status: 'pending',
+          assigned_role: inviteRole,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
         }]);
       
@@ -142,7 +145,8 @@ const AdminDashboard: React.FC = () => {
             email: newAdminEmail,
             token: token,
             created_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            assigned_role: inviteRole
           };
           
           // Get existing invitations
@@ -160,7 +164,7 @@ const AdminDashboard: React.FC = () => {
           
           setInviteLink(link);
           setMessage({ 
-            text: 'Admin invitation created locally. Database setup is incomplete.', 
+            text: 'Invitation created locally. Database setup is incomplete.', 
             type: 'warning' 
           });
           setNewAdminEmail('');
@@ -174,10 +178,10 @@ const AdminDashboard: React.FC = () => {
       }
       
       setInviteLink(link);
-      setMessage({ text: 'Admin invitation created successfully', type: 'success' });
+      setMessage({ text: 'Invitation created successfully', type: 'success' });
       setNewAdminEmail('');
     } catch (err: any) {
-      console.error('Error creating admin invitation:', err);
+      console.error('Error creating invitation:', err);
       setMessage({ text: err.message || 'Failed to create invitation', type: 'error' });
     }
   };
@@ -342,7 +346,7 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 gap-6">
               {/* Admin Invitation */}
               <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium mb-4">Invite New Admin</h2>
+                <h2 className="text-lg font-medium mb-4">Invite New User</h2>
                 
                 {message && (
                   <div className={`p-4 mb-4 rounded ${
@@ -365,9 +369,27 @@ const AdminDashboard: React.FC = () => {
                       className="form-input"
                       value={newAdminEmail}
                       onChange={(e) => setNewAdminEmail(e.target.value)}
-                      placeholder="new-admin@example.com"
+                      placeholder="new-user@example.com"
                       required
                     />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="form-label" htmlFor="invite-role">
+                      Role
+                    </label>
+                    <select
+                      id="invite-role"
+                      className="form-select"
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="project_owner">Project Owner</option>
+                    </select>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Admin can manage all projects and users. Project Owner can only manage their own projects.
+                    </p>
                   </div>
                   
                   <button
@@ -399,7 +421,7 @@ const AdminDashboard: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">
-                      Send this link to the new admin. The link will expire in 7 days.
+                      Send this link to the new user. The link will expire in 7 days.
                     </p>
                   </div>
                 )}

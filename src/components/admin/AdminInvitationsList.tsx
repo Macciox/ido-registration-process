@@ -9,6 +9,7 @@ interface LocalInvitation {
   token: string;
   created_at: string;
   expires_at: string;
+  assigned_role: string;
 }
 
 interface AdminInvitation {
@@ -16,6 +17,7 @@ interface AdminInvitation {
   email: string;
   token: string;
   status: string;
+  assigned_role: string;
   expires_at: string;
   created_at: string;
   used_at: string | null;
@@ -62,6 +64,7 @@ const AdminInvitationsList: React.FC = () => {
             email: inv.email,
             token: inv.token,
             status: 'pending',
+            assigned_role: inv.assigned_role || 'admin',
             expires_at: inv.expires_at,
             created_at: inv.created_at,
             used_at: null,
@@ -180,9 +183,20 @@ const AdminInvitationsList: React.FC = () => {
     }
   };
 
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">Admin</span>;
+      case 'project_owner':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Project Owner</span>;
+      default:
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{role}</span>;
+    }
+  };
+
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium mb-4">Admin Invitations</h2>
+      <h2 className="text-lg font-medium mb-4">User Invitations</h2>
       
       {message && (
         <div className={`p-4 mb-4 rounded ${
@@ -207,6 +221,7 @@ const AdminInvitationsList: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
@@ -217,6 +232,9 @@ const AdminInvitationsList: React.FC = () => {
                 {invitations.map((invitation) => (
                   <tr key={invitation.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invitation.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getRoleBadge(invitation.assigned_role || 'admin')}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(invitation)}
                     </td>
