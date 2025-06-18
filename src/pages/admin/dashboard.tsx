@@ -100,20 +100,29 @@ const AdminDashboard: React.FC = () => {
   const createAdminInvitationsTable = async () => {
     try {
       // Create the admin_invitations table if it doesn't exist
-      await supabase.rpc('create_admin_invitations_table').catch(e => {
+      try {
+        await supabase.rpc('create_admin_invitations_table');
+      } catch (e) {
         console.error('Error creating table via RPC:', e);
-      });
+      }
       
-      // Try direct SQL as a fallback
-      const { error } = await supabase.auth.admin.createUser({
-        email: 'temp@example.com',
-        password: 'temp_password',
-        email_confirm: true
-      });
+      // Try a simple query to see if the table exists now
+      const { count, error } = await supabase
+        .from('admin_invitations')
+        .select('*', { count: 'exact', head: true });
       
-      // We expect this to fail, we just need to trigger a query to create the table
-      console.log('Auth admin operation result:', error ? 'Failed as expected' : 'Unexpected success');
+      if (!error) {
+        // Table exists and is accessible
+        return true;
+      }
       
+      // If we still get an error, the table doesn't exist
+      if (error.code === '42P01') {
+        console.error('Table still does not exist after RPC call');
+        return false;
+      }
+      
+      // Some other error occurred, but the table might exist
       return true;
     } catch (err) {
       console.error('Error creating admin_invitations table:', err);
