@@ -9,7 +9,7 @@ interface ProjectOwnersListProps {
 interface ProjectOwner {
   id: string;
   email: string;
-  owner_id?: string;
+  owner_id: string;
   status: string;
   created_at: string;
 }
@@ -39,10 +39,10 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       setLoading(true);
       setMessage(null);
       
-      // First get the primary owner from the projects table
+      // Get the project with owner information
       const { data: project, error: projectError } = await supabase
         .from('projects')
-        .select('owner_email, owner_id')
+        .select('owner_id, profiles:owner_id(email)')
         .eq('id', projectId)
         .single();
       
@@ -52,24 +52,17 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
-      // Store the primary owner email
-      setPrimaryOwner(project.owner_email);
-      
-      // Get the owner's profile information
-      const { data: ownerProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', project.owner_id)
-        .single();
-      
       // Create a list of owners starting with the primary owner
       const ownersList: ProjectOwner[] = [{
         id: 'primary',
-        email: ownerProfile?.email || project.owner_email,
+        email: project.profiles?.email || '',
         owner_id: project.owner_id,
         status: 'primary',
         created_at: new Date().toISOString()
       }];
+      
+      // Store the primary owner ID
+      setPrimaryOwner(project.owner_id);
       
       // Try to get additional owners from the database
       try {
@@ -82,7 +75,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         if (!tableError) {
           const { data: additionalOwners, error } = await supabase
             .from('project_owners')
-            .select('*, profiles(email)')
+            .select('*, profiles:owner_id(email)')
             .eq('project_id', projectId);
             
           if (!error && additionalOwners && additionalOwners.length > 0) {
@@ -136,16 +129,19 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         .eq('email', newEmail.trim())
         .maybeSingle();
       
-      const owner_id = userData?.id || null;
+      if (!userData?.id) {
+        setMessage({ text: 'User not found. They must register first.', type: 'error' });
+        return;
+      }
       
       // Try to add the owner directly
       const { data, error } = await supabase
         .from('project_owners')
         .insert({
           project_id: projectId,
-          email: newEmail.trim(),
-          owner_id: owner_id,
-          status: owner_id ? 'verified' : 'pending'
+          email: newEmail.trim(), // Keep for backward compatibility
+          owner_id: userData.id,
+          status: 'verified'
         })
         .select();
       
@@ -155,8 +151,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           const newOwner = {
             id: `temp-${Date.now()}`,
             email: newEmail.trim(),
-            owner_id: owner_id,
-            status: owner_id ? 'verified' : 'pending',
+            owner_id: userData.id,
+            status: 'verified',
             created_at: new Date().toISOString()
           };
           
