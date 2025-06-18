@@ -163,7 +163,7 @@ const AdminDashboard: React.FC = () => {
             text: 'Admin invitation created locally. Database setup is incomplete.', 
             type: 'warning' 
           });
-          setNewEmail('');
+          setNewAdminEmail('');
           return;
         } else if (error.code === '23505') { // Unique constraint violation
           setMessage({ text: 'An invitation for this email already exists', type: 'error' });
