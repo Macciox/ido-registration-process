@@ -49,17 +49,40 @@ const AdminWhitelistSection: React.FC = () => {
       return;
     }
     try {
-      const { error } = await supabase
-        .from('admin_whitelist')
-        .insert({ 
-          email: newEmail.trim(),
-          status: 'pending'
-        });
-      if (error) throw error;
+      // Try to insert with status column
+      try {
+        const { error } = await supabase
+          .from('admin_whitelist')
+          .insert({ 
+            email: newEmail.trim(),
+            status: 'pending'
+          });
+        
+        if (error) {
+          // If error mentions status column, try without it
+          if (error.message && error.message.includes('status')) {
+            throw error;
+          } else {
+            // Other error
+            throw error;
+          }
+        }
+      } catch (statusError) {
+        // Try inserting without status column
+        const { error } = await supabase
+          .from('admin_whitelist')
+          .insert({ 
+            email: newEmail.trim()
+          });
+        
+        if (error) throw error;
+      }
+      
       setMessage('Admin email added to whitelist');
       setNewEmail('');
       loadWhitelist();
     } catch (err: any) {
+      console.error('Error adding to whitelist:', err);
       setError(err.message || 'Failed to add email to whitelist');
     }
   };
@@ -81,31 +104,67 @@ const AdminWhitelistSection: React.FC = () => {
   };
 
   const getStatusBadge = (entry: AdminWhitelistEntry) => {
-    if (!entry.status || entry.status === 'pending') {
-      return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-          Not Registered
-        </span>
-      );
-    } else if (entry.status === 'pending_verification') {
-      return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
-          Pending Verification
-        </span>
-      );
-    } else if (entry.status === 'verified') {
+    // Check if profiles table has this email
+    const [isVerified, setIsVerified] = useState<boolean | null>(null);
+    
+    useEffect(() => {
+      const checkVerification = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('email', entry.email)
+            .maybeSingle();
+          
+          setIsVerified(!!data);
+        } catch (err) {
+          setIsVerified(false);
+        }
+      };
+      
+      checkVerification();
+    }, [entry.email]);
+    
+    // If status is available, use it
+    if (entry.status) {
+      if (entry.status === 'pending') {
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+            Not Registered
+          </span>
+        );
+      } else if (entry.status === 'pending_verification') {
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+            Pending Verification
+          </span>
+        );
+      } else if (entry.status === 'verified') {
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+            Verified
+          </span>
+        );
+      }
+    }
+    
+    // Fallback based on profiles check
+    if (isVerified === true) {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
           Verified
         </span>
       );
-    } else {
+    } else if (isVerified === false) {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-          {entry.status}
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+          Not Registered
         </span>
       );
     }
+    
+    // Loading or unknown
+    return null;
   };
 
   return (
