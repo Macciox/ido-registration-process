@@ -49,18 +49,27 @@ const Header: React.FC = () => {
     }
   };
 
+  const navigateTo = (path: string) => {
+    // Close menu first
+    setIsProfileMenuOpen(false);
+    // Use setTimeout to ensure menu is closed before navigation
+    setTimeout(() => {
+      router.push(path);
+    }, 10);
+  };
+
   return (
     <header className="bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <button 
-                onClick={() => router.push('/admin/dashboard')}
+              <a 
+                href="/admin/dashboard"
                 className="text-xl font-bold text-primary hover:text-primary-dark transition-colors"
               >
                 Decubate IDO
-              </button>
+              </a>
             </div>
           </div>
           
@@ -88,15 +97,12 @@ const Header: React.FC = () => {
                     </div>
                     
                     {user.role === 'admin' && (
-                      <button
-                        onClick={() => {
-                          setIsProfileMenuOpen(false);
-                          router.push('/admin/dashboard?tab=settings');
-                        }}
+                      <a
+                        href="/admin/dashboard?tab=settings"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Admin Settings
-                      </button>
+                      </a>
                     )}
                     
                     <button
@@ -113,9 +119,9 @@ const Header: React.FC = () => {
           
           {!loading && !user && (
             <div className="flex items-center">
-              <Link href="/login" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+              <a href="/login" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                 Login
-              </Link>
+              </a>
             </div>
           )}
         </div>

@@ -4,7 +4,6 @@ import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
-// import AdminInvitationsList from '@/components/admin/AdminInvitationsList';
 import AdminWhitelistSection from '@/components/admin/AdminWhitelistSection';
 
 interface ProjectSummary {
@@ -15,25 +14,11 @@ interface ProjectSummary {
   completion_percentage: number;
 }
 
-// Store invitations in localStorage as a fallback
-const LOCAL_STORAGE_KEY = 'admin_invitations';
-
-interface LocalInvitation {
-  email: string;
-  token: string;
-  created_at: string;
-  expires_at: string;
-  assigned_role: string;
-}
-
 const AdminDashboard: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
-  // const [newAdminEmail, setNewAdminEmail] = useState('');
-  // const [inviteRole, setInviteRole] = useState('admin');
-  // const [inviteLink, setInviteLink] = useState('');
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
   const [activeTab, setActiveTab] = useState('projects');
 
@@ -43,7 +28,7 @@ const AdminDashboard: React.FC = () => {
         const currentUser = await getCurrentUser();
         
         if (!currentUser) {
-          router.push('/login');
+          window.location.href = '/login';
           return;
         }
         
@@ -56,7 +41,7 @@ const AdminDashboard: React.FC = () => {
         loadProjects();
       } catch (err) {
         console.error('Auth check error:', err);
-        router.push('/login');
+        window.location.href = '/login';
       } finally {
         setLoading(false);
       }
@@ -110,17 +95,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Funzione legacy invitation rimossa
-
-  // Update URL when tab changes
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    router.push({
-      pathname: router.pathname,
-      query: { tab }
-    }, undefined, { shallow: true });
-  };
-
   if (loading) {
     return (
       <Layout>
@@ -141,8 +115,8 @@ const AdminDashboard: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Admin Dashboard</h1>
               
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => router.push('/admin/dashboard')}
+                <a
+                  href="/admin/dashboard"
                   className={`px-4 py-2 rounded-md text-sm font-medium ${
                     !router.query.tab
                       ? 'bg-primary text-white shadow-sm'
@@ -150,22 +124,22 @@ const AdminDashboard: React.FC = () => {
                   }`}
                 >
                   Projects
-                </button>
+                </a>
                 
                 {user?.role === 'admin' && (
                   <>
-                    <button
-                      onClick={() => router.push('/admin/projects/new')}
+                    <a
+                      href="/admin/projects/new"
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm flex items-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                       </svg>
                       New Project
-                    </button>
+                    </a>
                     
-                    <button
-                      onClick={() => handleTabChange('settings')}
+                    <a
+                      href="/admin/dashboard?tab=settings"
                       className={`px-4 py-2 rounded-md text-sm font-medium ${
                         router.query.tab === 'settings'
                           ? 'bg-primary text-white shadow-sm'
@@ -173,7 +147,7 @@ const AdminDashboard: React.FC = () => {
                       }`}
                     >
                       Admin Settings
-                    </button>
+                    </a>
                   </>
                 )}
               </div>
@@ -228,8 +202,8 @@ const AdminDashboard: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex space-x-4">
-                              <button
-                                onClick={() => router.push(`/projects/${project.id}`)}
+                              <a
+                                href={`/projects/${project.id}`}
                                 className="text-primary hover:text-primary-dark flex items-center justify-center bg-blue-50 hover:bg-blue-100 rounded-full p-2 transition-colors"
                                 title="View Project"
                               >
@@ -237,25 +211,25 @@ const AdminDashboard: React.FC = () => {
                                   <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                                   <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                                 </svg>
-                              </button>
-                              <button
-                                onClick={() => router.push(`/projects/${project.id}/edit`)}
+                              </a>
+                              <a
+                                href={`/projects/${project.id}/edit`}
                                 className="text-indigo-600 hover:text-indigo-800 flex items-center justify-center bg-indigo-50 hover:bg-indigo-100 rounded-full p-2 transition-colors"
                                 title="Edit Project"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                                 </svg>
-                              </button>
-                              <button
-                                onClick={() => router.push(`/projects/${project.id}/settings`)}
+                              </a>
+                              <a
+                                href={`/projects/${project.id}/settings`}
                                 className="text-gray-600 hover:text-gray-800 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors"
                                 title="Project Settings"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                                 </svg>
-                              </button>
+                              </a>
                             </div>
                           </td>
                         </tr>
@@ -272,7 +246,7 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 gap-6">
               {/* Admin Whitelist */}
               <AdminWhitelistSection />
-                          </div>
+            </div>
           )}
         </div>
       </div>
