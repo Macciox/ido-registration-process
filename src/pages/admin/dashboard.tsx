@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
 import AdminInvitationsList from '@/components/admin/AdminInvitationsList';
+import AdminWhitelistSection from '@/components/admin/AdminWhitelistSection';
 
 interface ProjectSummary {
   id: string;
