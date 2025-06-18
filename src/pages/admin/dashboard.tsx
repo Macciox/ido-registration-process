@@ -4,7 +4,7 @@ import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
-import AdminInvitationsList from '@/components/admin/AdminInvitationsList';
+// import AdminInvitationsList from '@/components/admin/AdminInvitationsList';
 import AdminWhitelistSection from '@/components/admin/AdminWhitelistSection';
 
 interface ProjectSummary {
@@ -31,9 +31,9 @@ const AdminDashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
-  const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('admin');
-  const [inviteLink, setInviteLink] = useState('');
+  // const [newAdminEmail, setNewAdminEmail] = useState('');
+  // const [inviteRole, setInviteRole] = useState('admin');
+  // const [inviteLink, setInviteLink] = useState('');
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
   const [activeTab, setActiveTab] = useState('projects');
 
@@ -110,82 +110,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const generateAdminInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
-    
-    if (!newAdminEmail) {
-      setMessage({ text: 'Please enter an email address', type: 'error' });
-      return;
-    }
-    
-    try {
-      // Create a unique token
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      
-      // Try to store the invitation in the database
-      const { error } = await supabase
-        .from('admin_invitations')
-        .insert([{ 
-          email: newAdminEmail, 
-          token: token,
-          status: 'pending',
-          assigned_role: inviteRole,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
-        }]);
-      
-      // Generate the invite link
-      const baseUrl = window.location.origin;
-      const link = `${baseUrl}/admin/invite?token=${token}&email=${encodeURIComponent(newAdminEmail)}`;
-      
-      // If there's an error with the database, store in localStorage as fallback
-      if (error) {
-        if (error.code === '42P01') { // Table doesn't exist
-          // Store in localStorage
-          const invitation: LocalInvitation = {
-            email: newAdminEmail,
-            token: token,
-            created_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            assigned_role: inviteRole
-          };
-          
-          // Get existing invitations
-          const existingInvitations = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
-          
-          // Check if email already exists
-          if (existingInvitations.some((inv: LocalInvitation) => inv.email === newAdminEmail)) {
-            setMessage({ text: 'An invitation for this email already exists', type: 'error' });
-            return;
-          }
-          
-          // Add new invitation
-          existingInvitations.push(invitation);
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(existingInvitations));
-          
-          setInviteLink(link);
-          setMessage({ 
-            text: 'Invitation created locally. Database setup is incomplete.', 
-            type: 'warning' 
-          });
-          setNewAdminEmail('');
-          return;
-        } else if (error.code === '23505') { // Unique constraint violation
-          setMessage({ text: 'An invitation for this email already exists', type: 'error' });
-          return;
-        } else {
-          throw error;
-        }
-      }
-      
-      setInviteLink(link);
-      setMessage({ text: 'Invitation created successfully', type: 'success' });
-      setNewAdminEmail('');
-    } catch (err: any) {
-      console.error('Error creating invitation:', err);
-      setMessage({ text: err.message || 'Failed to create invitation', type: 'error' });
-    }
-  };
+  // Funzione legacy invitation rimossa
 
   // Update URL when tab changes
   const handleTabChange = (tab: string) => {
