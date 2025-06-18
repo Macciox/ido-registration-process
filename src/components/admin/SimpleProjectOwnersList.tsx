@@ -90,7 +90,6 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     try {
       // We can't create tables from the frontend, so we'll just try to use it
       // If the table doesn't exist, we'll handle the error later
-      
       // Add the owner
       const { error } = await supabase
         .from('project_owners')
@@ -98,27 +97,22 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
           project_id: projectId,
           email: newEmail.trim()
         });
-      
       if (error) {
-        if (error.code === '42P01') { // Table doesn't exist
+        console.error('Supabase error object:', error);
+        if (error.code === '42P01') {
           setError('Database setup is incomplete. Please contact support.');
         } else {
-          throw error;
+          setError(`Supabase error [${error.code}]: ${error.message}`);
         }
         return;
       }
-      
       // Update local state
       setOwners(prev => [...prev, newEmail.trim()]);
       setMessage('Project owner added successfully');
       setNewEmail('');
     } catch (err: any) {
       console.error('Error adding owner:', err);
-      if (err.code && err.message) {
-        setError(`Errore Supabase [${err.code}]: ${err.message}`);
-      } else {
-        setError(err.message || 'Failed to add project owner');
-      }
+      setError(err.message || 'Failed to add project owner');
     }
   };
 
