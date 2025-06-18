@@ -40,9 +40,15 @@ file_size_limit = "50MiB"
 [auth]
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://ido.decubate.com"
+site_url = "https://ido-registration-process-bpu2kdrke-maccioxs-projects.vercel.app"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://ido.decubate.com", "https://ido-staging.decubate.com"]
+additional_redirect_urls = [
+  "https://ido.decubate.com", 
+  "https://ido-staging.decubate.com",
+  "https://ido-registration-process-bpu2kdrke-maccioxs-projects.vercel.app",
+  "https://ido-registration-process-bpu2kdrke-maccioxs-projects.vercel.app/login",
+  "https://ido-registration-process-bpu2kdrke-maccioxs-projects.vercel.app/register"
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one
 # week).
 jwt_expiry = 3600
