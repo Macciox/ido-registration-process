@@ -178,6 +178,12 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
           Verified
         </span>
       );
+    } else if (owner.status === 'pending_verification') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+          Pending Verification
+        </span>
+      );
     } else {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">

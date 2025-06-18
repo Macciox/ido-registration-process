@@ -4,12 +4,12 @@ import { supabase } from '@/lib/supabase';
 interface AdminWhitelistEntry {
   id: string;
   email: string;
+  status?: string;
   created_at: string;
 }
 
 const AdminWhitelistSection: React.FC = () => {
   const [whitelist, setWhitelist] = useState<AdminWhitelistEntry[]>([]);
-  const [verifiedAdmins, setVerifiedAdmins] = useState<Record<string, boolean>>({});
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,23 +29,6 @@ const AdminWhitelistSection: React.FC = () => {
         .order('created_at', { ascending: true });
       if (error) throw error;
       setWhitelist(data || []);
-      // Verifica per ogni email se è registrata
-      if (data && data.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('email');
-        if (profilesError) {
-          setVerifiedAdmins({});
-        } else {
-          const verified: Record<string, boolean> = {};
-          data.forEach(entry => {
-            verified[entry.email] = profiles.some((p: any) => p.email === entry.email);
-          });
-          setVerifiedAdmins(verified);
-        }
-      } else {
-        setVerifiedAdmins({});
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to load admin whitelist');
     } finally {
@@ -68,7 +51,10 @@ const AdminWhitelistSection: React.FC = () => {
     try {
       const { error } = await supabase
         .from('admin_whitelist')
-        .insert({ email: newEmail.trim() });
+        .insert({ 
+          email: newEmail.trim(),
+          status: 'pending'
+        });
       if (error) throw error;
       setMessage('Admin email added to whitelist');
       setNewEmail('');
@@ -94,6 +80,34 @@ const AdminWhitelistSection: React.FC = () => {
     }
   };
 
+  const getStatusBadge = (entry: AdminWhitelistEntry) => {
+    if (!entry.status || entry.status === 'pending') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+          Not Registered
+        </span>
+      );
+    } else if (entry.status === 'pending_verification') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+          Pending Verification
+        </span>
+      );
+    } else if (entry.status === 'verified') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+          Verified
+        </span>
+      );
+    } else {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+          {entry.status}
+        </span>
+      );
+    }
+  };
+
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
       <h2 className="text-lg font-medium mb-4">Admin Whitelist</h2>
@@ -114,12 +128,7 @@ const AdminWhitelistSection: React.FC = () => {
               <li key={entry.id} className="py-3 flex justify-between items-center">
                 <div className="flex items-center space-x-3">
                   <span className="text-gray-900">{entry.email}</span>
-                  {verifiedAdmins[entry.email] === true && (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Verificato</span>
-                  )}
-                  {verifiedAdmins[entry.email] === false && (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Non registrato</span>
-                  )}
+                  {getStatusBadge(entry)}
                 </div>
                 <button
                   onClick={() => removeEmail(entry.id)}
