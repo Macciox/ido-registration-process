@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import CreateProjectForm from '@/components/admin/CreateProjectForm';
 import { getCurrentUser } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
 
-const NewProjectPage: React.FC = () => {
+const NewProject: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -21,11 +25,12 @@ const NewProjectPage: React.FC = () => {
         }
         
         if (currentUser.role !== 'admin') {
-          router.push('/dashboard');
+          router.push('/admin/dashboard');
           return;
         }
         
         setUser(currentUser);
+        setOwnerEmail(currentUser.email);
       } catch (err) {
         console.error('Auth check error:', err);
         router.push('/login');
@@ -36,6 +41,62 @@ const NewProjectPage: React.FC = () => {
     
     checkAuth();
   }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!projectName.trim()) {
+      setError('Please enter a project name');
+      return;
+    }
+    
+    if (!ownerEmail.trim()) {
+      setError('Please enter an owner email');
+      return;
+    }
+    
+    setCreating(true);
+    setError(null);
+    
+    try {
+      // Get the owner's user ID from their email
+      const { data: ownerData, error: ownerError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', ownerEmail.trim())
+        .single();
+      
+      if (ownerError) {
+        setError(`Owner not found: ${ownerEmail}. They must register first.`);
+        setCreating(false);
+        return;
+      }
+      
+      // Create the project
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([
+          { 
+            name: projectName.trim(),
+            owner_email: ownerEmail.trim(), // Keep for backward compatibility
+            owner_id: ownerData.id // Add the owner's user ID
+          }
+        ])
+        .select();
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        router.push(`/projects/${data[0].id}`);
+      } else {
+        throw new Error('No data returned from project creation');
+      }
+    } catch (err: any) {
+      console.error('Error creating project:', err);
+      setError(err.message || 'Failed to create project');
+      setCreating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -51,18 +112,84 @@ const NewProjectPage: React.FC = () => {
     <Layout>
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Project</h1>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Back to Dashboard
-            </button>
+          <div className="md:flex md:items-center md:justify-between mb-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900">Create New Project</h1>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <button
+                onClick={() => router.push('/admin/dashboard')}
+                className="btn btn-outline flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Back to Dashboard
+              </button>
+            </div>
           </div>
           
-          <div className="max-w-3xl mx-auto">
-            <CreateProjectForm />
+          <div className="bg-white shadow rounded-lg p-6">
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="form-label" htmlFor="project-name">
+                  Project Name
+                </label>
+                <input
+                  id="project-name"
+                  type="text"
+                  className="form-input"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="Enter project name"
+                  required
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="form-label" htmlFor="owner-email">
+                  Project Owner Email
+                </label>
+                <input
+                  id="owner-email"
+                  type="email"
+                  className="form-input"
+                  value={ownerEmail}
+                  onChange={(e) => setOwnerEmail(e.target.value)}
+                  placeholder="Enter owner email"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  The owner must have a registered account with this email.
+                </p>
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Project'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -70,4 +197,4 @@ const NewProjectPage: React.FC = () => {
   );
 };
 
-export default NewProjectPage;
+export default NewProject;

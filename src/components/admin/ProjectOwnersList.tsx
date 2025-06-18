@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getCurrentUser } from '@/lib/auth';
 
 interface ProjectOwnersListProps {
   projectId: string;
@@ -8,6 +9,7 @@ interface ProjectOwnersListProps {
 interface ProjectOwner {
   id: string;
   email: string;
+  owner_id?: string;
   status: string;
   created_at: string;
 }
@@ -15,6 +17,7 @@ interface ProjectOwner {
 const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const [owners, setOwners] = useState<ProjectOwner[]>([]);
   const [primaryOwner, setPrimaryOwner] = useState<string>('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [addingOwner, setAddingOwner] = useState(false);
@@ -22,7 +25,13 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
 
   useEffect(() => {
-    loadProjectData();
+    const init = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+      loadProjectData();
+    };
+    
+    init();
   }, [projectId]);
 
   const loadProjectData = async () => {
@@ -33,7 +42,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       // First get the primary owner from the projects table
       const { data: project, error: projectError } = await supabase
         .from('projects')
-        .select('owner_email')
+        .select('owner_email, owner_id')
         .eq('id', projectId)
         .single();
       
@@ -46,10 +55,18 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       // Store the primary owner email
       setPrimaryOwner(project.owner_email);
       
+      // Get the owner's profile information
+      const { data: ownerProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', project.owner_id)
+        .single();
+      
       // Create a list of owners starting with the primary owner
       const ownersList: ProjectOwner[] = [{
         id: 'primary',
-        email: project.owner_email,
+        email: ownerProfile?.email || project.owner_email,
+        owner_id: project.owner_id,
         status: 'primary',
         created_at: new Date().toISOString()
       }];
@@ -65,12 +82,20 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         if (!tableError) {
           const { data: additionalOwners, error } = await supabase
             .from('project_owners')
-            .select('*')
+            .select('*, profiles(email)')
             .eq('project_id', projectId);
             
           if (!error && additionalOwners && additionalOwners.length > 0) {
             // Add additional owners to the list
-            ownersList.push(...additionalOwners);
+            const formattedOwners = additionalOwners.map(owner => ({
+              id: owner.id,
+              email: owner.profiles?.email || owner.email,
+              owner_id: owner.owner_id,
+              status: owner.status || 'pending',
+              created_at: owner.created_at
+            }));
+            
+            ownersList.push(...formattedOwners);
           }
         }
       } catch (err) {
@@ -104,13 +129,23 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
+      // Find the user ID for this email
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', newEmail.trim())
+        .maybeSingle();
+      
+      const owner_id = userData?.id || null;
+      
       // Try to add the owner directly
       const { data, error } = await supabase
         .from('project_owners')
         .insert({
           project_id: projectId,
           email: newEmail.trim(),
-          status: 'pending'
+          owner_id: owner_id,
+          status: owner_id ? 'verified' : 'pending'
         })
         .select();
       
@@ -120,7 +155,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           const newOwner = {
             id: `temp-${Date.now()}`,
             email: newEmail.trim(),
-            status: 'pending',
+            owner_id: owner_id,
+            status: owner_id ? 'verified' : 'pending',
             created_at: new Date().toISOString()
           };
           
