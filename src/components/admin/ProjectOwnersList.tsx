@@ -25,6 +25,28 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     loadProjectData();
   }, [projectId]);
 
+  const createProjectOwnersTable = async () => {
+    try {
+      // Try to create the table via RPC
+      try {
+        await supabase.rpc('create_project_owners_table');
+        return true;
+      } catch (e) {
+        console.error('Error creating table via RPC:', e);
+      }
+      
+      // Check if the table exists now
+      const { count, error } = await supabase
+        .from('project_owners')
+        .select('*', { count: 'exact', head: true });
+      
+      return !error || error.code !== '42P01';
+    } catch (err) {
+      console.error('Error creating project_owners table:', err);
+      return false;
+    }
+  };
+
   const loadProjectData = async () => {
     try {
       setLoading(true);
@@ -56,12 +78,15 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       
       // Try to get additional owners from the database
       try {
-        const { data: additionalOwners } = await supabase
+        // Ensure the table exists
+        await createProjectOwnersTable();
+        
+        const { data: additionalOwners, error } = await supabase
           .from('project_owners')
           .select('*')
           .eq('project_id', projectId);
           
-        if (additionalOwners && additionalOwners.length > 0) {
+        if (!error && additionalOwners && additionalOwners.length > 0) {
           // Add additional owners to the list
           ownersList.push(...additionalOwners);
         }
@@ -96,6 +121,13 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
+      // Ensure the table exists
+      const tableExists = await createProjectOwnersTable();
+      if (!tableExists) {
+        setMessage({ text: 'Could not set up project owners. Please contact support.', type: 'error' });
+        return;
+      }
+      
       // Add the new owner
       const { data, error } = await supabase
         .from('project_owners')
@@ -107,13 +139,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         .select();
       
       if (error) {
-        // If the error is because the table doesn't exist, show a specific message
-        if (error.code === '42P01') {
-          setMessage({ text: 'Project owners feature is not fully set up. Please contact support.', type: 'error' });
-        } else {
-          throw error;
-        }
-        return;
+        throw error;
       }
       
       // Add the new owner to the local state
