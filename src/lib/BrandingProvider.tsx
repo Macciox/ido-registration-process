@@ -1,16 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getMediaKit, MediaKit } from '@/lib/mediaKit';
 
+// Simplified context with minimal properties
 interface BrandingContextType {
   mediaKit: MediaKit | null;
-  loading: boolean;
-  error: string | null;
 }
 
 const BrandingContext = createContext<BrandingContextType>({
-  mediaKit: null,
-  loading: true,
-  error: null
+  mediaKit: null
 });
 
 export const useBranding = () => useContext(BrandingContext);
@@ -22,28 +19,22 @@ interface BrandingProviderProps {
 
 export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, projectId }) => {
   const [mediaKit, setMediaKit] = useState<MediaKit | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadMediaKit = async () => {
-      try {
-        setLoading(true);
-        const kit = await getMediaKit(projectId);
-        setMediaKit(kit);
-      } catch (err: any) {
-        console.error('Error loading media kit:', err);
-        setError(err.message || 'Failed to load branding');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMediaKit();
+    // Only try to load media kit if projectId is provided
+    if (projectId) {
+      getMediaKit(projectId)
+        .then(kit => {
+          if (kit) setMediaKit(kit);
+        })
+        .catch(err => {
+          console.error('Error loading media kit:', err);
+        });
+    }
   }, [projectId]);
 
   return (
-    <BrandingContext.Provider value={{ mediaKit, loading, error }}>
+    <BrandingContext.Provider value={{ mediaKit }}>
       {children}
     </BrandingContext.Provider>
   );
