@@ -3,6 +3,16 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/lib/supabase';
 
+// Local storage key for admin invitations
+const LOCAL_STORAGE_KEY = 'admin_invitations';
+
+interface LocalInvitation {
+  email: string;
+  token: string;
+  created_at: string;
+  expires_at: string;
+}
+
 const AdminInvitePage: React.FC = () => {
   const router = useRouter();
   const { token, email } = router.query;
@@ -14,6 +24,7 @@ const AdminInvitePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [invitation, setInvitation] = useState<any>(null);
+  const [isLocalInvitation, setIsLocalInvitation] = useState(false);
 
   // Validate the invitation token
   useEffect(() => {
@@ -21,26 +32,53 @@ const AdminInvitePage: React.FC = () => {
       if (!token || !email) return;
       
       try {
-        // Check if invitation exists and is valid
-        const { data, error } = await supabase
-          .from('admin_invitations')
-          .select('*')
-          .eq('token', token)
-          .eq('email', email)
-          .eq('status', 'pending')
-          .gt('expires_at', new Date().toISOString())
-          .single();
-        
-        if (error || !data) {
-          setError('Invalid or expired invitation link');
-          return;
+        // First try to check in the database
+        try {
+          const { data, error } = await supabase
+            .from('admin_invitations')
+            .select('*')
+            .eq('token', token)
+            .eq('email', email)
+            .eq('status', 'pending')
+            .gt('expires_at', new Date().toISOString())
+            .single();
+          
+          if (!error && data) {
+            setInvitation(data);
+            setIsLocalInvitation(false);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.log('Could not validate invitation from database');
         }
         
-        setInvitation(data);
+        // If not found in database, check localStorage
+        const localInvitationsStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (localInvitationsStr) {
+          const localInvitations: LocalInvitation[] = JSON.parse(localInvitationsStr);
+          const matchingInvitation = localInvitations.find(inv => 
+            inv.token === token && inv.email === email && new Date(inv.expires_at) > new Date()
+          );
+          
+          if (matchingInvitation) {
+            setInvitation({
+              ...matchingInvitation,
+              status: 'pending',
+              id: 'local'
+            });
+            setIsLocalInvitation(true);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // If we get here, the invitation is invalid
+        setError('Invalid or expired invitation link');
+        setLoading(false);
       } catch (err) {
         console.error('Error validating invitation:', err);
         setError('Failed to validate invitation');
-      } finally {
         setLoading(false);
       }
     };
@@ -81,14 +119,24 @@ const AdminInvitePage: React.FC = () => {
       
       if (updateError) throw updateError;
       
-      // Mark the invitation as accepted and used
-      await supabase
-        .from('admin_invitations')
-        .update({ 
-          status: 'accepted',
-          used_at: new Date().toISOString() 
-        })
-        .eq('id', invitation.id);
+      // If it's a database invitation, mark it as accepted
+      if (!isLocalInvitation) {
+        await supabase
+          .from('admin_invitations')
+          .update({ 
+            status: 'accepted',
+            used_at: new Date().toISOString() 
+          })
+          .eq('id', invitation.id);
+      } else {
+        // If it's a local invitation, remove it from localStorage
+        const localInvitationsStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (localInvitationsStr) {
+          const localInvitations: LocalInvitation[] = JSON.parse(localInvitationsStr);
+          const updatedInvitations = localInvitations.filter(inv => inv.token !== token);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedInvitations));
+        }
+      }
       
       setSuccess(true);
       
@@ -134,57 +182,64 @@ const AdminInvitePage: React.FC = () => {
                 <p className="mt-2">Redirecting to login page...</p>
               </div>
             ) : invitation ? (
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label className="form-label" htmlFor="email">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    className="form-input bg-gray-100"
-                    value={invitation.email}
-                    readOnly
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="form-label" htmlFor="password">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    className="form-input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                  />
-                </div>
-                
-                <div className="mb-6">
-                  <label className="form-label" htmlFor="confirm-password">
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirm-password"
-                    type="password"
-                    className="form-input"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <button
-                  type="submit"
-                  className="btn btn-primary w-full"
-                  disabled={validating}
-                >
-                  {validating ? 'Creating Account...' : 'Create Admin Account'}
-                </button>
-              </form>
+              <>
+                {isLocalInvitation && (
+                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                    <p>This is a locally stored invitation. Your admin account will still be created correctly.</p>
+                  </div>
+                )}
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-4">
+                    <label className="form-label" htmlFor="email">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      className="form-input bg-gray-100"
+                      value={invitation.email}
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="form-label" htmlFor="password">
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      className="form-input"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label className="form-label" htmlFor="confirm-password">
+                      Confirm Password
+                    </label>
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      className="form-input"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-full"
+                    disabled={validating}
+                  >
+                    {validating ? 'Creating Account...' : 'Create Admin Account'}
+                  </button>
+                </form>
+              </>
             ) : (
               <div className="text-center text-red-600">
                 Invalid or expired invitation link

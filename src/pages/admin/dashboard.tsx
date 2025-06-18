@@ -14,6 +14,16 @@ interface ProjectSummary {
   completion_percentage: number;
 }
 
+// Store invitations in localStorage as a fallback
+const LOCAL_STORAGE_KEY = 'admin_invitations';
+
+interface LocalInvitation {
+  email: string;
+  token: string;
+  created_at: string;
+  expires_at: string;
+}
+
 const AdminDashboard: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -21,7 +31,7 @@ const AdminDashboard: React.FC = () => {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [inviteLink, setInviteLink] = useState('');
-  const [message, setMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+  const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
   const [activeTab, setActiveTab] = useState('projects');
 
   useEffect(() => {
@@ -97,39 +107,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const createAdminInvitationsTable = async () => {
-    try {
-      // Create the admin_invitations table if it doesn't exist
-      try {
-        await supabase.rpc('create_admin_invitations_table');
-      } catch (e) {
-        console.error('Error creating table via RPC:', e);
-      }
-      
-      // Try a simple query to see if the table exists now
-      const { count, error } = await supabase
-        .from('admin_invitations')
-        .select('*', { count: 'exact', head: true });
-      
-      if (!error) {
-        // Table exists and is accessible
-        return true;
-      }
-      
-      // If we still get an error, the table doesn't exist
-      if (error.code === '42P01') {
-        console.error('Table still does not exist after RPC call');
-        return false;
-      }
-      
-      // Some other error occurred, but the table might exist
-      return true;
-    } catch (err) {
-      console.error('Error creating admin_invitations table:', err);
-      return false;
-    }
-  };
-
   const generateAdminInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -144,7 +121,7 @@ const AdminDashboard: React.FC = () => {
       const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
       // Try to store the invitation in the database
-      let { error } = await supabase
+      const { error } = await supabase
         .from('admin_invitations')
         .insert([{ 
           email: newAdminEmail, 
@@ -153,49 +130,52 @@ const AdminDashboard: React.FC = () => {
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
         }]);
       
-      // If the table doesn't exist, try to create it
-      if (error && error.code === '42P01') {
-        setMessage({ text: 'Setting up admin invitations...', type: 'success' });
-        
-        // Create the admin_invitations table
-        const tableCreated = await createAdminInvitationsTable();
-        
-        if (tableCreated) {
-          // Try the insert again
-          const result = await supabase
-            .from('admin_invitations')
-            .insert([{ 
-              email: newAdminEmail, 
-              token: token,
-              status: 'pending',
-              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days expiry
-            }]);
-          
-          error = result.error;
-        } else {
-          setMessage({ 
-            text: 'Could not set up admin invitations. Please contact support.', 
-            type: 'error' 
-          });
-          return;
-        }
-      }
-      
-      if (error) {
-        if (error.code === '23505') { // Unique constraint violation
-          setMessage({ text: 'An invitation for this email already exists', type: 'error' });
-        } else {
-          throw error;
-        }
-        return;
-      }
-      
       // Generate the invite link
       const baseUrl = window.location.origin;
       const link = `${baseUrl}/admin/invite?token=${token}&email=${encodeURIComponent(newAdminEmail)}`;
       
+      // If there's an error with the database, store in localStorage as fallback
+      if (error) {
+        if (error.code === '42P01') { // Table doesn't exist
+          // Store in localStorage
+          const invitation: LocalInvitation = {
+            email: newAdminEmail,
+            token: token,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          };
+          
+          // Get existing invitations
+          const existingInvitations = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+          
+          // Check if email already exists
+          if (existingInvitations.some((inv: LocalInvitation) => inv.email === newAdminEmail)) {
+            setMessage({ text: 'An invitation for this email already exists', type: 'error' });
+            return;
+          }
+          
+          // Add new invitation
+          existingInvitations.push(invitation);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(existingInvitations));
+          
+          setInviteLink(link);
+          setMessage({ 
+            text: 'Admin invitation created locally. Database setup is incomplete.', 
+            type: 'warning' 
+          });
+          setNewEmail('');
+          return;
+        } else if (error.code === '23505') { // Unique constraint violation
+          setMessage({ text: 'An invitation for this email already exists', type: 'error' });
+          return;
+        } else {
+          throw error;
+        }
+      }
+      
       setInviteLink(link);
       setMessage({ text: 'Admin invitation created successfully', type: 'success' });
+      setNewAdminEmail('');
     } catch (err: any) {
       console.error('Error creating admin invitation:', err);
       setMessage({ text: err.message || 'Failed to create invitation', type: 'error' });
@@ -365,7 +345,11 @@ const AdminDashboard: React.FC = () => {
                 <h2 className="text-lg font-medium mb-4">Invite New Admin</h2>
                 
                 {message && (
-                  <div className={`p-4 mb-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className={`p-4 mb-4 rounded ${
+                    message.type === 'success' ? 'bg-green-100 text-green-700' : 
+                    message.type === 'warning' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
                     {message.text}
                   </div>
                 )}

@@ -25,28 +25,6 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     loadProjectData();
   }, [projectId]);
 
-  const createProjectOwnersTable = async () => {
-    try {
-      // Try to create the table via RPC
-      try {
-        await supabase.rpc('create_project_owners_table');
-        return true;
-      } catch (e) {
-        console.error('Error creating table via RPC:', e);
-      }
-      
-      // Check if the table exists now
-      const { count, error } = await supabase
-        .from('project_owners')
-        .select('*', { count: 'exact', head: true });
-      
-      return !error || error.code !== '42P01';
-    } catch (err) {
-      console.error('Error creating project_owners table:', err);
-      return false;
-    }
-  };
-
   const loadProjectData = async () => {
     try {
       setLoading(true);
@@ -78,17 +56,22 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       
       // Try to get additional owners from the database
       try {
-        // Ensure the table exists
-        await createProjectOwnersTable();
-        
-        const { data: additionalOwners, error } = await supabase
+        // First check if the table exists
+        const { data: tableCheck, error: tableError } = await supabase
           .from('project_owners')
-          .select('*')
-          .eq('project_id', projectId);
-          
-        if (!error && additionalOwners && additionalOwners.length > 0) {
-          // Add additional owners to the list
-          ownersList.push(...additionalOwners);
+          .select('count', { count: 'exact', head: true });
+        
+        // If the table exists, get the owners
+        if (!tableError) {
+          const { data: additionalOwners, error } = await supabase
+            .from('project_owners')
+            .select('*')
+            .eq('project_id', projectId);
+            
+          if (!error && additionalOwners && additionalOwners.length > 0) {
+            // Add additional owners to the list
+            ownersList.push(...additionalOwners);
+          }
         }
       } catch (err) {
         console.log('No additional owners found or table does not exist yet');
@@ -121,14 +104,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
-      // Ensure the table exists
-      const tableExists = await createProjectOwnersTable();
-      if (!tableExists) {
-        setMessage({ text: 'Could not set up project owners. Please contact support.', type: 'error' });
-        return;
-      }
-      
-      // Add the new owner
+      // Try to add the owner directly
       const { data, error } = await supabase
         .from('project_owners')
         .insert({
@@ -139,6 +115,23 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         .select();
       
       if (error) {
+        if (error.code === '42P01') { // Table doesn't exist
+          // Add the owner to the local state only
+          const newOwner = {
+            id: `temp-${Date.now()}`,
+            email: newEmail.trim(),
+            status: 'pending',
+            created_at: new Date().toISOString()
+          };
+          
+          setOwners(prev => [...prev, newOwner]);
+          setMessage({ 
+            text: 'Owner added locally. Database setup is incomplete. Please contact support.', 
+            type: 'warning' 
+          });
+          setNewEmail('');
+          return;
+        }
         throw error;
       }
       
@@ -167,6 +160,15 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       setRemovingOwnerId(ownerId);
       setMessage(null);
       
+      // Check if this is a temporary owner (added locally)
+      if (ownerId.startsWith('temp-')) {
+        // Just remove from local state
+        setOwners(prev => prev.filter(owner => owner.id !== ownerId));
+        setMessage({ text: 'Project owner removed successfully', type: 'success' });
+        return;
+      }
+      
+      // Try to remove from database
       const { error } = await supabase
         .from('project_owners')
         .delete()
@@ -205,7 +207,11 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       <h2 className="text-lg font-medium mb-4">Project Owners</h2>
       
       {message && (
-        <div className={`p-4 mb-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+        <div className={`p-4 mb-4 rounded ${
+          message.type === 'success' ? 'bg-green-100 text-green-700' : 
+          message.type === 'warning' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-red-100 text-red-700'
+        }`}>
           {message.text}
         </div>
       )}
