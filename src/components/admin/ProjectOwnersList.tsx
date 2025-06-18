@@ -19,7 +19,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const [newEmail, setNewEmail] = useState('');
   const [addingOwner, setAddingOwner] = useState(false);
   const [removingOwnerId, setRemovingOwnerId] = useState<string | null>(null);
-  const [message, setMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+  const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
 
   useEffect(() => {
     loadProjectData();
