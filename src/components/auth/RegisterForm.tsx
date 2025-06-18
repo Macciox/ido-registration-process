@@ -48,7 +48,36 @@ const RegisterForm: React.FC = () => {
         return;
       }
 
-      // If email is whitelisted, proceed with registration
+      // Check if the user already exists
+      const { data: existingUser, error: userError } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'dummy-password-for-check' // We're just checking if the user exists
+      });
+
+      // If the user exists (no error about invalid credentials)
+      if (!userError || userError.message.includes('Email not confirmed')) {
+        // User exists but email not confirmed, resend confirmation email
+        if (userError && userError.message.includes('Email not confirmed')) {
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email
+          });
+
+          if (resendError) {
+            throw resendError;
+          }
+
+          setMessage('A confirmation email has been resent. Please check your inbox.');
+        } else {
+          // User exists and email is confirmed
+          setError('This email is already registered. Please login instead.');
+        }
+        
+        setLoading(false);
+        return;
+      }
+
+      // If we get here, the user doesn't exist, proceed with registration
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
