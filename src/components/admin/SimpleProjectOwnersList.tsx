@@ -73,20 +73,8 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     }
     
     try {
-      // First, try to create the table if it doesn't exist
-      try {
-        await supabase.query(`
-          CREATE TABLE IF NOT EXISTS project_owners (
-            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-            email TEXT NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMPTZ DEFAULT NOW()
-          )
-        `);
-      } catch (err) {
-        console.log('Table might already exist or no permission to create');
-      }
+      // We can't create tables from the frontend, so we'll just try to use it
+      // If the table doesn't exist, we'll handle the error later
       
       // Add the owner
       const { error } = await supabase
