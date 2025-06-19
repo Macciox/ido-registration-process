@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
 import AdminWhitelistSection from '@/components/admin/AdminWhitelistSection';
+import { useVerifyAdminWhitelist } from '@/hooks/useVerifyAdminWhitelist';
 
 interface ProjectSummary {
   id: string;
@@ -17,6 +18,7 @@ interface ProjectSummary {
 const AdminDashboard: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  useVerifyAdminWhitelist(user?.email);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);

@@ -53,24 +53,13 @@ const AdminWhitelistSection: React.FC = () => {
       return;
     }
     try {
-      // First check if the email exists in profiles
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', newEmail.trim())
-        .maybeSingle();
-      
-      // Determine the initial status
-      const initialStatus = existingProfile ? 'verified' : 'pending';
-      
-      // Add to whitelist with appropriate status
+      // Always add to whitelist with status 'pending'
       const { error } = await supabase
         .from('admin_whitelist')
         .insert({ 
           email: newEmail.trim(),
-          status: initialStatus
+          status: 'pending'
         });
-        
       if (error) throw error;
       setMessage('Admin email added to whitelist');
       setNewEmail('');
