@@ -14,6 +14,7 @@ const AdminWhitelistSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadWhitelist();
@@ -28,7 +29,10 @@ const AdminWhitelistSection: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: true });
       if (error) throw error;
+      
+      console.log('Loaded whitelist:', data);
       setWhitelist(data || []);
+      
       // Verifica per ogni email se è registrata
       if (data && data.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
@@ -47,6 +51,7 @@ const AdminWhitelistSection: React.FC = () => {
         setVerifiedAdmins({});
       }
     } catch (err: any) {
+      console.error('Error loading whitelist:', err);
       setError(err.message || 'Failed to load admin whitelist');
     } finally {
       setLoading(false);
@@ -74,6 +79,7 @@ const AdminWhitelistSection: React.FC = () => {
       setNewEmail('');
       loadWhitelist();
     } catch (err: any) {
+      console.error('Error adding email:', err);
       setError(err.message || 'Failed to add email to whitelist');
     }
   };
@@ -81,16 +87,41 @@ const AdminWhitelistSection: React.FC = () => {
   const removeEmail = async (id: string) => {
     setError(null);
     setMessage(null);
+    setRemovingId(id);
+    
     try {
-      const { error } = await supabase
+      console.log('Removing email with ID:', id);
+      
+      // Get the entry before deleting it (for logging)
+      const { data: entryToRemove } = await supabase
+        .from('admin_whitelist')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      console.log('Entry to remove:', entryToRemove);
+      
+      // Delete the entry
+      const { error, count } = await supabase
         .from('admin_whitelist')
         .delete()
         .eq('id', id);
+      
+      console.log('Delete result:', { error, count });
+      
       if (error) throw error;
+      
+      // Update local state immediately
+      setWhitelist(prev => prev.filter(entry => entry.id !== id));
       setMessage('Admin email removed from whitelist');
+      
+      // Reload the list to confirm changes
       loadWhitelist();
     } catch (err: any) {
+      console.error('Error removing email:', err);
       setError(err.message || 'Failed to remove email from whitelist');
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -124,8 +155,9 @@ const AdminWhitelistSection: React.FC = () => {
                 <button
                   onClick={() => removeEmail(entry.id)}
                   className="px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                  disabled={removingId === entry.id}
                 >
-                  Remove
+                  {removingId === entry.id ? 'Removing...' : 'Remove'}
                 </button>
               </li>
             ))}
