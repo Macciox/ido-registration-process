@@ -18,7 +18,7 @@ interface ProjectSummary {
 const AdminDashboard: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  useVerifyAdminWhitelist(user);
+  useVerifyAdminWhitelist(user || undefined);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
