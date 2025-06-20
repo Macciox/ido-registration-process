@@ -83,13 +83,18 @@ const RegisterForm: React.FC = () => {
       expiresAt.setMinutes(expiresAt.getMinutes() + 30);
       
       // Save the code to the database
-      await supabase
+      const { error: insertError } = await supabase
         .from('verification_codes')
         .insert({
           email: email,
           code: code,
           expires_at: expiresAt.toISOString()
         });
+        
+      if (insertError) {
+        console.error('Error inserting verification code:', insertError);
+        throw new Error('Failed to generate verification code');
+      }
       
       // Update the status in the whitelist
       if (adminWhitelist) {
@@ -107,11 +112,13 @@ const RegisterForm: React.FC = () => {
       }
 
       // Send verification email
-      await sendVerificationEmail(email, code);
+      const emailSent = await sendVerificationEmail(email, code);
+      
+      if (!emailSent) {
+        throw new Error('Failed to send verification email');
+      }
 
-      // For testing purposes, show the code in the UI
-      console.log(`Verification code for ${email}: ${code}`);
-      setMessage(`Registration successful! A verification code has been sent to ${email}. (For testing: ${code})`);
+      setMessage('Registration successful! Please check your email for verification code.');
       
       // Redirect to verification page after a delay
       setTimeout(() => {
