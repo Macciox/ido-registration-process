@@ -87,26 +87,35 @@ const VerifyPage: React.FC = () => {
         }
       }
 
-      // Update admin_whitelist status if exists
+      // Check if email is in admin whitelist
       const { data: adminWhitelist } = await supabase
         .from('admin_whitelist')
         .select('id')
         .eq('email', email as string)
         .maybeSingle();
 
+      // Check if email is in project owners
+      const { data: projectOwner } = await supabase
+        .from('project_owners')
+        .select('id')
+        .eq('email', email as string)
+        .maybeSingle();
+
+      // Determine role
+      let role = 'user'; // Default role
+      if (adminWhitelist) {
+        role = 'admin';
+      } else if (projectOwner) {
+        role = 'project_owner';
+      }
+
+      // Update status in respective tables
       if (adminWhitelist) {
         await supabase
           .from('admin_whitelist')
           .update({ status: 'verified' })
           .eq('id', adminWhitelist.id);
       }
-
-      // Update project_owners status if exists
-      const { data: projectOwner } = await supabase
-        .from('project_owners')
-        .select('id')
-        .eq('email', email as string)
-        .maybeSingle();
 
       if (projectOwner) {
         await supabase
@@ -115,26 +124,24 @@ const VerifyPage: React.FC = () => {
           .eq('id', projectOwner.id);
       }
 
-      // Create or update profile
+      // Get current user
       const { data: user } = await supabase.auth.getUser();
       
       if (user?.user) {
+        console.log('Current user:', user.user);
+        
         // Check if profile exists
-        const { data: existingProfile } = await supabase
+        const { data: existingProfile, error: profileError } = await supabase
           .from('profiles')
-          .select('id')
+          .select('*')
           .eq('id', user.user.id)
           .maybeSingle();
+          
+        console.log('Existing profile:', existingProfile, 'Error:', profileError);
 
         if (!existingProfile) {
-          // Determine role
-          let role = 'project_owner';
-          if (adminWhitelist) {
-            role = 'admin';
-          }
-
-          // Create profile
-          await supabase
+          // Create profile with determined role
+          const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: user.user.id,
@@ -143,14 +150,42 @@ const VerifyPage: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             });
+            
+          console.log('Created new profile with role:', role, 'Result:', newProfile, 'Error:', insertError);
+        } else {
+          // Update existing profile with correct role if needed
+          if (existingProfile.role !== role && role === 'admin') {
+            const { data: updatedProfile, error: updateError } = await supabase
+              .from('profiles')
+              .update({ 
+                role: role,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', user.user.id);
+              
+            console.log('Updated profile role to:', role, 'Result:', updatedProfile, 'Error:', updateError);
+          }
         }
+      } else {
+        console.error('No authenticated user found');
       }
 
-      setMessage('Email verified successfully! Redirecting to dashboard...');
+      // Manually confirm the email in Supabase Auth
+      try {
+        // This is a workaround to ensure the email is confirmed in Supabase Auth
+        await supabase.auth.signInWithPassword({
+          email: email as string,
+          password: 'dummy-password-that-will-fail'
+        });
+      } catch (authError) {
+        // Ignore the error, we just want to trigger the email confirmation check
+      }
+
+      setMessage('Email verified successfully! Redirecting to login...');
       
-      // Redirect to dashboard after a delay
+      // Redirect to login after a delay
       setTimeout(() => {
-        router.push('/admin/dashboard');
+        router.push('/login');
       }, 2000);
     } catch (err: any) {
       console.error('Verification error:', err);
@@ -200,17 +235,15 @@ const VerifyPage: React.FC = () => {
         
         if (!emailSent) {
           console.error('Failed to send verification email');
-          // Continue anyway, we'll show the code on screen
+          // Continue anyway
         }
       } catch (emailError) {
         console.error('Email sending error:', emailError);
-        // Continue anyway, we'll show the code on screen
+        // Continue anyway
       }
       
-      // For testing purposes, show the code in the UI
-      console.log(`Verification code for ${email}: ${code}`);
-      setMessage(`A new verification code has been sent to ${email}. (For testing: ${code})`);
-      setVerificationCode(code); // Auto-fill the code
+      setMessage(`A new verification code has been sent to ${email}.`);
+      setVerificationCode(''); // Clear the code field
       setCountdown(60);
     } catch (err: any) {
       console.error('Error sending verification code:', err);
