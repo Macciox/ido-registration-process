@@ -4,10 +4,12 @@ const nextConfig = {
   // Exclude Supabase Edge Functions from Next.js compilation
   webpack: (config, { isServer }) => {
     // Exclude Supabase Edge Functions from compilation
-    config.module.rules.push({
-      test: /supabase\/functions\/.+/,
-      loader: 'ignore-loader',
-    });
+    if (isServer) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [...(config.watchOptions?.ignored || []), '**/supabase/functions/**']
+      };
+    }
     return config;
   },
 }
