@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/lib/supabase';
+import { sendVerificationEmail } from '@/lib/emailService';
 
 const VerifyPage: React.FC = () => {
   const router = useRouter();
@@ -167,11 +168,10 @@ const VerifyPage: React.FC = () => {
         });
       
       // Send email with the code
-      // In a real implementation, you would use an email service here
-      // For now, we'll just log the code to the console
-      console.log(`Verification code for ${email}: ${code}`);
+      await sendVerificationEmail(email as string, code);
       
       // For testing purposes, show the code in the UI
+      console.log(`Verification code for ${email}: ${code}`);
       setMessage(`A new verification code has been sent to ${email}. (For testing: ${code})`);
       setCountdown(60);
     } catch (err: any) {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
+import { sendVerificationEmail } from '@/lib/emailService';
 
 const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -65,6 +66,9 @@ const RegisterForm: React.FC = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/verify?email=${encodeURIComponent(email)}`
+        }
       });
 
       if (error) {
@@ -101,6 +105,9 @@ const RegisterForm: React.FC = () => {
           .update({ status: 'pending_verification' })
           .eq('id', projectOwners.id);
       }
+
+      // Send verification email
+      await sendVerificationEmail(email, code);
 
       // For testing purposes, show the code in the UI
       console.log(`Verification code for ${email}: ${code}`);
