@@ -168,7 +168,11 @@ const VerifyPage: React.FC = () => {
         });
       
       // Send email with the code
-      await sendVerificationEmail(email as string, code);
+      const emailSent = await sendVerificationEmail(email as string, code);
+      
+      if (!emailSent) {
+        throw new Error('Failed to send verification email');
+      }
       
       // For testing purposes, show the code in the UI
       console.log(`Verification code for ${email}: ${code}`);
