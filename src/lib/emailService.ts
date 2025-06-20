@@ -9,8 +9,8 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     // Call the Supabase Edge Function with the exact parameters it expects
     const { data, error } = await supabase.functions.invoke('resend-email', {
       body: { 
-        email, // The function expects 'email', not 'to'
-        code   // The function expects 'code', not HTML content
+        email, 
+        code
       }
     });
     
