@@ -9,14 +9,12 @@ const RegisterForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [needsVerification, setNeedsVerification] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
-    setNeedsVerification(false);
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -50,43 +48,44 @@ const RegisterForm: React.FC = () => {
         return;
       }
 
-      // Check if the email is already in auth.users but not verified
-      try {
-        const { data: authUser, error: authError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false
-          }
-        });
+      // Check if the user already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
 
-        // If no error, it means the user exists but might not be verified
-        if (!authError && authUser) {
-          setNeedsVerification(true);
-          setLoading(false);
-          return;
-        }
-      } catch (authCheckErr) {
-        // Ignore errors here, we're just checking if the user exists
-        console.log('Auth check error:', authCheckErr);
+      if (existingProfile) {
+        setError('This email is already registered. Please login instead.');
+        setLoading(false);
+        return;
       }
 
-      // If we get here, proceed with registration
+      // Register the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) {
-        // If the error is about the user already existing
-        if (error.message.includes('already registered')) {
-          setNeedsVerification(true);
-          setLoading(false);
-          return;
-        }
         throw error;
       }
 
-      setMessage('Registration successful! Please check your email for verification.');
+      // Generate a 6-digit verification code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Set expiration time (30 minutes from now)
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+      
+      // Save the code to the database
+      await supabase
+        .from('verification_codes')
+        .insert({
+          email: email,
+          code: code,
+          expires_at: expiresAt.toISOString()
+        });
       
       // Update the status in the whitelist
       if (adminWhitelist) {
@@ -102,39 +101,18 @@ const RegisterForm: React.FC = () => {
           .update({ status: 'pending_verification' })
           .eq('id', projectOwners.id);
       }
+
+      // For testing purposes, show the code in the UI
+      console.log(`Verification code for ${email}: ${code}`);
+      setMessage(`Registration successful! A verification code has been sent to ${email}. (For testing: ${code})`);
       
-      // Redirect to login after a delay
+      // Redirect to verification page after a delay
       setTimeout(() => {
-        router.push('/login');
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
       }, 3000);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred during registration');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resendVerificationEmail = async () => {
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    
-    try {
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email
-      });
-
-      if (resendError) {
-        throw resendError;
-      }
-
-      setMessage('A confirmation email has been resent. Please check your inbox.');
-      setNeedsVerification(false);
-    } catch (err: any) {
-      console.error('Error resending verification email:', err);
-      setError(err.message || 'Failed to resend verification email');
     } finally {
       setLoading(false);
     }
@@ -156,90 +134,68 @@ const RegisterForm: React.FC = () => {
         </div>
       )}
 
-      {needsVerification ? (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-          <p className="font-bold">Email verification needed</p>
-          <p>This email has already been registered but not verified. Would you like to resend the verification email?</p>
-          <div className="mt-4 flex space-x-4">
-            <button
-              onClick={resendVerificationEmail}
-              className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              disabled={loading}
-            >
-              {loading ? 'Sending...' : 'Resend Verification Email'}
-            </button>
-            <button
-              onClick={() => router.push('/login')}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            >
-              Go to Login
-            </button>
-          </div>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirm-password">
-              Confirm Password
-            </label>
-            <input
-              id="confirm-password"
-              type="password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <button
-              type="submit"
-              className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-              disabled={loading}
-            >
-              {loading ? 'Registering...' : 'Register'}
-            </button>
-          </div>
-          
-          <div className="text-center mt-4">
-            <a
-              href="/login"
-              className="inline-block align-baseline font-bold text-sm text-primary hover:text-primary-dark"
-            >
-              Already have an account? Login
-            </a>
-          </div>
-        </form>
-      )}
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        
+        <div className="mb-6">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirm-password">
+            Confirm Password
+          </label>
+          <input
+            id="confirm-password"
+            type="password"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <button
+            type="submit"
+            className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+            disabled={loading}
+          >
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+        </div>
+        
+        <div className="text-center mt-4">
+          <a
+            href="/login"
+            className="inline-block align-baseline font-bold text-sm text-primary hover:text-primary-dark"
+          >
+            Already have an account? Login
+          </a>
+        </div>
+      </form>
     </div>
   );
 };
