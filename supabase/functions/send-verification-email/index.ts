@@ -42,7 +42,7 @@ serve(async (req) => {
     const { error } = await supabaseClient.auth.admin.sendEmail(email, {
       template: 'verification',
       data: {
-        code: code,
+        token: code, // Using token instead of code to match Supabase's template variable
         site_url: Deno.env.get('SITE_URL') || 'https://ido-registration-process.vercel.app',
         verification_url: `${Deno.env.get('SITE_URL') || 'https://ido-registration-process.vercel.app'}/verify?email=${encodeURIComponent(email)}`
       }
