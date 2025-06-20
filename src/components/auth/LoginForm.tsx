@@ -90,6 +90,17 @@ const LoginForm: React.FC = () => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             });
+            
+          // Reload profile after creation
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
+            
+          if (newProfile) {
+            profile = newProfile;
+          }
         }
       }
 
@@ -188,6 +199,14 @@ const LoginForm: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <div className="text-right mt-1">
+            <a
+              href="/reset-password"
+              className="text-sm text-primary hover:text-primary-dark"
+            >
+              Forgot password?
+            </a>
+          </div>
         </div>
         
         <div className="flex items-center justify-between">
