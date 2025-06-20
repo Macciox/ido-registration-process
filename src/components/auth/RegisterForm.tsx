@@ -34,13 +34,13 @@ const RegisterForm: React.FC = () => {
       // First check if email is in any whitelist
       const { data: adminWhitelist } = await supabase
         .from('admin_whitelist')
-        .select('id')
+        .select('id, status')
         .eq('email', email)
         .maybeSingle();
       
       const { data: projectOwners } = await supabase
         .from('project_owners')
-        .select('id')
+        .select('id, status')
         .eq('email', email)
         .maybeSingle();
       
@@ -50,42 +50,58 @@ const RegisterForm: React.FC = () => {
         return;
       }
 
-      // Check if the user already exists in auth.users
-      const { data: existingUsers, error: usersError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
+      // Check if the email is already in auth.users but not verified
+      try {
+        const { data: authUser, error: authError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false
+          }
+        });
 
-      if (existingUsers) {
-        setError('This email is already registered. Please login instead.');
-        setLoading(false);
-        return;
+        // If no error, it means the user exists but might not be verified
+        if (!authError && authUser) {
+          setNeedsVerification(true);
+          setLoading(false);
+          return;
+        }
+      } catch (authCheckErr) {
+        // Ignore errors here, we're just checking if the user exists
+        console.log('Auth check error:', authCheckErr);
       }
 
-      // Check if the user is in the process of verification
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'dummy-password-for-check'
-      });
-
-      if (signInError && signInError.message.includes('Email not confirmed')) {
-        setNeedsVerification(true);
-        setLoading(false);
-        return;
-      }
-
-      // If we get here, the user doesn't exist, proceed with registration
+      // If we get here, proceed with registration
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) {
+        // If the error is about the user already existing
+        if (error.message.includes('already registered')) {
+          setNeedsVerification(true);
+          setLoading(false);
+          return;
+        }
         throw error;
       }
 
       setMessage('Registration successful! Please check your email for verification.');
+      
+      // Update the status in the whitelist
+      if (adminWhitelist) {
+        await supabase
+          .from('admin_whitelist')
+          .update({ status: 'pending_verification' })
+          .eq('id', adminWhitelist.id);
+      }
+      
+      if (projectOwners) {
+        await supabase
+          .from('project_owners')
+          .update({ status: 'pending_verification' })
+          .eq('id', projectOwners.id);
+      }
       
       // Redirect to login after a delay
       setTimeout(() => {
