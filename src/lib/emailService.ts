@@ -1,7 +1,6 @@
 // Service to send verification emails using the Next.js API route
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
-    // Log the email for testing
     console.log(`Sending verification email to ${email} with code: ${code}`);
     
     // Call the Next.js API route
@@ -13,21 +12,14 @@ export async function sendVerificationEmail(email: string, code: string): Promis
       body: JSON.stringify({ email, code }),
     });
     
-    // Check if the response is ok, even if we can't parse it as JSON
+    const data = await response.json();
+    
     if (!response.ok) {
-      console.error('Error sending verification email:', response.statusText);
+      console.error('Error sending verification email:', data.error || response.statusText);
       return false;
     }
     
-    try {
-      const data = await response.json();
-      console.log('Email sent successfully:', data);
-    } catch (jsonError) {
-      // If we can't parse the response as JSON, but the status was OK,
-      // we still consider it a success
-      console.log('Email sent, but could not parse response as JSON');
-    }
-    
+    console.log('Email sent successfully:', data);
     return true;
   } catch (err) {
     console.error('Error in sendVerificationEmail:', err);
