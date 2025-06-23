@@ -61,27 +61,27 @@ const LoginForm: React.FC = () => {
         // Check if the user is in admin_whitelist or project_owners
         const { data: adminWhitelist } = await supabase
           .from('admin_whitelist')
-          .select('id')
+          .select('id, status')
           .eq('email', email)
           .maybeSingle();
           
         const { data: projectOwner } = await supabase
           .from('project_owners')
-          .select('id')
+          .select('id, status')
           .eq('email', email)
           .maybeSingle();
           
         // Determine role
         let role = 'user';
-        if (adminWhitelist) {
+        if (adminWhitelist && (adminWhitelist.status === 'verified' || adminWhitelist.status === 'pending_verification')) {
           role = 'admin';
-        } else if (projectOwner) {
+        } else if (projectOwner && (projectOwner.status === 'verified' || projectOwner.status === 'pending_verification')) {
           role = 'project_owner';
         }
         
         // Create profile if it doesn't exist
         if (data.user) {
-          await supabase
+          const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: data.user.id,
@@ -91,16 +91,17 @@ const LoginForm: React.FC = () => {
               updated_at: new Date().toISOString()
             });
             
-          // Reload profile after creation
-          const { data: newProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .maybeSingle();
-            
-          if (newProfile) {
-            profile = newProfile;
+          console.log('Created new profile with role:', role, 'Result:', newProfile, 'Error:', insertError);
+          
+          if (insertError) {
+            console.error('Failed to create profile:', insertError);
+            setError('Failed to create user profile. Please contact support.');
+            setLoading(false);
+            return;
           }
+          
+          // Set the profile for redirection
+          profile = { id: data.user.id, email: email, role: role };
         }
       }
 

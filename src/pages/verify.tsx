@@ -152,6 +152,29 @@ const VerifyPage: React.FC = () => {
             });
             
           console.log('Created new profile with role:', role, 'Result:', newProfile, 'Error:', insertError);
+          
+          if (insertError) {
+            console.error('Failed to create profile:', insertError);
+            
+            // Try to get user by email from auth.users
+            const { data: authUsers } = await supabase.auth.admin.listUsers();
+            const authUser = authUsers?.users.find(u => u.email === email);
+            
+            if (authUser) {
+              // Try again with the correct user ID
+              const { data: retryProfile, error: retryError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: authUser.id,
+                  email: email as string,
+                  role: role,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+                
+              console.log('Retry creating profile:', retryProfile, 'Error:', retryError);
+            }
+          }
         } else {
           // Update existing profile with correct role if needed
           if (existingProfile.role !== role && role === 'admin') {
@@ -168,17 +191,30 @@ const VerifyPage: React.FC = () => {
         }
       } else {
         console.error('No authenticated user found');
-      }
-
-      // Manually confirm the email in Supabase Auth
-      try {
-        // This is a workaround to ensure the email is confirmed in Supabase Auth
-        await supabase.auth.signInWithPassword({
-          email: email as string,
-          password: 'dummy-password-that-will-fail'
-        });
-      } catch (authError) {
-        // Ignore the error, we just want to trigger the email confirmation check
+        
+        // Try to find the user in auth.users by email
+        try {
+          // This is an admin-only API, so it might fail
+          const { data: authUsers } = await supabase.auth.admin.listUsers();
+          const authUser = authUsers?.users.find(u => u.email === email);
+          
+          if (authUser) {
+            // Create profile for this user
+            const { data: newProfile, error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authUser.id,
+                email: email as string,
+                role: role,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+              
+            console.log('Created profile for existing auth user:', newProfile, 'Error:', insertError);
+          }
+        } catch (adminError) {
+          console.error('Failed to access admin API:', adminError);
+        }
       }
 
       setMessage('Email verified successfully! Redirecting to login...');
