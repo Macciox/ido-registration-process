@@ -119,7 +119,16 @@ const RegisterForm: React.FC = () => {
       }
 
       // Send verification email
-      await sendVerificationEmail(email, code);
+      console.log('Sending verification email...');
+      const emailSent = await sendVerificationEmail(email, code);
+      console.log('Email sent result:', emailSent);
+      
+      if (!emailSent) {
+        console.error('Failed to send verification email');
+        setError('Failed to send verification email. Please try again.');
+        setLoading(false);
+        return;
+      }
       
       // Always show success message
       setMessage('Registration successful! Please check your email for verification code.');
