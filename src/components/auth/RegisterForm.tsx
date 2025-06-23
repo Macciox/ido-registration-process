@@ -110,7 +110,6 @@ const RegisterForm: React.FC = () => {
       } catch (dbError) {
         console.error('Database error:', dbError);
         // Continue with the process even if there's a database error
-        // We'll use the code directly without storing it
       }
       
       // Update the status in the whitelist
@@ -134,20 +133,19 @@ const RegisterForm: React.FC = () => {
         
         if (!emailSent) {
           console.error('Failed to send verification email');
-          // Continue anyway, we'll show the code on screen
         }
       } catch (emailError) {
         console.error('Email sending error:', emailError);
-        // Continue anyway, we'll show the code on screen
       }
 
-      // For testing purposes, show the code in the UI
+      // Log the code for debugging only
       console.log(`Verification code for ${email}: ${code}`);
-      setMessage(`Registration successful! Please check your email for verification code. (For testing: ${code})`);
+      
+      setMessage('Registration successful! Please check your email for verification code.');
       
       // Redirect to verification page after a delay
       setTimeout(() => {
-        router.push(`/verify?email=${encodeURIComponent(email)}&code=${code}`);
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
       }, 3000);
     } catch (err: any) {
       console.error('Registration error:', err);

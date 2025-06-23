@@ -8,15 +8,34 @@ const LoginForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    setDebugInfo(null);
     setLoading(true);
 
     try {
+      // Debug: Check if user exists in auth.users
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.log('Auth check error:', authError);
+      } else {
+        console.log('Current auth user:', authUser);
+      }
+
+      // Debug: Check if email exists in admin_whitelist
+      const { data: adminCheck } = await supabase
+        .from('admin_whitelist')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+      
+      console.log('Admin whitelist check:', adminCheck);
+
       // Try to sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -24,6 +43,8 @@ const LoginForm: React.FC = () => {
       });
 
       if (error) {
+        console.error('Sign in error:', error);
+        
         // Check if the error is about email not confirmed
         if (error.message.includes('Email not confirmed')) {
           // Offer to resend verification email
@@ -42,6 +63,59 @@ const LoginForm: React.FC = () => {
         if (userExists) {
           setError('Invalid password. Please try again.');
         } else {
+          // Debug: Check if user exists in auth.users
+          try {
+            const { data: authUsers } = await supabase.auth.admin.listUsers();
+            const matchingUser = authUsers?.users.find(u => u.email === email);
+            
+            if (matchingUser) {
+              setDebugInfo(`User exists in auth.users but not in profiles. User ID: ${matchingUser.id}`);
+              
+              // Try to create profile for this user
+              const { data: adminWhitelist } = await supabase
+                .from('admin_whitelist')
+                .select('id, status')
+                .eq('email', email)
+                .maybeSingle();
+                
+              const { data: projectOwner } = await supabase
+                .from('project_owners')
+                .select('id, status')
+                .eq('email', email)
+                .maybeSingle();
+                
+              // Determine role
+              let role = 'user';
+              if (adminWhitelist && (adminWhitelist.status === 'verified' || adminWhitelist.status === 'pending_verification')) {
+                role = 'admin';
+              } else if (projectOwner && (projectOwner.status === 'verified' || projectOwner.status === 'pending_verification')) {
+                role = 'project_owner';
+              }
+              
+              // Create profile
+              const { data: newProfile, error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: matchingUser.id,
+                  email: email,
+                  role: role,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+                
+              if (insertError) {
+                setDebugInfo(`${debugInfo}\nFailed to create profile: ${insertError.message}`);
+              } else {
+                setDebugInfo(`${debugInfo}\nProfile created successfully. Please try logging in again.`);
+              }
+            } else {
+              setDebugInfo('User does not exist in auth.users');
+            }
+          } catch (adminError) {
+            console.error('Admin API error:', adminError);
+            setDebugInfo('Failed to check auth.users (admin API access required)');
+          }
+          
           setError(error.message || 'Invalid login credentials');
         }
         setLoading(false);
@@ -171,6 +245,13 @@ const LoginForm: React.FC = () => {
       {message && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
           {message}
+        </div>
+      )}
+      
+      {debugInfo && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+          <p className="font-bold">Debug Info:</p>
+          <pre className="whitespace-pre-wrap text-xs">{debugInfo}</pre>
         </div>
       )}
       
