@@ -103,12 +103,15 @@ const RegisterForm: React.FC = () => {
           .eq('id', projectOwners.id);
       }
 
-      // Register the user
+      // Register the user (disable automatic email confirmation)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/verify?email=${encodeURIComponent(email)}`
+          emailRedirectTo: undefined, // Disable automatic email
+          data: {
+            email_confirm: false // Explicitly disable email confirmation
+          }
         }
       });
 
