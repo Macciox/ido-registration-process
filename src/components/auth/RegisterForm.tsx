@@ -127,21 +127,21 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Try to send verification email
+      // Send verification email
       try {
         await sendVerificationEmail(email, code);
+        
+        // Always show success message and redirect
+        setMessage('Registration successful! Please check your email for verification code.');
+        
+        // Redirect to verification page after a delay
+        setTimeout(() => {
+          router.push(`/verify?email=${encodeURIComponent(email)}`);
+        }, 3000);
       } catch (emailError) {
         console.error('Email sending error:', emailError);
-        // Continue anyway, don't show error to user
+        setError('Failed to send verification email. Please try again.');
       }
-      
-      // Always show success message
-      setMessage('Registration successful! Please check your email for verification code.');
-      
-      // Redirect to verification page after a delay
-      setTimeout(() => {
-        router.push(`/verify?email=${encodeURIComponent(email)}`);
-      }, 3000);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred during registration');

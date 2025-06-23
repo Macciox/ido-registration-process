@@ -17,7 +17,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'registration@decubateido.com',
+      from: 'IDO Registration <registration@decubateido.com>',
       to: [email],
       subject: 'Verify your email for Decubate IDO',
       react: EmailTemplate({ code }),
@@ -29,8 +29,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     return res.status(200).json(data);
-  } catch (error) {
-    console.error('Error sending email:', error);
+  } catch (err) {
+    console.error('Error sending email:', err);
     return res.status(500).json({ error: 'Failed to send email' });
   }
 };
