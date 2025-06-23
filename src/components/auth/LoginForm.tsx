@@ -49,13 +49,15 @@ const LoginForm: React.FC = () => {
       }
 
       // Check if the user has a profile
-      const { data: profile, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user?.id)
         .maybeSingle();
 
-      if (profileError || !profile) {
+      let userRole = 'user';
+
+      if (profileError || !profileData) {
         console.error('Profile error:', profileError);
         
         // Check if the user is in admin_whitelist or project_owners
@@ -72,11 +74,10 @@ const LoginForm: React.FC = () => {
           .maybeSingle();
           
         // Determine role
-        let role = 'user';
         if (adminWhitelist && (adminWhitelist.status === 'verified' || adminWhitelist.status === 'pending_verification')) {
-          role = 'admin';
+          userRole = 'admin';
         } else if (projectOwner && (projectOwner.status === 'verified' || projectOwner.status === 'pending_verification')) {
-          role = 'project_owner';
+          userRole = 'project_owner';
         }
         
         // Create profile if it doesn't exist
@@ -86,12 +87,12 @@ const LoginForm: React.FC = () => {
             .insert({
               id: data.user.id,
               email: email,
-              role: role,
+              role: userRole,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             });
             
-          console.log('Created new profile with role:', role, 'Result:', newProfile, 'Error:', insertError);
+          console.log('Created new profile with role:', userRole, 'Result:', newProfile, 'Error:', insertError);
           
           if (insertError) {
             console.error('Failed to create profile:', insertError);
@@ -99,14 +100,14 @@ const LoginForm: React.FC = () => {
             setLoading(false);
             return;
           }
-          
-          // Set the profile for redirection
-          profile = { id: data.user.id, email: email, role: role };
         }
+      } else {
+        // Use the role from the existing profile
+        userRole = profileData.role;
       }
 
       // Redirect based on user role
-      if (profile?.role === 'admin') {
+      if (userRole === 'admin') {
         router.push('/admin/dashboard');
       } else {
         router.push('/dashboard');
