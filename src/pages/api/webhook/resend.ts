@@ -1,5 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
+import crypto from 'crypto';
+
+// Resend webhook signing secret
+const RESEND_WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET || 'whsec_3Ez2oVwsSJ7sz1L31GMIijCYJ+V998v1';
+
+// Verify the webhook signature
+function verifySignature(payload: string, signature: string): boolean {
+  if (!RESEND_WEBHOOK_SECRET) {
+    console.warn('RESEND_WEBHOOK_SECRET is not set, skipping signature verification');
+    return true;
+  }
+
+  try {
+    const hmac = crypto.createHmac('sha256', RESEND_WEBHOOK_SECRET);
+    const digest = hmac.update(payload).digest('hex');
+    return crypto.timingSafeEqual(
+      Buffer.from(digest),
+      Buffer.from(signature)
+    );
+  } catch (error) {
+    console.error('Error verifying signature:', error);
+    return false;
+  }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow POST requests
@@ -8,6 +32,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Get the raw body and signature
+    const rawBody = JSON.stringify(req.body);
+    const signature = req.headers['resend-signature'] as string;
+
+    // Verify the signature
+    if (signature && !verifySignature(rawBody, signature)) {
+      console.error('Invalid webhook signature');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
     // Get the webhook payload
     const payload = req.body;
     
@@ -36,6 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
         if (error) {
           console.error('Error updating verification code:', error);
+        } else {
+          console.log(`Updated email_sent status for ${email}`);
         }
       }
     }
