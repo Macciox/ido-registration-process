@@ -38,7 +38,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     // Update the user to confirm their email
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
-      { email_confirmed: true }
+      { email_confirm: true } // Corrected from email_confirmed to email_confirm
     );
 
     if (updateError) {
