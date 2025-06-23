@@ -1,9 +1,4 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +6,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -26,31 +20,42 @@ serve(async (req) => {
       )
     }
 
-    // Create a Supabase client with the Auth context of the logged in user
-    const supabaseClient = createClient(
-      // Supabase API URL - env var exported by default.
-      Deno.env.get('SUPABASE_URL') ?? '',
-      // Supabase API ANON KEY - env var exported by default.
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      // Create client with Auth context of the user that called the function.
-      // This way your row-level-security (RLS) policies are applied.
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    if (!RESEND_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'RESEND_API_KEY not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
 
-    // Send email using Supabase's built-in email functionality
-    // In a real implementation, you would use a proper email service
-    const { error } = await supabaseClient.auth.admin.sendEmail(email, {
-      template: 'verification',
-      data: {
-        token: code, // Using token instead of code to match Supabase's template variable
-        site_url: Deno.env.get('SITE_URL') || 'https://ido-registration-process.vercel.app',
-        verification_url: `${Deno.env.get('SITE_URL') || 'https://ido-registration-process.vercel.app'}/verify?email=${encodeURIComponent(email)}`
-      }
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'IDO Platform <noreply@decubateido.com>',
+        to: [email],
+        subject: 'Verify your email address',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Verify your email address</h2>
+            <p>Thank you for registering with IDO Platform. Please use the verification code below to complete your registration:</p>
+            <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
+              <h1 style="color: #333; font-size: 32px; margin: 0;">${code}</h1>
+            </div>
+            <p>This code will expire in 30 minutes.</p>
+            <p>If you didn't request this verification, please ignore this email.</p>
+          </div>
+        `,
+      }),
     })
 
-    if (error) {
+    if (!res.ok) {
+      const error = await res.text()
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: `Failed to send email: ${error}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
