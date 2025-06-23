@@ -6,12 +6,49 @@ import { sendVerificationEmail } from '@/lib/emailService';
 
 const VerifyPage: React.FC = () => {
   const router = useRouter();
-  const { email, code: initialCode } = router.query;
+  const { email, code: initialCode, type, token } = router.query;
   const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
+
+  // Check if this is a direct link from Supabase Auth
+  useEffect(() => {
+    const verifySupabaseToken = async () => {
+      if (type === 'signup' && token && email) {
+        setLoading(true);
+        try {
+          // Verify the token with Supabase Auth
+          const { error } = await supabase.auth.verifyOtp({
+            token: token as string,
+            type: 'signup',
+            email: email as string,
+          });
+
+          if (error) {
+            setError(`Failed to verify email: ${error.message}`);
+          } else {
+            // Update admin_whitelist or project_owners status
+            await updateWhitelistStatus(email as string);
+            setMessage('Email verified successfully! Redirecting to login...');
+            
+            // Redirect to login after a delay
+            setTimeout(() => {
+              router.push('/login');
+            }, 2000);
+          }
+        } catch (err: any) {
+          console.error('Token verification error:', err);
+          setError(err.message || 'An error occurred during verification');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    verifySupabaseToken();
+  }, [type, token, email, router]);
 
   useEffect(() => {
     // Set initial code from URL if available
@@ -32,6 +69,40 @@ const VerifyPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
+
+  // Helper function to update whitelist status
+  const updateWhitelistStatus = async (userEmail: string) => {
+    // Check if email is in admin whitelist
+    const { data: adminWhitelist } = await supabase
+      .from('admin_whitelist')
+      .select('id')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    // Check if email is in project owners
+    const { data: projectOwner } = await supabase
+      .from('project_owners')
+      .select('id')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    // Update status in respective tables
+    if (adminWhitelist) {
+      await supabase
+        .from('admin_whitelist')
+        .update({ status: 'verified' })
+        .eq('id', adminWhitelist.id);
+    }
+
+    if (projectOwner) {
+      await supabase
+        .from('project_owners')
+        .update({ status: 'verified', verified_at: new Date().toISOString() })
+        .eq('id', projectOwner.id);
+    }
+
+    // The trigger will automatically create the profile
+  };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,96 +158,30 @@ const VerifyPage: React.FC = () => {
         }
       }
 
-      // Get current user
-      const { data: user } = await supabase.auth.getUser();
-      let userId = user?.user?.id;
-      
-      // If no authenticated user, try to find the user by email
-      if (!userId) {
-        try {
-          // This might fail if the client doesn't have admin access
-          const { data: authUsers } = await supabase.auth.admin.listUsers();
-          const authUser = authUsers?.users.find(u => u.email === email);
-          if (authUser) {
-            userId = authUser.id;
-          }
-        } catch (adminError) {
-          console.error('Failed to access admin API:', adminError);
+      // IMPORTANT: Verify the email with Supabase Auth
+      // This is what was missing before
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email: email as string,
+        token: verificationCode,
+        type: 'email',
+      });
+
+      if (otpError) {
+        // Try with signup type
+        const { error: signupError } = await supabase.auth.verifyOtp({
+          email: email as string,
+          token: verificationCode,
+          type: 'signup',
+        });
+
+        if (signupError) {
+          console.error('Failed to verify email with Supabase Auth:', signupError);
+          // Continue anyway, we'll update our custom tables
         }
       }
 
-      // Check if email is in admin whitelist
-      const { data: adminWhitelist } = await supabase
-        .from('admin_whitelist')
-        .select('id')
-        .eq('email', email as string)
-        .maybeSingle();
-
-      // Check if email is in project owners
-      const { data: projectOwner } = await supabase
-        .from('project_owners')
-        .select('id')
-        .eq('email', email as string)
-        .maybeSingle();
-
-      // Determine role
-      let role = 'user'; // Default role
-      if (adminWhitelist) {
-        role = 'admin';
-      } else if (projectOwner) {
-        role = 'project_owner';
-      }
-
-      // Update status in respective tables
-      if (adminWhitelist) {
-        await supabase
-          .from('admin_whitelist')
-          .update({ status: 'verified' })
-          .eq('id', adminWhitelist.id);
-      }
-
-      if (projectOwner) {
-        await supabase
-          .from('project_owners')
-          .update({ status: 'verified', verified_at: new Date().toISOString() })
-          .eq('id', projectOwner.id);
-      }
-
-      // Create profile if we have a user ID
-      if (userId) {
-        // Check if profile exists
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (!existingProfile) {
-          // Create profile with determined role
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: userId,
-              email: email as string,
-              role: role,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
-            
-          if (insertError) {
-            console.error('Failed to create profile:', insertError);
-          }
-        } else if (existingProfile.role !== role && role === 'admin') {
-          // Update existing profile to admin role if needed
-          await supabase
-            .from('profiles')
-            .update({ 
-              role: role,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-        }
-      }
+      // Update whitelist status
+      await updateWhitelistStatus(email as string);
 
       setMessage('Email verified successfully! Redirecting to login...');
       
@@ -249,6 +254,18 @@ const VerifyPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // If we're processing a token, show a loading message
+  if (type === 'signup' && token && loading) {
+    return (
+      <Layout>
+        <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+          <h1 className="text-2xl font-bold text-center mb-6">Verifying Email</h1>
+          <p className="text-center">Please wait while we verify your email...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
