@@ -104,28 +104,25 @@ const VerifyPage: React.FC = () => {
     // The trigger will automatically create the profile
   };
 
-  // Force confirm email in Supabase Auth
-  const forceConfirmEmail = async (userEmail: string) => {
+  // Confirm email in Supabase Auth
+  const confirmEmail = async (userEmail: string) => {
     try {
-      // This is a workaround to force confirm the email
-      // First, get the user ID
-      const { data: authUsers } = await supabase.auth.admin.listUsers();
-      const user = authUsers?.users.find(u => u.email === userEmail);
+      const response = await fetch('/api/confirm-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: userEmail }),
+      });
       
-      if (user) {
-        // Use admin API to update user
-        const { error } = await supabase.auth.admin.updateUserById(
-          user.id,
-          { email_confirm: true }
-        );
-        
-        if (error) {
-          console.error('Failed to confirm email:', error);
-          return false;
-        }
-        return true;
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to confirm email:', data.error);
+        return false;
       }
-      return false;
+      
+      return true;
     } catch (err) {
       console.error('Error confirming email:', err);
       return false;
@@ -186,42 +183,11 @@ const VerifyPage: React.FC = () => {
         }
       }
 
-      // Try multiple methods to verify the email with Supabase Auth
-      let verified = false;
-      
-      // Method 1: Use verifyOtp
-      try {
-        const { error: otpError } = await supabase.auth.verifyOtp({
-          email: email as string,
-          token: verificationCode,
-          type: 'email',
-        });
-
-        if (!otpError) {
-          verified = true;
-        } else {
-          // Try with signup type
-          const { error: signupError } = await supabase.auth.verifyOtp({
-            email: email as string,
-            token: verificationCode,
-            type: 'signup',
-          });
-
-          if (!signupError) {
-            verified = true;
-          }
-        }
-      } catch (otpError) {
-        console.error('OTP verification error:', otpError);
-      }
-      
-      // Method 2: Force confirm email if Method 1 failed
-      if (!verified) {
-        verified = await forceConfirmEmail(email as string);
-      }
-      
-      // Method 3: If all else fails, update our custom tables anyway
+      // Update whitelist status
       await updateWhitelistStatus(email as string);
+      
+      // Confirm email in Supabase Auth
+      await confirmEmail(email as string);
 
       setMessage('Email verified successfully! Redirecting to login...');
       
