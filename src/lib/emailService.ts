@@ -4,7 +4,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     console.log(`Sending verification email to ${email} with code: ${code}`);
     
     // Call the Next.js API route
-    const response = await fetch('/api/send-verification', {
+    const response = await fetch('/api/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
