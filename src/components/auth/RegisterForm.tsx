@@ -70,17 +70,6 @@ const RegisterForm: React.FC = () => {
       expiresAt.setMinutes(expiresAt.getMinutes() + 30);
       
       try {
-        // Check if verification_codes table exists
-        const { error: tableCheckError } = await supabase
-          .from('verification_codes')
-          .select('id')
-          .limit(1);
-        
-        if (tableCheckError) {
-          console.error('Error checking verification_codes table:', tableCheckError);
-          throw new Error('Verification system is not properly set up');
-        }
-        
         // Save the code to the database
         const { error: insertError } = await supabase
           .from('verification_codes')
@@ -96,7 +85,9 @@ const RegisterForm: React.FC = () => {
         }
       } catch (dbError) {
         console.error('Database error:', dbError);
-        // Continue with the process even if there's a database error
+        setError('Failed to generate verification code. Please try again.');
+        setLoading(false);
+        return;
       }
       
       // Update the status in the whitelist
@@ -128,20 +119,15 @@ const RegisterForm: React.FC = () => {
       }
 
       // Send verification email
-      try {
-        await sendVerificationEmail(email, code);
-        
-        // Always show success message and redirect
-        setMessage('Registration successful! Please check your email for verification code.');
-        
-        // Redirect to verification page after a delay
-        setTimeout(() => {
-          router.push(`/verify?email=${encodeURIComponent(email)}`);
-        }, 3000);
-      } catch (emailError) {
-        console.error('Email sending error:', emailError);
-        setError('Failed to send verification email. Please try again.');
-      }
+      await sendVerificationEmail(email, code);
+      
+      // Always show success message
+      setMessage('Registration successful! Please check your email for verification code.');
+      
+      // Redirect to verification page after a delay
+      setTimeout(() => {
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
+      }, 3000);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred during registration');
