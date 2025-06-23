@@ -13,14 +13,21 @@ export async function sendVerificationEmail(email: string, code: string): Promis
       body: JSON.stringify({ email, code }),
     });
     
-    const data = await response.json();
-    
+    // Check if the response is ok, even if we can't parse it as JSON
     if (!response.ok) {
-      console.error('Error sending verification email:', data.error);
+      console.error('Error sending verification email:', response.statusText);
       return false;
     }
     
-    console.log('Email sent successfully:', data);
+    try {
+      const data = await response.json();
+      console.log('Email sent successfully:', data);
+    } catch (jsonError) {
+      // If we can't parse the response as JSON, but the status was OK,
+      // we still consider it a success
+      console.log('Email sent, but could not parse response as JSON');
+    }
+    
     return true;
   } catch (err) {
     console.error('Error in sendVerificationEmail:', err);
