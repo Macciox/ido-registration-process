@@ -127,13 +127,15 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Send verification email - but don't wait for the result
-      // This is a fire-and-forget approach
-      sendVerificationEmail(email, code).catch(err => {
-        console.error('Error sending email:', err);
-      });
+      // Try to send verification email
+      try {
+        await sendVerificationEmail(email, code);
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        // Continue anyway, don't show error to user
+      }
       
-      // Always show success message and redirect
+      // Always show success message
       setMessage('Registration successful! Please check your email for verification code.');
       
       // Redirect to verification page after a delay
