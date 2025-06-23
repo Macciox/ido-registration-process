@@ -87,6 +87,24 @@ const VerifyPage: React.FC = () => {
         }
       }
 
+      // Get current user
+      const { data: user } = await supabase.auth.getUser();
+      let userId = user?.user?.id;
+      
+      // If no authenticated user, try to find the user by email
+      if (!userId) {
+        try {
+          // This might fail if the client doesn't have admin access
+          const { data: authUsers } = await supabase.auth.admin.listUsers();
+          const authUser = authUsers?.users.find(u => u.email === email);
+          if (authUser) {
+            userId = authUser.id;
+          }
+        } catch (adminError) {
+          console.error('Failed to access admin API:', adminError);
+        }
+      }
+
       // Check if email is in admin whitelist
       const { data: adminWhitelist } = await supabase
         .from('admin_whitelist')
@@ -124,96 +142,39 @@ const VerifyPage: React.FC = () => {
           .eq('id', projectOwner.id);
       }
 
-      // Get current user
-      const { data: user } = await supabase.auth.getUser();
-      
-      if (user?.user) {
-        console.log('Current user:', user.user);
-        
+      // Create profile if we have a user ID
+      if (userId) {
         // Check if profile exists
-        const { data: existingProfile, error: profileError } = await supabase
+        const { data: existingProfile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.user.id)
+          .eq('id', userId)
           .maybeSingle();
-          
-        console.log('Existing profile:', existingProfile, 'Error:', profileError);
 
         if (!existingProfile) {
           // Create profile with determined role
-          const { data: newProfile, error: insertError } = await supabase
+          const { error: insertError } = await supabase
             .from('profiles')
             .insert({
-              id: user.user.id,
+              id: userId,
               email: email as string,
               role: role,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             });
             
-          console.log('Created new profile with role:', role, 'Result:', newProfile, 'Error:', insertError);
-          
           if (insertError) {
             console.error('Failed to create profile:', insertError);
-            
-            // Try to get user by email from auth.users
-            const { data: authUsers } = await supabase.auth.admin.listUsers();
-            const authUser = authUsers?.users.find(u => u.email === email);
-            
-            if (authUser) {
-              // Try again with the correct user ID
-              const { data: retryProfile, error: retryError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: authUser.id,
-                  email: email as string,
-                  role: role,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                });
-                
-              console.log('Retry creating profile:', retryProfile, 'Error:', retryError);
-            }
           }
-        } else {
-          // Update existing profile with correct role if needed
-          if (existingProfile.role !== role && role === 'admin') {
-            const { data: updatedProfile, error: updateError } = await supabase
-              .from('profiles')
-              .update({ 
-                role: role,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', user.user.id);
-              
-            console.log('Updated profile role to:', role, 'Result:', updatedProfile, 'Error:', updateError);
-          }
-        }
-      } else {
-        console.error('No authenticated user found');
-        
-        // Try to find the user in auth.users by email
-        try {
-          // This is an admin-only API, so it might fail
-          const { data: authUsers } = await supabase.auth.admin.listUsers();
-          const authUser = authUsers?.users.find(u => u.email === email);
-          
-          if (authUser) {
-            // Create profile for this user
-            const { data: newProfile, error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: authUser.id,
-                email: email as string,
-                role: role,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              });
-              
-            console.log('Created profile for existing auth user:', newProfile, 'Error:', insertError);
-          }
-        } catch (adminError) {
-          console.error('Failed to access admin API:', adminError);
+        } else if (existingProfile.role !== role && role === 'admin') {
+          // Update existing profile to admin role if needed
+          await supabase
+            .from('profiles')
+            .update({ 
+              role: role,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
         }
       }
 
