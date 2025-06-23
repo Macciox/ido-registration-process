@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
-import Layout from '@/components/Layout';
 
 const VerifyPage: React.FC = () => {
   const [code, setCode] = useState('');
@@ -17,6 +16,37 @@ const VerifyPage: React.FC = () => {
       setEmail(router.query.email as string);
     }
   }, [router.query]);
+
+  // Check if email was sent
+  useEffect(() => {
+    const checkEmailSent = async () => {
+      if (!email) return;
+      
+      try {
+        // Check if the email was sent via webhook confirmation
+        const { data, error } = await supabase
+          .from('verification_codes')
+          .select('email_sent')
+          .eq('email', email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+          
+        if (error) {
+          console.error('Error checking email status:', error);
+          return;
+        }
+        
+        if (!data || data.email_sent !== true) {
+          setError('Email verification is still pending. Please wait a moment and refresh this page, or check your spam folder.');
+        }
+      } catch (err) {
+        console.error('Error checking email status:', err);
+      }
+    };
+    
+    checkEmailSent();
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,17 +76,6 @@ const VerifyPage: React.FC = () => {
 
       if (verificationError || !verificationData) {
         throw new Error('Invalid or expired verification code');
-      }
-
-      // Mark the email as confirmed in Supabase Auth
-      const { error: confirmError } = await supabase.auth.admin.updateUserById(
-        verificationData.user_id,
-        { email_confirm: true }
-      );
-
-      if (confirmError) {
-        console.error('Error confirming email:', confirmError);
-        throw new Error('Failed to confirm email');
       }
 
       // Update the verification code status
@@ -112,67 +131,65 @@ const VerifyPage: React.FC = () => {
   };
 
   return (
-    <Layout>
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Verify Your Email</h2>
-          
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
-          
-          {message && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-              {message}
-            </div>
-          )}
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Verify Your Email</h2>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        
+        {message && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {message}
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={!!router.query.email}
-                required
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="code">
-                Verification Code
-              </label>
-              <input
-                id="code"
-                type="text"
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Enter the 6-digit code from your email"
-                required
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <button
-                type="submit"
-                className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-                disabled={loading}
-              >
-                {loading ? 'Verifying...' : 'Verify Email'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={!!router.query.email}
+              required
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="code">
+              Verification Code
+            </label>
+            <input
+              id="code"
+              type="text"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Enter the 6-digit code from your email"
+              required
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <button
+              type="submit"
+              className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+              disabled={loading}
+            >
+              {loading ? 'Verifying...' : 'Verify Email'}
+            </button>
+          </div>
+        </form>
       </div>
-    </Layout>
+    </div>
   );
 };
 
