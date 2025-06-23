@@ -137,9 +137,6 @@ const RegisterForm: React.FC = () => {
       } catch (emailError) {
         console.error('Email sending error:', emailError);
       }
-
-      // Log the code for debugging only
-      console.log(`Verification code for ${email}: ${code}`);
       
       setMessage('Registration successful! Please check your email for verification code.');
       
