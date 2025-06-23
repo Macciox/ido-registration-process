@@ -16,10 +16,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Email and code are required' });
     }
 
-    console.log(`Sending email to ${email} with code ${code} using API key: ${process.env.RESEND_API_KEY?.substring(0, 5)}...`);
+    console.log(`Sending email to ${email} with code ${code}`);
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'IDO Registration <registration@decubateido.com>',
       to: [email],
       subject: 'Verify your email for Decubate IDO',
       react: EmailTemplate({ code }),
