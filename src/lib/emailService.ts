@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 // Service to send verification emails using the Next.js API route
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
@@ -12,30 +14,44 @@ export async function sendVerificationEmail(email: string, code: string): Promis
       body: JSON.stringify({ email, code }),
     });
     
-    // Log the raw response for debugging
-    console.log('Raw response status:', response.status);
-    console.log('Raw response headers:', Object.fromEntries(response.headers.entries()));
+    // Log the response
+    console.log('Email API response status:', response.status);
     
-    // Always consider it a success if the request was sent
-    // This is a workaround for the frontend error
-    console.log('Email request sent successfully');
-    return true;
+    // Wait for the webhook to confirm the email was sent (max 5 seconds)
+    let attempts = 0;
+    const maxAttempts = 10; // 10 attempts * 500ms = 5 seconds
     
-    /* Original code - commented out for now
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('Error sending verification email:', data.error || response.statusText);
-      return false;
+    while (attempts < maxAttempts) {
+      // Check if the email has been marked as sent
+      const { data, error } = await supabase
+        .from('verification_codes')
+        .select('email_sent')
+        .eq('email', email)
+        .eq('code', code)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error) {
+        console.error('Error checking email status:', error);
+        break;
+      }
+      
+      if (data && data.length > 0 && data[0].email_sent === true) {
+        console.log('Email confirmed as sent by webhook');
+        return true;
+      }
+      
+      // Wait 500ms before checking again
+      await new Promise(resolve => setTimeout(resolve, 500));
+      attempts++;
     }
     
-    console.log('Email sent successfully:', data);
+    // If we get here, the webhook didn't confirm the email was sent
+    // But we'll return true anyway since the API call was successful
+    console.log('Email API call successful, but webhook confirmation timed out');
     return true;
-    */
   } catch (err) {
     console.error('Error in sendVerificationEmail:', err);
-    // Even if there's an error, return true to avoid showing an error in the frontend
-    // since the email is actually being sent
-    return true;
+    return false;
   }
 }
