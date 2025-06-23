@@ -7,8 +7,8 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     
     // Call the Supabase Edge Function
     try {
-      console.log('Calling Supabase Edge Function: rapid-api');
-      const { data, error } = await supabase.functions.invoke('rapid-api', {
+      console.log('Calling Supabase Edge Function: send-email');
+      const { data, error } = await supabase.functions.invoke('send-email', {
         body: { 
           email, 
           code

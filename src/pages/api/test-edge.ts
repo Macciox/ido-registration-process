@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Testing Supabase Edge Function...');
     
     // Call the Supabase Edge Function directly
-    const { data, error } = await supabase.functions.invoke('rapid-api', {
+    const { data, error } = await supabase.functions.invoke('send-email', {
       body: { 
         email: 'test@example.com',
         code: '123456'
