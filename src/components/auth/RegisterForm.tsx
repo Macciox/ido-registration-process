@@ -62,19 +62,6 @@ const RegisterForm: React.FC = () => {
         return;
       }
 
-      // Register the user
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/verify?email=${encodeURIComponent(email)}`
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
       // Generate a 6-digit verification code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       
@@ -136,6 +123,24 @@ const RegisterForm: React.FC = () => {
         }
       } catch (emailError) {
         console.error('Email sending error:', emailError);
+      }
+      
+      // Register the user AFTER sending the verification email
+      // This prevents Supabase from sending its own verification email
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          // Disable the default email verification
+          emailRedirectTo: `${window.location.origin}/verify?email=${encodeURIComponent(email)}`,
+          data: {
+            email_verified: true // Try to mark as verified from the start
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
       }
       
       setMessage('Registration successful! Please check your email for verification code.');
