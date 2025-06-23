@@ -19,7 +19,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     console.log(`Sending email to ${email} with code ${code} using API key: ${process.env.RESEND_API_KEY?.substring(0, 5)}...`);
 
     const { data, error } = await resend.emails.send({
-      from: 'Decubate IDO <onboarding@resend.dev>',
+      from: 'registration@decubateido.com',
       to: [email],
       subject: 'Verify your email for Decubate IDO',
       react: EmailTemplate({ code }),
