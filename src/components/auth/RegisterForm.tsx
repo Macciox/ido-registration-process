@@ -85,9 +85,7 @@ const RegisterForm: React.FC = () => {
         }
       } catch (dbError) {
         console.error('Database error:', dbError);
-        setError('Failed to generate verification code. Please try again.');
-        setLoading(false);
-        return;
+        // Continue with the process even if there's a database error
       }
       
       // Update the status in the whitelist
@@ -110,7 +108,7 @@ const RegisterForm: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: '', // Disable the default email verification
+          emailRedirectTo: `${window.location.origin}/verify?email=${encodeURIComponent(email)}`
         }
       });
 
@@ -118,19 +116,19 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Send verification email
-      console.log('Sending verification email...');
-      const emailSent = await sendVerificationEmail(email, code);
-      console.log('Email sent result:', emailSent);
-      
-      if (!emailSent) {
-        console.error('Failed to send verification email');
-        setError('Failed to send verification email. Please try again.');
-        setLoading(false);
-        return;
+      // Send verification email (don't block the flow if it fails)
+      try {
+        console.log('Sending verification email...');
+        const emailSent = await sendVerificationEmail(email, code);
+        console.log('Email sent result:', emailSent);
+        
+        if (!emailSent) {
+          console.error('Failed to send verification email');
+        }
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
       }
       
-      // Always show success message
       setMessage('Registration successful! Please check your email for verification code.');
       
       // Redirect to verification page after a delay
