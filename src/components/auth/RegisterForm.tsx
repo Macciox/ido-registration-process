@@ -87,8 +87,7 @@ const RegisterForm: React.FC = () => {
           .insert({
             email: email,
             code: code,
-            expires_at: expiresAt.toISOString(),
-            email_sent: false // Initialize as not sent
+            expires_at: expiresAt.toISOString()
           });
           
         if (insertError) {
@@ -115,8 +114,7 @@ const RegisterForm: React.FC = () => {
           .eq('id', projectOwners.id);
       }
 
-      // Register the user AFTER sending the verification email
-      // IMPORTANT: Disable auto confirmation email by setting emailRedirectTo to empty string
+      // Register the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -129,23 +127,13 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Send verification email
-      try {
-        const emailSent = await sendVerificationEmail(email, code);
-        
-        if (!emailSent) {
-          console.error('Failed to send verification email');
-          setError('Failed to send verification email. Please try again.');
-          setLoading(false);
-          return;
-        }
-      } catch (emailError) {
-        console.error('Email sending error:', emailError);
-        setError('Failed to send verification email. Please try again.');
-        setLoading(false);
-        return;
-      }
+      // Send verification email - but don't wait for the result
+      // This is a fire-and-forget approach
+      sendVerificationEmail(email, code).catch(err => {
+        console.error('Error sending email:', err);
+      });
       
+      // Always show success message and redirect
       setMessage('Registration successful! Please check your email for verification code.');
       
       // Redirect to verification page after a delay
