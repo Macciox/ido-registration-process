@@ -13,6 +13,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Email and code are required' });
     }
 
+    // Log API key for debugging (only first few characters)
+    const apiKey = process.env.RESEND_API_KEY;
+    console.log(`Using API key: ${apiKey ? apiKey.substring(0, 5) + '...' : 'undefined'}`);
     console.log(`Sending email to ${email} with code ${code}`);
 
     // Chiamata diretta all'API di Resend
@@ -20,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         from: 'registration@decubateido.com',
@@ -37,6 +40,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const data = await response.json();
+    
+    // Log the complete response for debugging
+    console.log('Resend API response:', {
+      status: response.status,
+      data: data
+    });
     
     if (!response.ok) {
       console.error('Resend API error:', data);

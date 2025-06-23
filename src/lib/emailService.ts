@@ -12,13 +12,24 @@ export async function sendVerificationEmail(email: string, code: string): Promis
       body: JSON.stringify({ email, code }),
     });
     
+    // Log the complete response for debugging
     console.log('Email API response status:', response.status);
     
-    // Always return true to avoid showing errors in the frontend
+    try {
+      const data = await response.json();
+      console.log('Email API response data:', data);
+      
+      if (data.error) {
+        console.error('Email API error:', data.error);
+        return false;
+      }
+    } catch (jsonError) {
+      console.error('Error parsing API response:', jsonError);
+    }
+    
     return true;
   } catch (err) {
     console.error('Error in sendVerificationEmail:', err);
-    // Return true anyway to avoid showing errors in the frontend
-    return true;
+    return false;
   }
 }
