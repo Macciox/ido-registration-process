@@ -126,12 +126,12 @@ const RegisterForm: React.FC = () => {
       }
       
       // Register the user AFTER sending the verification email
-      // IMPORTANT: Disable auto confirmation email by setting emailRedirectTo to null
+      // IMPORTANT: Disable auto confirmation email by setting emailRedirectTo to empty string
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: null, // Disable the default email verification
+          emailRedirectTo: '', // Disable the default email verification
         }
       });
 
