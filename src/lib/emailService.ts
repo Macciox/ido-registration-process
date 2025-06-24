@@ -8,21 +8,41 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     // Try Edge Function first
     try {
       console.log('Calling Supabase Edge Function: send-verification-email');
+      console.log('Supabase client config check:', {
+        url: supabase.supabaseUrl,
+        key: supabase.supabaseKey?.substring(0, 20) + '...'
+      });
+      
       const { data, error } = await supabase.functions.invoke('send-verification-email', {
         body: { email, code }
       });
       
       console.log('Edge Function response:', { data, error });
+      console.log('Edge Function response type:', typeof data, typeof error);
       
       if (error) {
-        console.error('Edge Function error:', error);
+        console.error('Edge Function error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return await sendEmailFallback(email, code);
       }
       
-      console.log('Email sent successfully via Edge Function');
-      return true;
+      if (data && data.success) {
+        console.log('Email sent successfully via Edge Function:', data);
+        return true;
+      } else {
+        console.warn('Edge Function returned unexpected data:', data);
+        return await sendEmailFallback(email, code);
+      }
     } catch (edgeError) {
-      console.error('Edge Function exception:', edgeError);
+      console.error('Edge Function exception details:', {
+        name: edgeError.name,
+        message: edgeError.message,
+        stack: edgeError.stack
+      });
       return await sendEmailFallback(email, code);
     }
   } catch (err) {
