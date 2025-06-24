@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextApiRequest, NextApiResponse } from 'next'
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -11,8 +11,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const redirectTo = (next as string) || '/dashboard'
 
   if (token_hash && type) {
-    const supabase = createClient(req.cookies)
-
     const { error } = await supabase.auth.verifyOtp({
       type: type as EmailOtpType,
       token_hash: token_hash as string,
