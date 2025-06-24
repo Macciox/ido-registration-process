@@ -5,8 +5,4 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOi
 
 console.log('Supabase config:', { supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  functions: {
-    url: 'https://gitxgpwxxutrdvdirdke.functions.supabase.co'
-  }
-});
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

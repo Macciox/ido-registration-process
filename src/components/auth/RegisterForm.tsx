@@ -119,28 +119,16 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Send verification email (test direct fetch with anon key)
+      // Send verification email (block the flow if it fails)
       try {
-        const response = await fetch('https://gitxgpwxxutrdvdirdke.supabase.co/functions/v1/send-verification-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdHhncHd4eHV0cmR2ZGlyZGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwMjQ0NjMsImV4cCI6MjA2NTYwMDQ2M30.Xibm9POBM-NR8dO5h8N5fCAaz1MhlH-ZTb9ltuHAwFE'
-          },
-          body: JSON.stringify({
-            email: email,
-            code: code
-          })
-        });
-        const data = await response.json();
-        console.log('Edge function response:', data);
-        if (!response.ok || !data.success) {
-          setError('Errore durante l\'invio dell\'email di verifica (fetch diretto). Riprovare.');
+        const emailSent = await sendVerificationEmail(email, code);
+        if (!emailSent) {
+          setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
           setLoading(false);
           return;
         }
       } catch (emailError) {
-        setError('Errore durante l\'invio dell\'email di verifica (fetch diretto). Riprovare.');
+        setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
         setLoading(false);
         return;
       }
