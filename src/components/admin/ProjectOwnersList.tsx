@@ -9,7 +9,7 @@ interface ProjectOwnersListProps {
 interface ProjectOwner {
   id: string;
   email: string;
-  owner_id: string;
+  owner_id: string | null;
   status: string;
   created_at: string;
 }
