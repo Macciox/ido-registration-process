@@ -39,11 +39,12 @@ const RegisterForm: React.FC = () => {
       
       const { data: projectOwners } = await supabase
         .from('project_owners')
-        .select('id, status')
-        .eq('email', email)
-        .maybeSingle();
+        .select('id, status, project_id')
+        .eq('email', email);
       
-      if (!adminWhitelist && !projectOwners) {
+      console.log('Whitelist check:', { adminWhitelist, projectOwners });
+      
+      if (!adminWhitelist && (!projectOwners || projectOwners.length === 0)) {
         setError('Registration is restricted. Your email is not in the allowed list.');
         setLoading(false);
         return;
@@ -89,11 +90,14 @@ const RegisterForm: React.FC = () => {
           });
       }
       
-      if (projectOwners) {
-        await supabase
-          .from('project_owners')
-          .update({ status: 'registered' })
-          .eq('id', projectOwners.id);
+      if (projectOwners && projectOwners.length > 0) {
+        // Update all project owner entries for this email
+        for (const owner of projectOwners) {
+          await supabase
+            .from('project_owners')
+            .update({ status: 'registered' })
+            .eq('id', owner.id);
+        }
         
         // Create project owner profile
         await supabase
