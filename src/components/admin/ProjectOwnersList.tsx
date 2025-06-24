@@ -153,24 +153,22 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
 
   const togglePrimary = async (ownerId: string) => {
     try {
-      // First, set all owners to non-primary
-      await supabase
-        .from('project_owners')
-        .update({ is_primary: false })
-        .eq('project_id', projectId);
+      const owner = owners.find(o => o.id === ownerId);
+      if (!owner) return;
       
-      // Then set the selected owner as primary
+      // Toggle primary status
       const { error } = await supabase
         .from('project_owners')
-        .update({ is_primary: true })
+        .update({ is_primary: !owner.is_primary })
         .eq('id', ownerId);
       
       if (error) throw error;
       
-      setMessage({ text: 'Primary owner updated successfully', type: 'success' });
+      const action = owner.is_primary ? 'removed from' : 'set as';
+      setMessage({ text: `Owner ${action} primary successfully`, type: 'success' });
       loadProjectData(); // Reload to get fresh data
     } catch (err: any) {
-      setMessage({ text: `Failed to update primary owner: ${err.message}`, type: 'error' });
+      setMessage({ text: `Failed to update primary status: ${err.message}`, type: 'error' });
     }
   };
 
@@ -214,17 +212,40 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     }
   };
 
-  const getStatusBadge = (owner: ProjectOwner) => {
+  const getStatusBadges = (owner: ProjectOwner) => {
+    const badges = [];
+    
+    // Role badge
     if (owner.is_primary) {
-      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Primary Owner</span>;
+      badges.push(
+        <span key="role" className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+          Primary
+        </span>
+      );
     }
+    
+    // Registration status badge
     if (owner.status === 'registered') {
-      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Registered</span>;
+      badges.push(
+        <span key="status" className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+          Verified
+        </span>
+      );
+    } else if (owner.status === 'pending_verification') {
+      badges.push(
+        <span key="status" className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+          Pending Verification
+        </span>
+      );
+    } else {
+      badges.push(
+        <span key="status" className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+          Not Registered
+        </span>
+      );
     }
-    if (owner.status === 'pending_verification') {
-      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Pending Verification</span>;
-    }
-    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Not Registered</span>;
+    
+    return <div className="flex space-x-1">{badges}</div>;
   };
 
   return (
@@ -271,7 +292,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                       ) : (
                         <span className="text-gray-900">{owner.email}</span>
                       )}
-                      {getStatusBadge(owner)}
+                      {getStatusBadges(owner)}
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -298,14 +319,16 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                           >
                             Edit
                           </button>
-                          {!owner.is_primary && (
-                            <button
-                              onClick={() => togglePrimary(owner.id)}
-                              className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
-                            >
-                              Make Primary
-                            </button>
-                          )}
+                          <button
+                            onClick={() => togglePrimary(owner.id)}
+                            className={`px-2 py-1 text-xs rounded ${
+                              owner.is_primary 
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                            }`}
+                          >
+                            {owner.is_primary ? 'Remove Primary' : 'Make Primary'}
+                          </button>
                           <button
                             onClick={() => removeOwner(owner.id)}
                             className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"

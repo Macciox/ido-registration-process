@@ -91,10 +91,15 @@ const ProjectSettings: React.FC = () => {
       setDeleting(true);
       
       // Delete project owners first
-      await supabase
+      const { error: ownersError } = await supabase
         .from('project_owners')
         .delete()
         .eq('project_id', project.id);
+      
+      if (ownersError) {
+        console.error('Error deleting project owners:', ownersError);
+        // Continue anyway, might not exist
+      }
       
       // Delete project
       const { error } = await supabase
@@ -106,6 +111,7 @@ const ProjectSettings: React.FC = () => {
       
       router.push('/admin/dashboard');
     } catch (err: any) {
+      console.error('Delete project error:', err);
       setMessage({ text: `Failed to delete project: ${err.message}`, type: 'error' });
       setDeleting(false);
     }
