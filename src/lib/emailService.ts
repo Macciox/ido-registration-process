@@ -1,25 +1,30 @@
-// Service to send verification emails using Next.js API route
+import { supabase } from './supabase';
+
+// Service to send verification emails using Supabase Edge Function
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
     console.log(`Sending verification email to ${email} with code: ${code}`);
     
-    const response = await fetch('/api/send-verification-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, code }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('API error:', error);
+    // Try Edge Function first
+    try {
+      console.log('Calling Supabase Edge Function: send-verification-email');
+      const { data, error } = await supabase.functions.invoke('send-verification-email', {
+        body: { email, code }
+      });
+      
+      console.log('Edge Function response:', { data, error });
+      
+      if (error) {
+        console.error('Edge Function error:', error);
+        return await sendEmailFallback(email, code);
+      }
+      
+      console.log('Email sent successfully via Edge Function');
+      return true;
+    } catch (edgeError) {
+      console.error('Edge Function exception:', edgeError);
       return await sendEmailFallback(email, code);
     }
-
-    const result = await response.json();
-    console.log('Email sent successfully:', result);
-    return true;
   } catch (err) {
     console.error('Error in sendVerificationEmail:', err);
     return await sendEmailFallback(email, code);
