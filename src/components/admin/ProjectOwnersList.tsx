@@ -239,7 +239,13 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium mb-4">Project Owners</h2>
+      <div className="flex justify-between items-start mb-4">
+        <h2 className="text-lg font-medium">Project Owners</h2>
+        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+          <div><strong>Primary Owner:</strong> Can invite others</div>
+          <div><strong>Secondary Owners:</strong> Project access only</div>
+        </div>
+      </div>
       
       {message && (
         <div className={`p-4 mb-4 rounded ${

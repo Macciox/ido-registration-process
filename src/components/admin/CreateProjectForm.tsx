@@ -102,9 +102,16 @@ const CreateProjectForm: React.FC = () => {
             id="owner-emails"
             rows={4}
             className="form-input"
-            placeholder="Enter email addresses (comma or line separated)"
+            placeholder="primary@example.com, secondary@example.com"
             {...register('ownerEmails', { required: 'At least one owner email is required' })}
           />
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 className="text-sm font-medium text-blue-800 mb-1">📋 Owner Roles:</h4>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li><strong>First email</strong> = Primary Owner (can invite other owners)</li>
+              <li><strong>Other emails</strong> = Secondary Owners (project access only)</li>
+            </ul>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             Enter multiple emails separated by commas or new lines
           </p>
