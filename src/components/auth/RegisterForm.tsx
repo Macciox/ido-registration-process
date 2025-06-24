@@ -76,40 +76,21 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Update whitelist status and create profile
+      // Update whitelist status to pending verification
       if (adminWhitelist) {
         await supabase
           .from('admin_whitelist')
-          .update({ status: 'registered' })
+          .update({ status: 'pending_verification' })
           .eq('id', adminWhitelist.id);
-        
-        // Create admin profile
-        await supabase
-          .from('profiles')
-          .insert({
-            id: data.user?.id,
-            email: email,
-            role: 'admin'
-          });
       }
       
       if (projectOwners && projectOwners.length > 0) {
-        // Update all project owner entries for this email
         for (const owner of projectOwners) {
           await supabase
             .from('project_owners')
-            .update({ status: 'registered' })
+            .update({ status: 'pending_verification' })
             .eq('id', owner.id);
         }
-        
-        // Create project owner profile
-        await supabase
-          .from('profiles')
-          .insert({
-            id: data.user?.id,
-            email: email,
-            role: 'project_owner'
-          });
       }
 
       setMessage('Registrazione avvenuta! Controlla la tua email per confermare l\'account.');
