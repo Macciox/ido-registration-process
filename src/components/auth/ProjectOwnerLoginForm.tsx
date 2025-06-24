@@ -22,21 +22,21 @@ const ProjectOwnerLoginForm: React.FC = () => {
         return;
       }
       
-      // Check if user has a project
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('owner_email', data.email)
-        .single();
+      // Check if user has projects in project_owners table
+      const { data: projectOwners, error: projectError } = await supabase
+        .from('project_owners')
+        .select('project_id, projects(id, name)')
+        .eq('email', data.email)
+        .eq('status', 'registered');
       
-      if (projectError || !project) {
+      if (projectError || !projectOwners || projectOwners.length === 0) {
         setError('No project found for this email. Please contact an admin.');
         await supabase.auth.signOut();
         return;
       }
       
-      // Redirect to project page
-      window.location.href = `/projects/${project.id}`;
+      // Redirect to project owner dashboard
+      router.push('/project-owner/dashboard');
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
