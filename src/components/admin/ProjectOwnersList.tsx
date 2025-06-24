@@ -12,6 +12,7 @@ interface ProjectOwner {
   owner_id: string | null;
   status: string;
   created_at: string;
+  is_primary?: boolean;
 }
 
 const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
@@ -84,7 +85,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           const { data: additionalOwners, error } = await supabase
             .from('project_owners')
             .select('*, profiles:owner_id(email)')
-            .eq('project_id', projectId);
+            .eq('project_id', projectId)
+            .order('is_primary', { ascending: false });
           if (!error && additionalOwners && additionalOwners.length > 0) {
             // Add additional owners to the list
             const formattedOwners = additionalOwners.map(owner => ({
@@ -222,14 +224,14 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     }
   };
 
-  const getStatusBadge = (status: string, email: string) => {
-    if (status === 'primary') {
-      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Primary</span>;
+  const getStatusBadge = (owner: ProjectOwner) => {
+    if (owner.is_primary) {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Primary Owner</span>;
     }
-    if (status === 'registered') {
+    if (owner.status === 'registered') {
       return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Registered</span>;
     }
-    if (status === 'pending_verification') {
+    if (owner.status === 'pending_verification') {
       return <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Pending Verification</span>;
     }
     return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Not Registered</span>;
@@ -263,7 +265,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                 <li key={owner.id} className="py-3 flex justify-between items-center">
                   <div className="flex items-center space-x-3">
                     <span className="text-gray-900">{owner.email}</span>
-                    {getStatusBadge(owner.status, owner.email)}
+                    {getStatusBadge(owner)}
                   </div>
                   {owner.id !== 'primary' && (
                     <button
