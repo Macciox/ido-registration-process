@@ -86,9 +86,9 @@ const LoginForm: React.FC = () => {
                 
               // Determine role
               let role = 'user';
-              if (adminWhitelist && (adminWhitelist.status === 'verified' || adminWhitelist.status === 'pending_verification')) {
+              if (adminWhitelist && (adminWhitelist.status === 'registered' || adminWhitelist.status === 'pending_verification')) {
                 role = 'admin';
-              } else if (projectOwner && (projectOwner.status === 'verified' || projectOwner.status === 'pending_verification')) {
+              } else if (projectOwner && (projectOwner.status === 'registered' || projectOwner.status === 'pending_verification')) {
                 role = 'project_owner';
               }
               
@@ -148,9 +148,9 @@ const LoginForm: React.FC = () => {
           .maybeSingle();
           
         // Determine role
-        if (adminWhitelist && (adminWhitelist.status === 'verified' || adminWhitelist.status === 'pending_verification')) {
+        if (adminWhitelist && (adminWhitelist.status === 'registered' || adminWhitelist.status === 'pending_verification')) {
           userRole = 'admin';
-        } else if (projectOwner && (projectOwner.status === 'verified' || projectOwner.status === 'pending_verification')) {
+        } else if (projectOwner && (projectOwner.status === 'registered' || projectOwner.status === 'pending_verification')) {
           userRole = 'project_owner';
         }
         
