@@ -318,7 +318,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                     </div>
                   </div>
                 </li>
-              ))
+              ))}
             </ul>
           )}
         </div>
