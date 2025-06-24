@@ -155,8 +155,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           const newOwner = {
             id: `temp-${Date.now()}`,
             email: newEmail.trim(),
-            owner_id: ownerId,
-            status: status,
+            owner_id: null,
+            status: 'pending',
             created_at: new Date().toISOString()
           };
           setOwners(prev => [...prev, newOwner]);
