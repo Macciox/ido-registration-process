@@ -5,6 +5,7 @@ import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@s
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
     console.log(`Sending verification email to ${email} with code: ${code}`);
+    alert(`DEBUG: sendVerificationEmail called with ${email}, ${code}`); // DEBUG
     
     // Validate parameters
     if (!email || !code) {
