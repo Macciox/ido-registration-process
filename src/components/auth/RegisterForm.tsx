@@ -112,10 +112,7 @@ const RegisterForm: React.FC = () => {
           });
       }
 
-      setMessage('Registrazione avvenuta con successo!');
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      setMessage('Registrazione avvenuta! Controlla la tua email per confermare l\'account.');
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred during registration');
