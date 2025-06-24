@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
-import { sendVerificationEmail } from '@/lib/emailService';
 
 const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -63,81 +62,20 @@ const RegisterForm: React.FC = () => {
         return;
       }
 
-      // Generate a 6-digit verification code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Set expiration time (30 minutes from now)
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
-      
-      try {
-        // Save the code to the database
-        const { error: insertError } = await supabase
-          .from('verification_codes')
-          .insert({
-            email: email,
-            code: code,
-            expires_at: expiresAt.toISOString()
-          });
-          
-        if (insertError) {
-          console.error('Error inserting verification code:', insertError);
-          throw new Error('Failed to generate verification code');
-        }
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        // Continue with the process even if there's a database error
-      }
-      
-      // Update the status in the whitelist
-      if (adminWhitelist) {
-        await supabase
-          .from('admin_whitelist')
-          .update({ status: 'pending_verification' })
-          .eq('id', adminWhitelist.id);
-      }
-      
-      if (projectOwners) {
-        await supabase
-          .from('project_owners')
-          .update({ status: 'pending_verification' })
-          .eq('id', projectOwners.id);
-      }
-
-      // Register the user (disable automatic email confirmation)
+      // Register the user
       const { data, error } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          emailRedirectTo: undefined, // Disable automatic email
-          data: {
-            email_confirm: false // Explicitly disable email confirmation
-          }
-        }
+        password
       });
 
       if (error) {
         throw error;
       }
 
-      // Send verification email (block the flow if it fails)
-      try {
-        const emailResult = await sendVerificationEmail(email, code);
-        if (!emailResult) {
-          setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
-          setLoading(false);
-          return;
-        }
-      } catch (emailError) {
-        setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
-        setLoading(false);
-        return;
-      }
-
-      setMessage('Registrazione avvenuta con successo! Controlla la tua email per il codice di verifica.');
+      setMessage('Registrazione avvenuta con successo!');
       setTimeout(() => {
-        router.push(`/verify?email=${encodeURIComponent(email)}`);
-      }, 3000);
+        router.push('/dashboard');
+      }, 2000);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred during registration');
