@@ -141,26 +141,13 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         setMessage({ text: 'This email is already an owner of this project', type: 'error' });
         return;
       }
-      // Verifica se l'utente esiste
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', newEmail.trim())
-        .maybeSingle();
-      let status = 'pending';
-      let ownerId = null;
-      if (userData?.id) {
-        status = 'verified';
-        ownerId = userData.id;
-      }
-      // Prova ad aggiungere l'owner
+      // Add project owner with pending status
       const { data, error } = await supabase
         .from('project_owners')
         .insert({
           project_id: projectId,
           email: newEmail.trim(),
-          owner_id: ownerId,
-          status: status
+          status: 'pending'
         })
         .select();
       if (error) {
@@ -239,13 +226,13 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     if (status === 'primary') {
       return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Primary</span>;
     }
-    if (verifiedOwners[email] === true) {
-      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Verificato</span>;
+    if (status === 'registered') {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Registered</span>;
     }
-    if (verifiedOwners[email] === false) {
-      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Non registrato</span>;
+    if (status === 'pending_verification') {
+      return <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Pending Verification</span>;
     }
-    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{status}</span>;
+    return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Not Registered</span>;
   };
 
   return (

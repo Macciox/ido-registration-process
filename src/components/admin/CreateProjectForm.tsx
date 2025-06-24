@@ -41,10 +41,11 @@ const CreateProjectForm: React.FC = () => {
       
       if (projectError) throw projectError;
       
-      // Add all emails to project_owners table
+      // Add all emails to project_owners table with pending status
       const projectOwners = emails.map(email => ({
         project_id: projectData.id,
-        email
+        email,
+        status: 'pending'
       }));
       
       const { error: ownersError } = await supabase
