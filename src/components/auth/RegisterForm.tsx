@@ -122,8 +122,8 @@ const RegisterForm: React.FC = () => {
 
       // Send verification email (block the flow if it fails)
       try {
-        const emailSent = await sendVerificationEmail(email, code);
-        if (!emailSent) {
+        const emailResult = await sendVerificationEmail(email, code);
+        if (!emailResult) {
           setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
           setLoading(false);
           return;
