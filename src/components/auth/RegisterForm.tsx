@@ -68,7 +68,7 @@ const RegisterForm: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`
+          emailRedirectTo: '/dashboard'
         }
       });
 
