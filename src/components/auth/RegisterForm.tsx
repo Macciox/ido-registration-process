@@ -66,7 +66,13 @@ const RegisterForm: React.FC = () => {
       // Register the user
       const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          emailRedirectTo: undefined,
+          data: {
+            email_confirm: false
+          }
+        }
       });
 
       if (error) {
