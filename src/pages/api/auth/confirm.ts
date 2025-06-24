@@ -18,53 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (!error) {
-      // Get user info from token
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user?.email) {
-        // Update whitelist status and create profile
-        const { data: adminWhitelist } = await supabase
-          .from('admin_whitelist')
-          .select('id')
-          .eq('email', user.email)
-          .maybeSingle()
-        
-        const { data: projectOwners } = await supabase
-          .from('project_owners')
-          .select('id')
-          .eq('email', user.email)
-      }
-        if (adminWhitelist) {
-          await supabase
-            .from('admin_whitelist')
-            .update({ status: 'registered' })
-            .eq('id', adminWhitelist.id)
-          
-          await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              role: 'admin'
-            })
-        }
-        
-        if (projectOwners && projectOwners.length > 0) {
-          for (const owner of projectOwners) {
-            await supabase
-              .from('project_owners')
-              .update({ status: 'registered' })
-              .eq('id', owner.id)
-          }
-          
-          await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              role: 'project_owner'
-            })
-        }
+      // Email verified successfully - trigger will handle profile creation
       return res.redirect(redirectTo)
     }
   }
