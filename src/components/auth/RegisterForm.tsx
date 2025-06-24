@@ -68,10 +68,7 @@ const RegisterForm: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: undefined,
-          data: {
-            email_confirm: false
-          }
+          emailRedirectTo: undefined
         }
       });
 
