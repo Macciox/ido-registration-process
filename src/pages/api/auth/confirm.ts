@@ -1,25 +1,26 @@
-import { type EmailOtpType } from '@supabase/supabase-js'
-import { type NextApiRequest, NextApiResponse } from 'next'
-import { supabase } from '@/lib/supabase'
+import { type EmailOtpType } from '@supabase/supabase-js';
+import { type NextApiRequest, type NextApiResponse } from 'next';
+import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    res.status(405).end();
+    return;
   }
-
-  const { token_hash, type, next } = req.query
-  const redirectTo = (next as string) || '/dashboard'
-
+  const { token_hash, type, next } = req.query;
   if (token_hash && type) {
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { error } = await supabase.auth.verifyOtp({
       type: type as EmailOtpType,
       token_hash: token_hash as string,
-    })
-
+    });
     if (!error) {
-      return res.redirect(redirectTo)
+      res.redirect(next ? String(next) : '/');
+      return;
     }
   }
-
-  return res.redirect('/login?error=confirmation_failed')
+  res.redirect('/auth/auth-code-error');
 }
