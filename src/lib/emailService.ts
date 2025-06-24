@@ -2,53 +2,37 @@ import { supabase } from './supabase';
 import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 
 // Service to send verification emails using Supabase Edge Function
-export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
+export async function sendVerificationEmail(email: string, code: string): Promise<{ success: boolean; data?: any; error?: any }> {
   try {
-    console.log(`Sending verification email to ${email} with code: ${code}`);
-    alert(`DEBUG: sendVerificationEmail called with ${email}, ${code}`); // DEBUG
-    
     // Validate parameters
     if (!email || !code) {
-      console.error('Missing email or code parameters');
-      return await sendEmailFallback(email, code);
+      return { success: false, error: 'Missing email or code parameters' };
     }
-    
-    console.log('Calling Supabase Edge Function: send-verification-email');
-    console.log('Parameters:', { email, code });
-    
+
     const { data, error } = await supabase.functions.invoke('send-verification-email', {
       body: { email, code },
       headers: {
         'Content-Type': 'application/json'
       }
     });
-    
-    console.log('Edge Function raw response:', { data, error });
-    
+
     if (error) {
-      if (error instanceof FunctionsHttpError) {
-        const errorMessage = await error.context.json();
-        console.error('Function returned an error:', errorMessage);
-      } else if (error instanceof FunctionsRelayError) {
-        console.error('Relay error:', error.message);
-      } else if (error instanceof FunctionsFetchError) {
-        console.error('Fetch error:', error.message);
-      } else {
-        console.error('Unknown error:', error);
+      let errorMessage = error.message;
+      if (error instanceof FunctionsHttpError && error.context) {
+        try {
+          errorMessage = JSON.stringify(await error.context.json());
+        } catch {}
       }
-      return await sendEmailFallback(email, code);
+      return { success: false, error: errorMessage };
     }
-    
+
     if (data && data.success) {
-      console.log('Email sent successfully via Edge Function:', data);
-      return true;
+      return { success: true, data: data.data };
     } else {
-      console.warn('Edge Function returned unexpected data:', data);
-      return await sendEmailFallback(email, code);
+      return { success: false, error: data };
     }
   } catch (err) {
-    console.error('Error in sendVerificationEmail:', err);
-    return await sendEmailFallback(email, code);
+    return { success: false, error: err };
   }
 }
 

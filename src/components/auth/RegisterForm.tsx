@@ -119,22 +119,21 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
-      // Send verification email (don't block the flow if it fails)
+      // Send verification email (block the flow if it fails)
       try {
-        console.log('Sending verification email...');
-        const emailSent = await sendVerificationEmail(email, code);
-        console.log('Email sent result:', emailSent);
-        
-        if (!emailSent) {
-          console.error('Failed to send verification email');
+        const emailResult = await sendVerificationEmail(email, code);
+        if (!emailResult.success) {
+          setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
+          setLoading(false);
+          return;
         }
       } catch (emailError) {
-        console.error('Email sending error:', emailError);
+        setError('Errore durante l\'invio dell\'email di verifica. Riprovare.');
+        setLoading(false);
+        return;
       }
-      
-      setMessage('Registration successful! Please check your email for verification code.');
-      
-      // Redirect to verification page after a delay
+
+      setMessage('Registrazione avvenuta con successo! Controlla la tua email per il codice di verifica.');
       setTimeout(() => {
         router.push(`/verify?email=${encodeURIComponent(email)}`);
       }, 3000);
