@@ -87,11 +87,8 @@ const ProjectsList: React.FC = () => {
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <Link href={`/projects/${project.id}`} className="text-primary hover:text-primary-dark mr-4">
-                  View
-                </Link>
-                <Link href={`/projects/${project.id}`} className="text-primary hover:text-primary-dark">
-                  Edit
+                <Link href={`/admin/projects/${project.id}/settings`} className="text-primary hover:text-primary-dark">
+                  Settings
                 </Link>
               </td>
             </tr>
