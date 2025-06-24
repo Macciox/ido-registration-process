@@ -25,7 +25,7 @@ export default function ConfirmPage() {
       try {
         const { error } = await supabase.auth.verifyOtp({
           type: type as EmailOtpType,
-          token: authToken as string,
+          token_hash: authToken as string,
         });
         
         if (error) {
