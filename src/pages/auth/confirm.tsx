@@ -10,11 +10,13 @@ export default function ConfirmPage() {
 
   useEffect(() => {
     const handleConfirmation = async () => {
-      const { token_hash, type, next } = router.query;
+      const { token, token_hash, type, next } = router.query;
       
-      console.log('Confirm params:', { token_hash, type, next });
+      console.log('Confirm params:', { token, token_hash, type, next });
       
-      if (!token_hash || !type) {
+      const authToken = token || token_hash;
+      
+      if (!authToken || !type) {
         setError('No confirmation token found in URL');
         setStatus('error');
         return;
@@ -23,7 +25,7 @@ export default function ConfirmPage() {
       try {
         const { error } = await supabase.auth.verifyOtp({
           type: type as EmailOtpType,
-          token_hash: token_hash as string,
+          token: authToken as string,
         });
         
         if (error) {
