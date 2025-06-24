@@ -1,24 +1,31 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('API route called:', req.method, req.url);
+  
   if (req.method !== 'POST') {
+    console.log('Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { email, code } = req.body;
+  console.log('Request body:', { email, code });
 
   if (!email || !code) {
+    console.log('Missing email or code');
     return res.status(400).json({ error: 'Email and code are required' });
   }
 
   try {
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
+    console.log('RESEND_API_KEY exists:', !!RESEND_API_KEY);
     
     if (!RESEND_API_KEY) {
       console.error('RESEND_API_KEY not configured');
       return res.status(500).json({ error: 'Email service not configured' });
     }
 
+    console.log('Sending email to Resend API...');
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -42,6 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `,
       }),
     });
+    
+    console.log('Resend API response status:', response.status);
 
     if (!response.ok) {
       const error = await response.text();
