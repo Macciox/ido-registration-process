@@ -112,10 +112,10 @@ const AdminWhitelistSection: React.FC = () => {
   };
 
   const getStatusBadge = (entry: AdminWhitelistEntry) => {
-    if (entry.status === 'verified') {
+    if (entry.status === 'registered') {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-          Verified
+          Registered
         </span>
       );
     } else if (entry.status === 'pending_verification') {
