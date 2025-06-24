@@ -64,7 +64,8 @@ const ProjectOwnerDashboard: React.FC = () => {
 
       const userProjects = projectOwners
         ?.map(po => po.projects)
-        .filter(Boolean) || [];
+        .filter(Boolean)
+        .flat() || [];
 
       setProjects(userProjects);
     } catch (err: any) {
