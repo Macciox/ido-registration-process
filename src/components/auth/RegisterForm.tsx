@@ -72,6 +72,39 @@ const RegisterForm: React.FC = () => {
         throw error;
       }
 
+      // Update whitelist status and create profile
+      if (adminWhitelist) {
+        await supabase
+          .from('admin_whitelist')
+          .update({ status: 'registered' })
+          .eq('id', adminWhitelist.id);
+        
+        // Create admin profile
+        await supabase
+          .from('profiles')
+          .insert({
+            id: data.user?.id,
+            email: email,
+            role: 'admin'
+          });
+      }
+      
+      if (projectOwners) {
+        await supabase
+          .from('project_owners')
+          .update({ status: 'registered' })
+          .eq('id', projectOwners.id);
+        
+        // Create project owner profile
+        await supabase
+          .from('profiles')
+          .insert({
+            id: data.user?.id,
+            email: email,
+            role: 'project_owner'
+          });
+      }
+
       setMessage('Registrazione avvenuta con successo!');
       setTimeout(() => {
         router.push('/dashboard');
