@@ -34,11 +34,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
         return await sendEmailFallback(email, code);
       }
     } catch (edgeError) {
-      console.error('Edge Function exception details:', {
-        name: edgeError.name,
-        message: edgeError.message,
-        stack: edgeError.stack
-      });
+      console.error('Edge Function exception:', edgeError);
       return await sendEmailFallback(email, code);
     }
   } catch (err) {
