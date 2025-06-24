@@ -16,10 +16,14 @@ const Dashboard: React.FC = () => {
           return;
         }
         
-        // Redirect all users to admin/dashboard
-        // Admin users will see the full dashboard
-        // Project owners will see their projects
-        router.push('/admin/dashboard');
+        // Redirect based on user role
+        if (currentUser.role === 'admin') {
+          router.push('/admin/dashboard');
+        } else if (currentUser.role === 'project_owner') {
+          router.push('/project-owner/dashboard');
+        } else {
+          router.push('/login');
+        }
       } catch (err) {
         console.error('Auth check error:', err);
         router.push('/login');
