@@ -68,7 +68,7 @@ const RegisterForm: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: '/dashboard'
+          emailRedirectTo: 'https://decubateido.com/dashboard'
         }
       });
 

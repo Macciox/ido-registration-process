@@ -6,22 +6,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { token_hash, type, next } = req.query
   const redirectTo = (next as string) || '/dashboard'
 
+  console.log('Confirm API called with:', { token_hash, type, next })
+
   if (token_hash && type) {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { error } = await supabase.auth.verifyOtp({
+    console.log('Attempting to verify OTP...')
+    const { error, data } = await supabase.auth.verifyOtp({
       type: type as EmailOtpType,
       token_hash: token_hash as string,
     })
 
+    console.log('Verification result:', { error, data })
+
     if (!error) {
-      // Email verified successfully - trigger will handle profile creation
+      console.log('Email verified successfully, redirecting to:', redirectTo)
       return res.redirect(redirectTo)
+    } else {
+      console.error('Verification failed:', error)
     }
   }
 
+  console.log('Redirecting to login with error')
   return res.redirect('/login?error=confirmation_failed')
 }
