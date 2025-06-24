@@ -1,27 +1,27 @@
-import { supabase } from './supabase';
+import { createClient } from '@supabase/supabase-js';
 import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 
 // Service to send verification emails using Supabase Edge Function
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
-    console.log(`Sending verification email to ${email} with code: ${code}`);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-verification-email', {
-        body: { email, code }
-      });
-      if (error) {
-        console.error('Error from Edge Function:', error);
-        return await sendEmailDirectly(email, code);
-      }
-      console.log('Email sent successfully via Edge Function:', data);
-      return true;
-    } catch (edgeError) {
-      console.error('Exception calling Edge Function:', edgeError);
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    const { data, error } = await supabase.functions.invoke('send-verification-email', {
+      body: { email, code }
+    });
+    
+    if (error) {
+      console.error('Edge function error:', error);
       return await sendEmailDirectly(email, code);
     }
-  } catch (err) {
-    console.error('Error in sendVerificationEmail:', err);
-    return false;
+    
+    return true;
+  } catch (edgeError) {
+    console.error('Exception calling edge function:', edgeError);
+    return await sendEmailDirectly(email, code);
   }
 }
 
