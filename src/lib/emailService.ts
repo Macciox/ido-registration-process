@@ -8,10 +8,6 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     // Try Edge Function first
     try {
       console.log('Calling Supabase Edge Function: send-verification-email');
-      console.log('Supabase client config check:', {
-        url: supabase.supabaseUrl,
-        key: supabase.supabaseKey?.substring(0, 20) + '...'
-      });
       
       const { data, error } = await supabase.functions.invoke('send-verification-email', {
         body: { email, code }
