@@ -18,22 +18,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (!error) {
-      // Update whitelist status and create profile
-      const { data: adminWhitelist } = await supabase
-        .from('admin_whitelist')
-        .select('id')
-        .eq('email', req.query.email || '')
-        .maybeSingle()
-      
-      const { data: projectOwners } = await supabase
-        .from('project_owners')
-        .select('id')
-        .eq('email', req.query.email || '')
-      
       // Get user info from token
       const { data: { user } } = await supabase.auth.getUser()
       
-      if (user) {
+      if (user?.email) {
+        // Update whitelist status and create profile
+        const { data: adminWhitelist } = await supabase
+          .from('admin_whitelist')
+          .select('id')
+          .eq('email', user.email)
+          .maybeSingle()
+        
+        const { data: projectOwners } = await supabase
+          .from('project_owners')
+          .select('id')
+          .eq('email', user.email)
+      }
         if (adminWhitelist) {
           await supabase
             .from('admin_whitelist')
@@ -65,8 +65,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               role: 'project_owner'
             })
         }
-      }
-      
       return res.redirect(redirectTo)
     }
   }
