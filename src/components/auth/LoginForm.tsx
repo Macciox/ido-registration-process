@@ -228,201 +228,263 @@ const LoginForm: React.FC = () => {
     <>
       <Head>
         <link
-          href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+          href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800,900&display=swap"
           rel="stylesheet"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Poppins&display=swap"
+          href="https://use.fontawesome.com/releases/v6.5.1/css/all.css"
           rel="stylesheet"
         />
       </Head>
       
-      <div className="custom-login-wrapper">
-        <form onSubmit={handleSubmit}>
-          <h1>Login</h1>
-          
-          {error && (
-            <div className="error-message">
-              <p>{error}</p>
-              {error.includes('not been verified') && (
-                <button
-                  onClick={resendVerificationEmail}
-                  className="resend-btn"
-                  disabled={loading}
-                >
-                  Resend verification email
-                </button>
-              )}
+      <div className="box">
+        <div className="login">
+          <div className="loginBx">
+            <h2>
+              <i className="fa-solid fa-right-to-bracket"></i>
+              Login
+              <i className="fa-solid fa-heart"></i>
+            </h2>
+            
+            {error && (
+              <div className="error-message">
+                <p>{error}</p>
+                {error.includes('not been verified') && (
+                  <button
+                    onClick={resendVerificationEmail}
+                    className="resend-btn"
+                    disabled={loading}
+                  >
+                    Resend verification email
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {message && (
+              <div className="success-message">
+                {message}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <input
+                type="submit"
+                value={loading ? 'Signing in...' : 'Sign in'}
+                disabled={loading}
+              />
+            </form>
+            
+            <div className="group">
+              <a href="/reset-password">Forgot Password</a>
+              <a href="/register">Sign up</a>
             </div>
-          )}
-          
-          {message && (
-            <div className="success-message">
-              {message}
-            </div>
-          )}
-          
-          <div className="input-box">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <i className="bx bxs-user"></i>
           </div>
-          
-          <div className="input-box">
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <i className="bx bxs-lock-alt"></i>
-          </div>
-          
-          <div className="remember-forgot">
-            <label>
-              <input type="checkbox" /> Remember me
-            </label>
-            <a href="/reset-password">Forgot password?</a>
-          </div>
-          
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-          
-          <div className="register-link">
-            <p>Don't have an account? <a href="/register">Register</a></p>
-          </div>
-        </form>
+        </div>
       </div>
       
       <style jsx>{`
-        .custom-login-wrapper {
-          width: 420px;
-          background: transparent;
-          border: 2px solid rgba(255, 255, 255, .2);
-          backdrop-filter: blur(20px);
-          box-shadow: 0 0 10px rgba(0, 0, 0, .2);
-          color: #fff;
-          border-radius: 10px;
-          padding: 30px 40px;
+        @property --a {
+          syntax: "<angle>";
+          inherits: false;
+          initial-value: 0deg;
         }
         
-        .custom-login-wrapper h1 {
-          font-size: 36px;
-          text-align: center;
+        .box {
+          position: relative;
+          width: 400px;
+          height: 200px;
+          background: repeating-conic-gradient(
+            from var(--a),
+            #ff2770 0%,
+            #ff2770 5%,
+            transparent 5%,
+            transparent 40%,
+            #ff2770 50%
+          );
+          filter: drop-shadow(0 15px 50px #000);
+          border-radius: 20px;
+          animation: rotating 4s linear infinite;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          transition: 0.5s;
+        }
+        
+        @keyframes rotating {
+          0% { --a: 0deg; }
+          100% { --a: 360deg; }
+        }
+        
+        .box::before {
+          content: "";
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: repeating-conic-gradient(
+            from var(--a),
+            #45f3ff 0%,
+            #45f3ff 5%,
+            transparent 5%,
+            transparent 40%,
+            #45f3ff 50%
+          );
+          filter: drop-shadow(0 15px 50px #000);
+          border-radius: 20px;
+          animation: rotating 4s linear infinite;
+          animation-delay: -1s;
+        }
+        
+        .box::after {
+          content: "";
+          position: absolute;
+          inset: 4px;
+          background: #2d2d39;
+          border-radius: 15px;
+          border: 8px solid #25252b;
+        }
+        
+        .box:hover {
+          width: 450px;
+          height: 500px;
+        }
+        
+        .box:hover .login {
+          inset: 40px;
+        }
+        
+        .box:hover .loginBx {
+          transform: translateY(0px);
+        }
+        
+        .login {
+          position: absolute;
+          inset: 60px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+          border-radius: 10px;
+          background: #00000033;
+          color: #fff;
+          z-index: 1000;
+          box-shadow: inset 0 10px 20px #00000080;
+          border-bottom: 2px solid #ffffff80;
+          transition: 0.5s;
+          overflow: hidden;
+        }
+        
+        .loginBx {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+          gap: 20px;
+          width: 70%;
+          transform: translateY(126px);
+          transition: 0.5s;
+        }
+        
+        h2 {
+          text-transform: uppercase;
+          font-weight: 600;
+          letter-spacing: 0.2em;
           font-family: 'Poppins', sans-serif;
         }
         
-        .input-box {
-          position: relative;
-          width: 100%;
-          height: 50px;
-          margin: 30px 0;
+        h2 i {
+          color: #ff2770;
+          text-shadow: 0 0 5px #ff2770, 0 0 20px #ff2770;
         }
         
-        .input-box input {
+        input {
           width: 100%;
-          height: 100%;
-          background: transparent;
-          border: 2px solid rgba(255, 255, 255, .2);
-          border-radius: 40px;
-          font-size: 16px;
-          color: #fff;
-          padding: 20px 45px 20px 20px;
+          padding: 10px 20px;
           outline: none;
-        }
-        
-        .input-box input::placeholder {
+          border: none;
+          font-size: 1em;
           color: #fff;
+          background: #0000001a;
+          border: 2px solid #fff;
+          border-radius: 30px;
+          font-family: 'Poppins', sans-serif;
         }
         
-        .input-box i {
-          position: absolute;
-          right: 20px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 20px;
+        input::placeholder {
+          color: #999;
         }
         
-        .remember-forgot {
+        input[type="submit"] {
+          background: #45f3ff;
+          border: none;
+          font-weight: 500;
+          color: #111;
+          cursor: pointer;
+          transition: 0.5s;
+        }
+        
+        input[type="submit"]:hover {
+          box-shadow: 0 0 10px #45f3ff, 0 0 60px #45f3ff;
+        }
+        
+        .group {
+          width: 100%;
           display: flex;
           justify-content: space-between;
-          font-size: 14.5px;
-          margin: -15px 0 15px;
         }
         
-        .remember-forgot label input {
-          accent-color: #fff;
-          margin-right: 3px;
-        }
-        
-        .remember-forgot a {
+        .group a {
           color: #fff;
           text-decoration: none;
+          font-family: 'Poppins', sans-serif;
         }
         
-        .remember-forgot a:hover {
-          text-decoration: underline;
-        }
-        
-        .btn {
-          width: 100%;
-          height: 45px;
-          border-radius: 40px;
-          border: none;
-          outline: none;
-          background: #fff;
-          box-shadow: 0 0 10px rgba(0, 0, 0, .1);
-          cursor: pointer;
-          font-size: 16px;
-          color: #333;
+        .group a:nth-child(2) {
+          color: #ff2770;
           font-weight: 600;
-        }
-        
-        .register-link {
-          text-align: center;
-          font-size: 14.5px;
-          margin: 20px 0 15px;
-        }
-        
-        .register-link p a {
-          color: #fff;
-          text-decoration: none;
-          font-weight: 600;
-        }
-        
-        .register-link p a:hover {
-          text-decoration: underline;
         }
         
         .error-message {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
+          background: rgba(239, 68, 68, 0.2);
+          border: 1px solid #ff2770;
           color: #fff;
-          padding: 12px;
-          border-radius: 8px;
-          margin-bottom: 20px;
+          padding: 10px;
+          border-radius: 10px;
+          margin-bottom: 15px;
+          width: 100%;
+          text-align: center;
         }
         
         .success-message {
-          background: rgba(34, 197, 94, 0.1);
-          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: rgba(69, 243, 255, 0.2);
+          border: 1px solid #45f3ff;
           color: #fff;
-          padding: 12px;
-          border-radius: 8px;
-          margin-bottom: 20px;
+          padding: 10px;
+          border-radius: 10px;
+          margin-bottom: 15px;
+          width: 100%;
+          text-align: center;
         }
         
         .resend-btn {
           background: none;
           border: none;
-          color: #fff;
+          color: #45f3ff;
           text-decoration: underline;
           cursor: pointer;
           font-size: 12px;
