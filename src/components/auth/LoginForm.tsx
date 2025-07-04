@@ -296,19 +296,20 @@ const LoginForm: React.FC = () => {
           position: relative;
           width: 400px;
           height: 200px;
-          background: conic-gradient(from 0deg, #ff2770 0%, #ff2770 5%, transparent 5%, transparent 40%, #ff2770 50%);
+          background: repeating-conic-gradient(
+            from 0deg,
+            #ff2770 0%,
+            #ff2770 5%,
+            transparent 5%,
+            transparent 40%,
+            #ff2770 50%
+          );
           filter: drop-shadow(0 15px 50px #000);
           border-radius: 20px;
-          animation: rotating 4s linear infinite;
           display: flex;
           justify-content: center;
           align-items: center;
           transition: 0.5s;
-        }
-        
-        @keyframes rotating {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
         }
         
         .box::before {
@@ -316,11 +317,22 @@ const LoginForm: React.FC = () => {
           position: absolute;
           width: 100%;
           height: 100%;
-          background: conic-gradient(from 90deg, #45f3ff 0%, #45f3ff 5%, transparent 5%, transparent 40%, #45f3ff 50%);
+          background: repeating-conic-gradient(
+            from 90deg,
+            #45f3ff 0%,
+            #45f3ff 5%,
+            transparent 5%,
+            transparent 40%,
+            #45f3ff 50%
+          );
           filter: drop-shadow(0 15px 50px #000);
           border-radius: 20px;
-          animation: rotating 4s linear infinite;
-          animation-delay: -1s;
+          animation: borderRotate 4s linear infinite;
+        }
+        
+        @keyframes borderRotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         
         .box::after {
