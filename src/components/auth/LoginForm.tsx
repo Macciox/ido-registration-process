@@ -292,12 +292,18 @@ const LoginForm: React.FC = () => {
       </div>
       
       <style jsx global>{`
+        @property --a {
+          syntax: "<angle>";
+          inherits: false;
+          initial-value: 0deg;
+        }
+        
         .box {
           position: relative;
           width: 400px;
           height: 200px;
           background: repeating-conic-gradient(
-            from 0deg,
+            from var(--a),
             #ff2770 0%,
             #ff2770 5%,
             transparent 5%,
@@ -306,10 +312,16 @@ const LoginForm: React.FC = () => {
           );
           filter: drop-shadow(0 15px 50px #000);
           border-radius: 20px;
+          animation: rotating 4s linear infinite;
           display: flex;
           justify-content: center;
           align-items: center;
           transition: 0.5s;
+        }
+        
+        @keyframes rotating {
+          0% { --a: 0deg; }
+          100% { --a: 360deg; }
         }
         
         .box::before {
@@ -318,7 +330,7 @@ const LoginForm: React.FC = () => {
           width: 100%;
           height: 100%;
           background: repeating-conic-gradient(
-            from 90deg,
+            from var(--a),
             #45f3ff 0%,
             #45f3ff 5%,
             transparent 5%,
@@ -327,12 +339,8 @@ const LoginForm: React.FC = () => {
           );
           filter: drop-shadow(0 15px 50px #000);
           border-radius: 20px;
-          animation: borderRotate 4s linear infinite;
-        }
-        
-        @keyframes borderRotate {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          animation: rotating 4s linear infinite;
+          animation-delay: -1s;
         }
         
         .box::after {
@@ -365,11 +373,11 @@ const LoginForm: React.FC = () => {
           align-items: center;
           flex-direction: column;
           border-radius: 10px;
-          background: rgba(0, 0, 0, 0.2);
+          background: #00000033;
           color: #fff;
           z-index: 1000;
-          box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.5);
-          border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+          box-shadow: inset 0 10px 20px #00000080;
+          border-bottom: 2px solid #ffffff80;
           transition: 0.5s;
           overflow: hidden;
         }
@@ -406,7 +414,7 @@ const LoginForm: React.FC = () => {
           border: 2px solid #fff;
           font-size: 1em;
           color: #fff;
-          background: rgba(0, 0, 0, 0.1);
+          background: #0000001a;
           border-radius: 30px;
           font-family: 'Poppins', sans-serif;
         }
