@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
 import Head from 'next/head';
-import '../styles/modern-login.css';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -226,65 +225,247 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="box">
-      <div className="login">
-        <div className="loginBx">
-          <h2>
-            <i className="fa-solid fa-right-to-bracket"></i>
-            Login
-            <i className="fa-solid fa-heart"></i>
-          </h2>
-          
-          {error && (
-            <div className="error-message">
-              <p>{error}</p>
-              {error.includes('not been verified') && (
-                <button
-                  onClick={resendVerificationEmail}
-                  className="resend-btn"
-                  disabled={loading}
-                >
-                  Resend verification email
-                </button>
-              )}
+    <>
+      <Head>
+        <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        <link href="https://use.fontawesome.com/releases/v6.5.1/css/all.css" rel="stylesheet" />
+      </Head>
+      
+      <div className="box">
+        <div className="login">
+          <div className="loginBx">
+            <h2>
+              <i className="fa-solid fa-right-to-bracket"></i>
+              Login
+              <i className="fa-solid fa-heart"></i>
+            </h2>
+            
+            {error && (
+              <div className="error-message">
+                <p>{error}</p>
+                {error.includes('not been verified') && (
+                  <button
+                    onClick={resendVerificationEmail}
+                    className="resend-btn"
+                    disabled={loading}
+                  >
+                    Resend verification email
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {message && (
+              <div className="success-message">
+                {message}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <input
+                type="submit"
+                value={loading ? 'Signing in...' : 'Sign in'}
+                disabled={loading}
+              />
+            </form>
+            
+            <div className="group">
+              <a href="/reset-password">Forgot Password</a>
+              <a href="/register">Sign up</a>
             </div>
-          )}
-          
-          {message && (
-            <div className="success-message">
-              {message}
-            </div>
-          )}
-          
-          <form onSubmit={handleSubmit}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <input
-              type="submit"
-              value={loading ? 'Signing in...' : 'Sign in'}
-              disabled={loading}
-            />
-          </form>
-          
-          <div className="group">
-            <a href="/reset-password">Forgot Password</a>
-            <a href="/register">Sign up</a>
           </div>
         </div>
       </div>
-    </div>
+      
+      <style jsx global>{`
+        .box {
+          position: relative;
+          width: 400px;
+          height: 200px;
+          background: conic-gradient(from 0deg, #ff2770 0%, #ff2770 5%, transparent 5%, transparent 40%, #ff2770 50%);
+          filter: drop-shadow(0 15px 50px #000);
+          border-radius: 20px;
+          animation: rotating 4s linear infinite;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          transition: 0.5s;
+        }
+        
+        @keyframes rotating {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .box::before {
+          content: "";
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: conic-gradient(from 90deg, #45f3ff 0%, #45f3ff 5%, transparent 5%, transparent 40%, #45f3ff 50%);
+          filter: drop-shadow(0 15px 50px #000);
+          border-radius: 20px;
+          animation: rotating 4s linear infinite;
+          animation-delay: -1s;
+        }
+        
+        .box::after {
+          content: "";
+          position: absolute;
+          inset: 4px;
+          background: #2d2d39;
+          border-radius: 15px;
+          border: 8px solid #25252b;
+        }
+        
+        .box:hover {
+          width: 450px;
+          height: 500px;
+        }
+        
+        .box:hover .login {
+          inset: 40px;
+        }
+        
+        .box:hover .loginBx {
+          transform: translateY(0px);
+        }
+        
+        .login {
+          position: absolute;
+          inset: 60px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+          border-radius: 10px;
+          background: rgba(0, 0, 0, 0.2);
+          color: #fff;
+          z-index: 1000;
+          box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.5);
+          border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+          transition: 0.5s;
+          overflow: hidden;
+        }
+        
+        .loginBx {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+          gap: 20px;
+          width: 70%;
+          transform: translateY(126px);
+          transition: 0.5s;
+        }
+        
+        .loginBx h2 {
+          text-transform: uppercase;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          margin: 0;
+          font-family: 'Poppins', sans-serif;
+        }
+        
+        .loginBx h2 i {
+          color: #ff2770;
+          text-shadow: 0 0 5px #ff2770, 0 0 20px #ff2770;
+        }
+        
+        .loginBx input {
+          width: 100%;
+          padding: 10px 20px;
+          outline: none;
+          border: 2px solid #fff;
+          font-size: 1em;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 30px;
+          font-family: 'Poppins', sans-serif;
+        }
+        
+        .loginBx input::placeholder {
+          color: #999;
+        }
+        
+        .loginBx input[type="submit"] {
+          background: #45f3ff;
+          border: none;
+          font-weight: 500;
+          color: #111;
+          cursor: pointer;
+          transition: 0.5s;
+        }
+        
+        .loginBx input[type="submit"]:hover {
+          box-shadow: 0 0 10px #45f3ff, 0 0 60px #45f3ff;
+        }
+        
+        .group {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+        }
+        
+        .group a {
+          color: #fff;
+          text-decoration: none;
+          font-family: 'Poppins', sans-serif;
+        }
+        
+        .group a:nth-child(2) {
+          color: #ff2770;
+          font-weight: 600;
+        }
+        
+        .error-message {
+          background: rgba(239, 68, 68, 0.2);
+          border: 1px solid #ff2770;
+          color: #fff;
+          padding: 10px;
+          border-radius: 10px;
+          margin-bottom: 15px;
+          width: 100%;
+          text-align: center;
+        }
+        
+        .success-message {
+          background: rgba(69, 243, 255, 0.2);
+          border: 1px solid #45f3ff;
+          color: #fff;
+          padding: 10px;
+          border-radius: 10px;
+          margin-bottom: 15px;
+          width: 100%;
+          text-align: center;
+        }
+        
+        .resend-btn {
+          background: none;
+          border: none;
+          color: #45f3ff;
+          text-decoration: underline;
+          cursor: pointer;
+          font-size: 12px;
+          margin-top: 8px;
+        }
+      `}</style>
+    </>
   );
 };
 
