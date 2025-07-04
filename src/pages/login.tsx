@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import AdminLoginForm from '@/components/auth/AdminLoginForm';
 import ProjectOwnerLoginForm from '@/components/auth/ProjectOwnerLoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
+import LoginForm from '@/components/auth/LoginForm';
 import Logo from '@/components/ui/Logo';
 import Head from 'next/head';
 
