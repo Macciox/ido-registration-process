@@ -23,12 +23,12 @@ const LoginPage: React.FC = () => {
       <Head>
         <title>{showRegister ? "Register Account" : "Project Owner Login"} | Decubate IDO</title>
       </Head>
-      <div className="min-h-screen login-gradient py-12 flex items-center justify-center">
+      <div className="custom-login-page">
         <div className="max-w-md w-full px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex justify-center">
             <Logo />
           </div>
-          <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+          <div className="custom-login-wrapper">
             <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-secondary/10 to-secondary/5">
               <h1 className="text-3xl font-bold text-center text-secondary mb-2">
                 {showRegister ? "Register Account" : "Project Owner Login"}
@@ -92,8 +92,30 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <style jsx>{`
+        .custom-login-page {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          background: url(https://img.playbook.com/IZSaaisbuPYRUSQYBZckzA61Px-1dJx2_5pGRp3N4dk/Z3M6Ly9wbGF5Ym9v/ay1hc3NldHMtcHVi/bGljLzRkZmUwYjQ2/LWRhNjAtNDQ2Yy1h/Y2UxLWM0ZTZkMGI3/NTdlMA);
+          background-size: cover;
+          background-position: center;
+          font-family: 'Poppins', sans-serif;
+        }
+        
+        .custom-login-wrapper {
+          background: transparent;
+          border: 2px solid rgba(255, 255, 255, .2);
+          backdrop-filter: blur(20px);
+          box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+          color: #fff;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+      `}</style>
     </>
-    
   );
 };
 

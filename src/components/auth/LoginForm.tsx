@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
+import Head from 'next/head';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -224,94 +225,211 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
+    <>
+      <Head>
+        <link
+          href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+          rel="stylesheet"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Poppins&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{error}</p>
-          {error.includes('not been verified') && (
-            <button
-              onClick={resendVerificationEmail}
-              className="mt-2 text-sm font-medium text-red-700 underline"
-              disabled={loading}
-            >
-              Resend verification email
-            </button>
+      <div className="custom-login-wrapper">
+        <form onSubmit={handleSubmit}>
+          <h1>Login</h1>
+          
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+              {error.includes('not been verified') && (
+                <button
+                  onClick={resendVerificationEmail}
+                  className="resend-btn"
+                  disabled={loading}
+                >
+                  Resend verification email
+                </button>
+              )}
+            </div>
           )}
-        </div>
-      )}
-      
-      {message && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {message}
-        </div>
-      )}
-      
-      {debugInfo && (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
-          <p className="font-bold">Debug Info:</p>
-          <pre className="whitespace-pre-wrap text-xs">{debugInfo}</pre>
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <div className="text-right mt-1">
-            <a
-              href="/reset-password"
-              className="text-sm text-primary hover:text-primary-dark"
-            >
-              Forgot password?
-            </a>
+          
+          {message && (
+            <div className="success-message">
+              {message}
+            </div>
+          )}
+          
+          <div className="input-box">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <i className="bx bxs-user"></i>
           </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-            disabled={loading}
-          >
+          
+          <div className="input-box">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <i className="bx bxs-lock-alt"></i>
+          </div>
+          
+          <div className="remember-forgot">
+            <label>
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="/reset-password">Forgot password?</a>
+          </div>
+          
+          <button type="submit" className="btn" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
-        </div>
+          
+          <div className="register-link">
+            <p>Don't have an account? <a href="/register">Register</a></p>
+          </div>
+        </form>
+      </div>
+      
+      <style jsx>{`
+        .custom-login-wrapper {
+          width: 420px;
+          background: transparent;
+          border: 2px solid rgba(255, 255, 255, .2);
+          backdrop-filter: blur(20px);
+          box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+          color: #fff;
+          border-radius: 10px;
+          padding: 30px 40px;
+        }
         
-        <div className="text-center mt-4">
-          <a
-            href="/register"
-            className="inline-block align-baseline font-bold text-sm text-primary hover:text-primary-dark"
-          >
-            Don't have an account? Register
-          </a>
-        </div>
-      </form>
-    </div>
+        .custom-login-wrapper h1 {
+          font-size: 36px;
+          text-align: center;
+          font-family: 'Poppins', sans-serif;
+        }
+        
+        .input-box {
+          position: relative;
+          width: 100%;
+          height: 50px;
+          margin: 30px 0;
+        }
+        
+        .input-box input {
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          border: 2px solid rgba(255, 255, 255, .2);
+          border-radius: 40px;
+          font-size: 16px;
+          color: #fff;
+          padding: 20px 45px 20px 20px;
+          outline: none;
+        }
+        
+        .input-box input::placeholder {
+          color: #fff;
+        }
+        
+        .input-box i {
+          position: absolute;
+          right: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 20px;
+        }
+        
+        .remember-forgot {
+          display: flex;
+          justify-content: space-between;
+          font-size: 14.5px;
+          margin: -15px 0 15px;
+        }
+        
+        .remember-forgot label input {
+          accent-color: #fff;
+          margin-right: 3px;
+        }
+        
+        .remember-forgot a {
+          color: #fff;
+          text-decoration: none;
+        }
+        
+        .remember-forgot a:hover {
+          text-decoration: underline;
+        }
+        
+        .btn {
+          width: 100%;
+          height: 45px;
+          border-radius: 40px;
+          border: none;
+          outline: none;
+          background: #fff;
+          box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+          cursor: pointer;
+          font-size: 16px;
+          color: #333;
+          font-weight: 600;
+        }
+        
+        .register-link {
+          text-align: center;
+          font-size: 14.5px;
+          margin: 20px 0 15px;
+        }
+        
+        .register-link p a {
+          color: #fff;
+          text-decoration: none;
+          font-weight: 600;
+        }
+        
+        .register-link p a:hover {
+          text-decoration: underline;
+        }
+        
+        .error-message {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #fff;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+        }
+        
+        .success-message {
+          background: rgba(34, 197, 94, 0.1);
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          color: #fff;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+        }
+        
+        .resend-btn {
+          background: none;
+          border: none;
+          color: #fff;
+          text-decoration: underline;
+          cursor: pointer;
+          font-size: 12px;
+          margin-top: 8px;
+        }
+      `}</style>
+    </>
   );
 };
 
