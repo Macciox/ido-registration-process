@@ -227,16 +227,16 @@ const ProjectPage = () => {
             <div className="mb-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{projectName}</h1>
-                  <p className="text-gray-600">Complete the following information for your project</p>
+                  <h1 className="text-2xl font-bold project-name">{projectName}</h1>
+                  <p className="text-text-secondary">Complete the following information for your project</p>
                 </div>
                 
                 <div className="mt-4 md:mt-0">
                   <button
                     onClick={() => router.push('/admin/dashboard')}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center"
+                    className="back-dashboard-btn flex items-center gap-2"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
                     </svg>
                     Back to Dashboard

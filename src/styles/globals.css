@@ -302,9 +302,99 @@ body {
   box-shadow: 0 4px 12px rgba(136, 88, 255, 0.4);
 }
 
+/* Main CTA Button - Light Style */
+.main-cta_btn {
+  color: #e4ddf9;
+  background-image: linear-gradient(#8264dd, #8264dd1a);
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  height: 44px;
+  padding: 10px 20px;
+  gap: 8px;
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.main-cta_btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(130, 100, 221, 0.4);
+  color: #e4ddf9;
+}
+
+/* Back to Dashboard Button */
+.back-dashboard-btn {
+  color: #e4ddf9;
+  background-image: linear-gradient(#8264dd, #8264dd1a);
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  height: 44px;
+  padding: 10px 20px;
+  gap: 8px;
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.back-dashboard-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(130, 100, 221, 0.4);
+  color: #e4ddf9;
+}
+
 /* Project name fix */
 .project-title {
   color: var(--text-primary) !important;
+}
+
+/* Project name in header */
+.project-name {
+  color: var(--text-primary) !important;
+}
+
+/* Header dropdown z-index fix */
+.header-dropdown {
+  z-index: 9999 !important;
+}
+
+/* Nav item consistency */
+.nav-item {
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: var(--accent-gradient);
+  color: white;
 }
 
 /* Scrollbar */
