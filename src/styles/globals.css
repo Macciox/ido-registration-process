@@ -227,6 +227,53 @@ body {
   border: 1px solid rgba(240, 113, 97, 0.3);
 }
 
+/* Form Elements */
+.form-container {
+  color: var(--text-primary);
+}
+
+.form-container label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.form-container input,
+.form-container textarea,
+.form-container select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.form-container input::placeholder,
+.form-container textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.form-container input:focus,
+.form-container textarea:focus,
+.form-container select:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(128, 82, 241, 0.1);
+}
+
+/* White background text fix */
+.bg-white,
+.bg-white * {
+  color: #1f2937 !important;
+}
+
+.bg-white label {
+  color: #374151 !important;
+}
+
+.bg-white .text-gray-500 {
+  color: #6b7280 !important;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

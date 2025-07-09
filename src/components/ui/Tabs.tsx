@@ -26,17 +26,17 @@ const Tabs: React.FC<TabsProps> = ({ tabs, renderContent, defaultTab }) => {
 
   return (
     <div>
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-white/10 mb-6">
         <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={clsx(
-                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
+                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors',
                 tab.id === activeTab
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-white/20'
               )}
               aria-current={tab.id === activeTab ? 'page' : undefined}
             >
@@ -45,8 +45,8 @@ const Tabs: React.FC<TabsProps> = ({ tabs, renderContent, defaultTab }) => {
                 {tab.completion !== undefined && (
                   <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
                     tab.completion > 0 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-700'
+                      ? 'bg-secondary/20 text-secondary border border-secondary/30' 
+                      : 'bg-white/10 text-text-muted border border-white/20'
                   }`}>
                     {tab.completion}%
                   </span>
@@ -59,7 +59,9 @@ const Tabs: React.FC<TabsProps> = ({ tabs, renderContent, defaultTab }) => {
       
       <div className="py-4">
         {/* Renderizza il contenuto della tab attiva */}
-        {renderContent(activeTab)}
+        <div className="text-text-primary">
+          {renderContent(activeTab)}
+        </div>
         
         {/* Pre-renderizza il contenuto di tutte le altre tab in modo nascosto */}
         <div className="hidden">
