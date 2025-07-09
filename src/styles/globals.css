@@ -181,14 +181,18 @@ body {
 
 /* Navigation */
 .nav-item {
-  padding: 12px 20px;
-  border-radius: 12px;
+  padding: 10px 20px;
+  border-radius: 8px;
   transition: all 0.3s ease;
   color: var(--text-secondary);
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 44px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
 }
 
 .nav-item:hover {
@@ -197,8 +201,8 @@ body {
 }
 
 .nav-item.active {
-  background: var(--accent-gradient);
-  color: white;
+  background: radial-gradient(46.21% 61.1% at 49.66% 100%, #CDAFFF 0%, #8858FF 100%);
+  color: #FFFFFF;
 }
 
 /* Status Badges */
@@ -274,86 +278,69 @@ body {
   color: #6b7280 !important;
 }
 
-/* New Primary Button 2025 */
-.primary-btn {
-  box-sizing: border-box;
+/* Dark Button - Gradient background with white text */
+.btn-dark {
   display: flex;
-  flex-direction: row;
   justify-content: center;
   align-items: center;
   padding: 10px 20px;
-  gap: 12px;
+  gap: 8px;
   height: 44px;
   background: radial-gradient(46.21% 61.1% at 49.66% 100%, #CDAFFF 0%, #8858FF 100%);
   border-radius: 8px;
   border: none;
-  font-family: 'Inter', sans-serif;
+  font-family: Inter, sans-serif;
   font-weight: 700;
   font-size: 14px;
-  line-height: 150%;
-  text-align: center;
-  color: #F3EEFC;
+  color: #FFFFFF;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
 }
 
-.primary-btn:hover {
+.btn-dark:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(136, 88, 255, 0.4);
+  color: #FFFFFF;
 }
 
-/* Main CTA Button - Light Style */
+/* Light Button - Light background with dark text */
+.btn-light {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px;
+  gap: 8px;
+  height: 44px;
+  background: linear-gradient(#e4ddf9, #f3f0ff);
+  border-radius: 8px;
+  border: none;
+  font-family: Inter, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #2d1b69;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-light:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(130, 100, 221, 0.2);
+  color: #2d1b69;
+}
+
+/* Legacy button classes - redirect to new system */
+.primary-btn {
+  @apply btn-dark;
+}
+
 .main-cta_btn {
-  color: #e4ddf9;
-  background-image: linear-gradient(#8264dd, #8264dd1a);
-  border-radius: 8px;
-  justify-content: center;
-  align-items: center;
-  height: 44px;
-  padding: 10px 20px;
-  gap: 8px;
-  font-family: Inter, sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  display: flex;
-  position: relative;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
+  @apply btn-light;
 }
 
-.main-cta_btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(130, 100, 221, 0.4);
-  color: #e4ddf9;
-}
-
-/* Back to Dashboard Button */
 .back-dashboard-btn {
-  color: #e4ddf9;
-  background-image: linear-gradient(#8264dd, #8264dd1a);
-  border-radius: 8px;
-  justify-content: center;
-  align-items: center;
-  height: 44px;
-  padding: 10px 20px;
-  gap: 8px;
-  font-family: Inter, sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  display: flex;
-  position: relative;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-}
-
-.back-dashboard-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(130, 100, 221, 0.4);
-  color: #e4ddf9;
+  @apply btn-light;
 }
 
 /* Project name fix */
@@ -371,31 +358,7 @@ body {
   z-index: 9999 !important;
 }
 
-/* Nav item consistency */
-.nav-item {
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  color: var(--text-secondary);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  font-weight: 700;
-  font-size: 14px;
-  font-family: Inter, sans-serif;
-}
 
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-
-.nav-item.active {
-  background: var(--accent-gradient);
-  color: white;
-}
 
 /* Scrollbar */
 ::-webkit-scrollbar {

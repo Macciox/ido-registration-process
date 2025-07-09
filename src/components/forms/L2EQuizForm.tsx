@@ -171,16 +171,16 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="sleek-card p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">L2E Quiz Questions (up to 5 entries)</h2>
+        <h2 className="text-lg font-medium text-white">L2E Quiz Questions (up to 5 entries)</h2>
         <div className="flex items-center">
-          <div className="mr-3 text-sm font-medium">
+          <div className="mr-3 text-sm font-medium text-white">
             Completion: {completionPercentage}%
           </div>
-          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+          <div className="progress-bar w-32">
             <div 
-              className="bg-primary h-2.5 rounded-full" 
+              className="progress-fill" 
               style={{ width: `${completionPercentage}%` }}
             ></div>
           </div>
@@ -201,14 +201,14 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
       
       <div>
         {questions.map((question, index) => (
-          <div key={index} className="mb-6 p-4 border border-gray-200 rounded-md">
+          <div key={index} className="mb-6 p-4 border border-white/10 rounded-md bg-bg-secondary">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-md font-medium">Question #{index + 1}</h3>
+              <h3 className="text-md font-medium text-white">Question #{index + 1}</h3>
               {questions.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeQuestion(index)}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-400 hover:text-red-300"
                 >
                   Remove
                 </button>
@@ -216,13 +216,13 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
             </div>
             
             <div className="mb-4">
-              <label className="form-label" htmlFor={`question_${index}`}>
+              <label className="form-label text-text-secondary" htmlFor={`question_${index}`}>
                 Question
               </label>
               <input
                 id={`question_${index}`}
                 type="text"
-                className="form-input"
+                className="sleek-input"
                 placeholder="Enter question"
                 value={question.question}
                 onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
@@ -231,13 +231,13 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
             
             {['A', 'B', 'C', 'D'].map((option, optionIndex) => (
               <div className="mb-4" key={optionIndex}>
-                <label className="form-label" htmlFor={`question_${index}_option_${option.toLowerCase()}`}>
+                <label className="form-label text-text-secondary" htmlFor={`question_${index}_option_${option.toLowerCase()}`}>
                   Option {option}
                 </label>
                 <input
                   id={`question_${index}_option_${option.toLowerCase()}`}
                   type="text"
-                  className="form-input"
+                  className="sleek-input"
                   placeholder={`Enter option ${option}`}
                   value={question.options[optionIndex]}
                   onChange={(e) => handleQuestionChange(index, 'option', e.target.value, optionIndex)}
@@ -246,12 +246,12 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
             ))}
             
             <div>
-              <label className="form-label" htmlFor={`question_${index}_correct`}>
+              <label className="form-label text-text-secondary" htmlFor={`question_${index}_correct`}>
                 Correct Answer
               </label>
               <select
                 id={`question_${index}_correct`}
-                className="form-input"
+                className="sleek-input"
                 value={question.correctAnswer}
                 onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
               >
@@ -269,7 +269,7 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
             <button
               type="button"
               onClick={addQuestion}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="btn-light"
             >
               + Add Another Question
             </button>

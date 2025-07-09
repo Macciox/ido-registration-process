@@ -114,19 +114,19 @@ const AdminWhitelistSection: React.FC = () => {
   const getStatusBadge = (entry: AdminWhitelistEntry) => {
     if (entry.status === 'registered') {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+        <span className="status-success">
           Registered
         </span>
       );
     } else if (entry.status === 'pending_verification') {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+        <span className="status-warning">
           Pending Verification
         </span>
       );
     } else {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+        <span className="status-warning">
           Not Registered
         </span>
       );
@@ -134,30 +134,30 @@ const AdminWhitelistSection: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-medium mb-4">Admin Whitelist</h2>
+    <div className="sleek-card p-6 mb-6">
+      <h2 className="text-lg font-medium text-white mb-4">Admin Whitelist</h2>
       {error && (
-        <div className="p-4 mb-4 rounded bg-red-100 text-red-700">{error}</div>
+        <div className="p-4 mb-4 rounded bg-red-900/20 text-red-400 border border-red-500/30">{error}</div>
       )}
       {message && (
-        <div className="p-4 mb-4 rounded bg-green-100 text-green-700">{message}</div>
+        <div className="p-4 mb-4 rounded bg-green-900/20 text-green-400 border border-green-500/30">{message}</div>
       )}
       {loading ? (
         <div className="flex justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
         </div>
       ) : (
         <div className="mb-6">
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-white/10">
             {whitelist.map(entry => (
               <li key={entry.id} className="py-3 flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <span className="text-gray-900">{entry.email}</span>
+                  <span className="text-white">{entry.email}</span>
                   {getStatusBadge(entry)}
                 </div>
                 <button
                   onClick={() => removeEmail(entry.id)}
-                  className="px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                  className="btn-light text-sm"
                   disabled={removingId === entry.id}
                 >
                   {removingId === entry.id ? 'Removing...' : 'Remove'}
@@ -171,7 +171,7 @@ const AdminWhitelistSection: React.FC = () => {
         <div className="flex">
           <input
             type="email"
-            className="form-input flex-1 rounded-r-none"
+            className="sleek-input flex-1 rounded-r-none"
             placeholder="Add admin email"
             value={newEmail}
             onChange={e => setNewEmail(e.target.value)}
@@ -179,7 +179,7 @@ const AdminWhitelistSection: React.FC = () => {
           />
           <button
             type="submit"
-            className="btn btn-primary rounded-l-none"
+            className="btn-dark rounded-l-none"
           >
             Add
           </button>

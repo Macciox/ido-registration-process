@@ -292,7 +292,7 @@ const LoginForm: React.FC = () => {
             
             <button
               type="submit"
-              className="sleek-btn login-btn"
+              className="btn-dark login-btn"
               disabled={loading}
             >
               {loading ? (
