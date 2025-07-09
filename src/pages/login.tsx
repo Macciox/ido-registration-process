@@ -24,76 +24,27 @@ const LoginPage: React.FC = () => {
       <Head>
         <title>{showRegister ? "Register Account" : "Project Owner Login"} | Decubate IDO</title>
       </Head>
-      <div className="modern-login-body">
-        <div className="login-container">
+      <div className="animated-bg min-h-screen">
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-8">
           <LoginForm />
           
           {/* Admin Login Toggle */}
-          <div className="admin-toggle">
+          <div className="text-center">
             <button 
               onClick={() => setShowAdminLogin(!showAdminLogin)}
-              className="admin-btn"
+              className="px-4 py-2 text-sm bg-white/10 border border-white/20 text-text-secondary hover:text-white hover:bg-white/20 rounded-lg transition-all duration-300"
             >
               {showAdminLogin ? "Hide Admin Login" : "Admin Login"}
             </button>
             
             {showAdminLogin && (
-              <div className="admin-form">
+              <div className="mt-6 sleek-card p-6 max-w-md w-full">
                 <AdminLoginForm />
               </div>
             )}
           </div>
         </div>
       </div>
-      
-      <style jsx>{`
-        .modern-login-body {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background: #25252b;
-          font-family: 'Poppins', sans-serif;
-          padding: 20px;
-        }
-        
-        .login-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 30px;
-        }
-        
-        .admin-toggle {
-          text-align: center;
-        }
-        
-        .admin-btn {
-          background: rgba(255, 255, 255, 0.1);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          color: #fff;
-          padding: 8px 16px;
-          border-radius: 20px;
-          cursor: pointer;
-          font-family: 'Poppins', sans-serif;
-          font-size: 12px;
-          transition: 0.3s;
-        }
-        
-        .admin-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-          border-color: #45f3ff;
-          box-shadow: 0 0 10px rgba(69, 243, 255, 0.3);
-        }
-        
-        .admin-form {
-          margin-top: 20px;
-          padding: 20px;
-          background: rgba(0, 0, 0, 0.3);
-          border-radius: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-      `}</style>
     </>
   );
 };

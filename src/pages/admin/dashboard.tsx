@@ -112,19 +112,23 @@ const AdminDashboard: React.FC = () => {
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header with navigation */}
-          <div className="mb-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Admin Dashboard</h1>
+          <div className="mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+                <p className="text-text-secondary">Manage your IDO projects and platform settings</p>
+              </div>
               
               <div className="flex flex-wrap gap-3">
                 <a
                   href="/admin/dashboard"
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    !router.query.tab
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  className={`nav-item ${
+                    !router.query.tab ? 'active' : ''
                   }`}
                 >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
                   Projects
                 </a>
                 
@@ -132,9 +136,9 @@ const AdminDashboard: React.FC = () => {
                   <>
                     <a
                       href="/admin/projects/new"
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm flex items-center"
+                      className="sleek-btn flex items-center gap-2"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                       </svg>
                       New Project
@@ -142,13 +146,14 @@ const AdminDashboard: React.FC = () => {
                     
                     <a
                       href="/admin/dashboard?tab=settings"
-                      className={`px-4 py-2 rounded-md text-sm font-medium ${
-                        router.query.tab === 'settings'
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      className={`nav-item ${
+                        router.query.tab === 'settings' ? 'active' : ''
                       }`}
                     >
-                      Admin Settings
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                      </svg>
+                      Settings
                     </a>
                   </>
                 )}
@@ -158,68 +163,67 @@ const AdminDashboard: React.FC = () => {
           
           {/* Projects Section */}
           {activeTab === 'projects' && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium">All Projects</h2>
+            <div className="sleek-card p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-white">All Projects</h2>
               </div>
               
               {projects.length === 0 ? (
-                <p className="text-gray-500">No projects found</p>
+                <div className="text-center py-12">
+                  <div className="text-text-muted text-lg">No projects found</div>
+                  <p className="text-text-secondary mt-2">Create your first project to get started</p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="sleek-table w-full">
+                    <thead>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th>Project Name</th>
+                        <th>Owner</th>
+                        <th>Created</th>
+                        <th>Progress</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody>
                       {projects.map((project) => (
                         <tr key={project.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{project.name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.owner_email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="font-medium text-white">{project.name}</td>
+                          <td className="text-text-secondary">{project.owner_email}</td>
+                          <td className="text-text-secondary">
                             {new Date(project.created_at).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="mr-2 text-sm font-medium text-gray-900">
+                          <td>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-white min-w-[40px]">
                                 {project.completion_percentage}%
-                              </div>
-                              <div className="w-24 bg-gray-200 rounded-full h-2.5">
+                              </span>
+                              <div className="progress-bar w-24">
                                 <div 
-                                  className={`h-2.5 rounded-full ${
-                                    project.completion_percentage > 75 ? 'bg-green-500' :
-                                    project.completion_percentage > 25 ? 'bg-yellow-500' :
-                                    'bg-red-500'
-                                  }`}
+                                  className="progress-fill"
                                   style={{ width: `${project.completion_percentage}%` }}
                                 ></div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex space-x-2">
+                          <td>
+                            <div className="flex gap-2">
                               <a
                                 href={`/projects/${project.id}`}
-                                className="text-primary hover:text-primary-dark flex items-center justify-center bg-blue-50 hover:bg-blue-100 rounded-full p-2 transition-colors"
+                                className="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
                                 title="View Project"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                                   <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                                 </svg>
                               </a>
                               <a
                                 href={`/admin/projects/${project.id}/settings`}
-                                className="text-gray-600 hover:text-gray-800 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors"
+                                className="p-2 rounded-lg bg-white/10 text-text-secondary hover:bg-white/20 hover:text-white transition-colors"
                                 title="Project Settings"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                                 </svg>
                               </a>

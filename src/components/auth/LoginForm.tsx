@@ -227,262 +227,299 @@ const LoginForm: React.FC = () => {
   return (
     <>
       <Head>
-        <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
-        <link href="https://use.fontawesome.com/releases/v6.5.1/css/all.css" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
       
-      <div className="box">
-        <div className="login">
-          <div className="loginBx">
-            <h2>
-              <i className="fa-solid fa-right-to-bracket"></i>
-              Login
-              <i className="fa-solid fa-heart"></i>
-            </h2>
-            
-            {error && (
-              <div className="error-message">
+      <div className="sleek-login-container">
+        <div className="sleek-card login-card">
+          <div className="login-header">
+            <div className="logo-container">
+              <div className="logo-glow"></div>
+              <img src="/assets/decubate-logo.svg" alt="Decubate Technologies" className="logo" />
+            </div>
+            <p>Welcome back to the future of IDO management</p>
+          </div>
+          
+          {error && (
+            <div className="alert alert-error">
+              <div className="alert-icon">⚠</div>
+              <div>
                 <p>{error}</p>
                 {error.includes('not been verified') && (
                   <button
                     onClick={resendVerificationEmail}
-                    className="resend-btn"
+                    className="link-btn"
                     disabled={loading}
                   >
                     Resend verification email
                   </button>
                 )}
               </div>
-            )}
-            
-            {message && (
-              <div className="success-message">
-                {message}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit}>
+            </div>
+          )}
+          
+          {message && (
+            <div className="alert alert-success">
+              <div className="alert-icon">✓</div>
+              <p>{message}</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label>Email Address</label>
               <input
                 type="email"
-                placeholder="Email"
+                className="sleek-input"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+            </div>
+            
+            <div className="form-group">
+              <label>Password</label>
               <input
                 type="password"
-                placeholder="Password"
+                className="sleek-input"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <input
-                type="submit"
-                value={loading ? 'Signing in...' : 'Sign in'}
-                disabled={loading}
-              />
-            </form>
-            
-            <div className="group">
-              <a href="/reset-password">Forgot Password</a>
-              <a href="/register">Sign up</a>
             </div>
+            
+            <button
+              type="submit"
+              className="sleek-btn login-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="spinner"></div>
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+          
+          <div className="login-footer">
+            <a href="/reset-password" className="link">Forgot Password?</a>
+            <a href="/register" className="link primary">Create Account</a>
           </div>
         </div>
       </div>
       
       <style jsx global>{`
-        @property --a {
-          syntax: "<angle>";
-          inherits: false;
-          initial-value: 0deg;
-        }
-        
-        .box {
+        .sleek-login-container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: var(--bg-primary);
           position: relative;
-          width: 400px;
-          height: 200px;
-          background: repeating-conic-gradient(
-            from var(--a),
-            #ff2770 0%,
-            #ff2770 5%,
-            transparent 5%,
-            transparent 40%,
-            #ff2770 50%
-          );
-          filter: drop-shadow(0 15px 50px #000);
-          border-radius: 20px;
-          animation: rotating 4s linear infinite;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          transition: 0.5s;
-        }
-        
-        @keyframes rotating {
-          0% { --a: 0deg; }
-          100% { --a: 360deg; }
-        }
-        
-        .box::before {
-          content: "";
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: repeating-conic-gradient(
-            from var(--a),
-            #45f3ff 0%,
-            #45f3ff 5%,
-            transparent 5%,
-            transparent 40%,
-            #45f3ff 50%
-          );
-          filter: drop-shadow(0 15px 50px #000);
-          border-radius: 20px;
-          animation: rotating 4s linear infinite;
-          animation-delay: -1s;
-        }
-        
-        .box::after {
-          content: "";
-          position: absolute;
-          inset: 4px;
-          background: #2d2d39;
-          border-radius: 15px;
-          border: 8px solid #25252b;
-        }
-        
-        .box:hover {
-          width: 450px;
-          height: 500px;
-        }
-        
-        .box:hover .login {
-          inset: 40px;
-        }
-        
-        .box:hover .loginBx {
-          transform: translateY(0px);
-        }
-        
-        .login {
-          position: absolute;
-          inset: 60px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-          border-radius: 10px;
-          background: #00000033;
-          color: #fff;
-          z-index: 1000;
-          box-shadow: inset 0 10px 20px #00000080;
-          border-bottom: 2px solid #ffffff80;
-          transition: 0.5s;
           overflow: hidden;
         }
         
-        .loginBx {
+        .sleek-login-container::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-image: url('/assets/Vector.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          opacity: 0.1;
+          z-index: 0;
+        }
+        
+        .sleek-login-container::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(128, 82, 241, 0.1) 0%, transparent 70%);
+          animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        .login-card {
+          width: 100%;
+          max-width: 420px;
+          padding: 40px;
           position: relative;
+          z-index: 2;
+        }
+        
+        .login-header {
+          text-align: center;
+          margin-bottom: 32px;
+        }
+        
+        .logo-container {
+          position: relative;
+          display: inline-block;
+          margin-bottom: 16px;
+        }
+        
+        .logo-glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 80px;
+          height: 80px;
+          background: var(--accent-gradient);
+          border-radius: 50%;
+          filter: blur(20px);
+          opacity: 0.3;
+          animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .logo {
+          height: 40px;
+          width: auto;
+          position: relative;
+          z-index: 1;
+          filter: brightness(1.1);
+        }
+        
+        .login-header p {
+          color: var(--text-secondary);
+          font-size: 14px;
+          margin: 8px 0 0 0;
+        }
+        
+        .alert {
           display: flex;
-          justify-content: center;
-          align-items: center;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+          font-size: 14px;
+        }
+        
+        .alert-error {
+          background: rgba(240, 113, 97, 0.1);
+          border: 1px solid rgba(240, 113, 97, 0.3);
+          color: #F07161;
+        }
+        
+        .alert-success {
+          background: rgba(45, 219, 156, 0.1);
+          border: 1px solid rgba(45, 219, 156, 0.3);
+          color: #2DDB9C;
+        }
+        
+        .alert-icon {
+          font-size: 16px;
+          margin-top: 2px;
+        }
+        
+        .login-form {
+          display: flex;
           flex-direction: column;
           gap: 20px;
-          width: 70%;
-          transform: translateY(126px);
-          transition: 0.5s;
         }
         
-        .loginBx h2 {
-          text-transform: uppercase;
-          font-weight: 600;
-          letter-spacing: 0.2em;
-          margin: 0;
-          font-family: 'Poppins', sans-serif;
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
         }
         
-        .loginBx h2 i {
-          color: #ff2770;
-          text-shadow: 0 0 5px #ff2770, 0 0 20px #ff2770;
-        }
-        
-        .loginBx input {
-          width: 100%;
-          padding: 10px 20px;
-          outline: none;
-          border: 2px solid #fff;
-          font-size: 1em;
-          color: #fff;
-          background: #0000001a;
-          border-radius: 30px;
-          font-family: 'Poppins', sans-serif;
-        }
-        
-        .loginBx input::placeholder {
-          color: #999;
-        }
-        
-        .loginBx input[type="submit"] {
-          background: #45f3ff;
-          border: none;
+        .form-group label {
+          color: var(--text-secondary);
+          font-size: 14px;
           font-weight: 500;
-          color: #111;
-          cursor: pointer;
-          transition: 0.5s;
         }
         
-        .loginBx input[type="submit"]:hover {
-          box-shadow: 0 0 10px #45f3ff, 0 0 60px #45f3ff;
-        }
-        
-        .group {
+        .login-btn {
           width: 100%;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 16px;
+          margin-top: 8px;
+        }
+        
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top: 2px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        .login-footer {
           display: flex;
           justify-content: space-between;
+          align-items: center;
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .group a {
-          color: #fff;
+        .link {
+          color: var(--text-secondary);
           text-decoration: none;
-          font-family: 'Poppins', sans-serif;
+          font-size: 14px;
+          transition: color 0.3s ease;
         }
         
-        .group a:nth-child(2) {
-          color: #ff2770;
-          font-weight: 600;
+        .link:hover {
+          color: var(--text-primary);
         }
         
-        .error-message {
-          background: rgba(239, 68, 68, 0.2);
-          border: 1px solid #ff2770;
-          color: #fff;
-          padding: 10px;
-          border-radius: 10px;
-          margin-bottom: 15px;
-          width: 100%;
-          text-align: center;
+        .link.primary {
+          color: var(--accent-purple);
+          font-weight: 500;
         }
         
-        .success-message {
-          background: rgba(69, 243, 255, 0.2);
-          border: 1px solid #45f3ff;
-          color: #fff;
-          padding: 10px;
-          border-radius: 10px;
-          margin-bottom: 15px;
-          width: 100%;
-          text-align: center;
+        .link.primary:hover {
+          color: var(--accent-cyan);
         }
         
-        .resend-btn {
+        .link-btn {
           background: none;
           border: none;
-          color: #45f3ff;
+          color: var(--accent-cyan);
           text-decoration: underline;
           cursor: pointer;
           font-size: 12px;
           margin-top: 8px;
+          transition: color 0.3s ease;
+        }
+        
+        .link-btn:hover {
+          color: var(--text-primary);
         }
       `}</style>
     </>

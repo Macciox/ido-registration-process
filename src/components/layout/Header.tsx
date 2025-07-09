@@ -59,18 +59,20 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow">
+    <header className="border-b border-white/10 backdrop-blur-lg bg-bg-secondary/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <a 
-                href="/admin/dashboard"
-                className="text-xl font-bold text-primary hover:text-primary-dark transition-colors"
-              >
-                Decubate IDO
-              </a>
-            </div>
+          <div className="flex items-center">
+            <a 
+              href="/admin/dashboard"
+              className="flex items-center gap-3 group"
+            >
+              <img 
+                src="/assets/decubate-logo.svg" 
+                alt="Decubate Technologies" 
+                className="h-8 w-auto transition-all duration-300 group-hover:scale-105"
+              />
+            </a>
           </div>
           
           {!loading && user && (
@@ -79,36 +81,48 @@ const Header: React.FC = () => {
               <div className="relative" ref={profileMenuRef}>
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 focus:outline-none"
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 focus:outline-none transition-colors"
                 >
-                  <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
-                    {user.email.charAt(0).toUpperCase()}
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                    <span className="text-white font-medium text-sm">
+                      {user.email.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-medium text-white">{user.email.split('@')[0]}</p>
+                    <p className="text-xs text-text-secondary capitalize">{user.role}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-text-secondary" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </button>
                 
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 ring-1 ring-black ring-opacity-5">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{user.email}</p>
-                      <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                  <div className="absolute right-0 mt-2 w-56 sleek-card p-2 z-50">
+                    <div className="px-3 py-2 border-b border-white/10 mb-2">
+                      <p className="text-sm font-medium text-white">{user.email}</p>
+                      <p className="text-xs text-text-secondary capitalize">{user.role} Account</p>
                     </div>
                     
                     {user.role === 'admin' && (
                       <a
                         href="/admin/dashboard?tab=settings"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                        </svg>
                         Admin Settings
                       </a>
                     )}
                     
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                     >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+                      </svg>
                       Sign out
                     </button>
                   </div>
@@ -119,7 +133,7 @@ const Header: React.FC = () => {
           
           {!loading && !user && (
             <div className="flex items-center">
-              <a href="/login" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+              <a href="/login" className="nav-item">
                 Login
               </a>
             </div>
