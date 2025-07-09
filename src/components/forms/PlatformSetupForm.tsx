@@ -185,16 +185,16 @@ const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId, onComp
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="sleek-card p-6 form-container">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">Platform Setup</h2>
+        <h2 className="text-lg font-medium text-text-primary">Platform Setup</h2>
         <div className="flex items-center">
-          <div className="mr-3 text-sm font-medium">
+          <div className="mr-3 text-sm font-medium text-text-primary">
             Completion: {completionPercentage}%
           </div>
-          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+          <div className="progress-bar w-32">
             <div 
-              className="bg-primary h-2.5 rounded-full" 
+              className="progress-fill" 
               style={{ width: `${completionPercentage}%` }}
             ></div>
           </div>
@@ -202,22 +202,23 @@ const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId, onComp
       </div>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="alert alert-error mb-4">
+          <div className="alert-icon">⚠</div>
+          <p>{error}</p>
         </div>
       )}
       
       <div className="grid grid-cols-1 gap-6">
         {fields.map((field) => (
-          <div key={field.id} className="border border-gray-200 rounded-md p-4">
-            <label className="form-label" htmlFor={field.id}>
+          <div key={field.id} className="border border-white/10 rounded-lg p-4 bg-white/5">
+            <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={field.id}>
               {field.label}
             </label>
             {field.type === 'textarea' ? (
               <textarea
                 id={field.id}
                 rows={4}
-                className="form-input"
+                className="sleek-input w-full"
                 placeholder={field.placeholder}
                 {...register(`${field.id}.value`)}
                 onChange={(e) => handleValueChange(field.id, e.target.value)}
@@ -226,36 +227,34 @@ const PlatformSetupForm: React.FC<PlatformSetupFormProps> = ({ projectId, onComp
               <input
                 id={field.id}
                 type={field.type}
-                className="form-input"
+                className="sleek-input w-full"
                 placeholder={field.placeholder}
                 {...register(`${field.id}.value`)}
                 onChange={(e) => handleValueChange(field.id, e.target.value)}
               />
             )}
-            <div className="mt-2 flex items-center justify-between">
-              <div className="flex space-x-2">
-                {['Not Confirmed', 'Might Still Change', 'Confirmed'].map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className={`px-2 py-1 text-xs font-medium rounded ${
-                      formValues[field.id]?.status === status
-                        ? status === 'Confirmed' 
-                          ? 'bg-green-500 text-white' 
-                          : status === 'Might Still Change'
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-gray-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                    onClick={() => {
-                      setValue(`${field.id}.status`, status as any);
-                      handleStatusChange(field.id, status);
-                    }}
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {['Not Confirmed', 'Might Still Change', 'Confirmed'].map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    formValues[field.id]?.status === status
+                      ? status === 'Confirmed' 
+                        ? 'bg-secondary text-white' 
+                        : status === 'Might Still Change'
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-gray-500 text-white'
+                      : 'bg-white/10 text-text-secondary hover:bg-white/20 hover:text-text-primary'
+                  }`}
+                  onClick={() => {
+                    setValue(`${field.id}.status`, status as any);
+                    handleStatusChange(field.id, status);
+                  }}
+                >
+                  {status}
+                </button>
+              ))}
             </div>
           </div>
         ))}

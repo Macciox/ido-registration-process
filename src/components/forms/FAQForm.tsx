@@ -127,16 +127,16 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="sleek-card p-6 form-container">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">FAQ (up to 5 entries)</h2>
+        <h2 className="text-lg font-medium text-text-primary">FAQ (up to 5 entries)</h2>
         <div className="flex items-center">
-          <div className="mr-3 text-sm font-medium">
+          <div className="mr-3 text-sm font-medium text-text-primary">
             Completion: {completionPercentage}%
           </div>
-          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+          <div className="progress-bar w-32">
             <div 
-              className="bg-primary h-2.5 rounded-full" 
+              className="progress-fill" 
               style={{ width: `${completionPercentage}%` }}
             ></div>
           </div>
@@ -144,27 +144,29 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
       </div>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="alert alert-error mb-4">
+          <div className="alert-icon">⚠</div>
+          <p>{error}</p>
         </div>
       )}
       
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
+        <div className="alert alert-success mb-4">
+          <div className="alert-icon">✓</div>
+          <p>{success}</p>
         </div>
       )}
       
       <div>
         {faqs.map((faq, index) => (
-          <div key={index} className="mb-6 p-4 border border-gray-200 rounded-md">
+          <div key={index} className="mb-6 p-4 border border-white/10 rounded-lg bg-white/5">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-md font-medium">FAQ #{index + 1}</h3>
+              <h3 className="text-md font-medium text-text-primary">FAQ #{index + 1}</h3>
               {faqs.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeFAQ(index)}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-400 hover:text-red-300 transition-colors"
                 >
                   Remove
                 </button>
@@ -172,13 +174,13 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
             </div>
             
             <div className="mb-4">
-              <label className="form-label" htmlFor={`faq_${index}_question`}>
+              <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={`faq_${index}_question`}>
                 Question
               </label>
               <input
                 id={`faq_${index}_question`}
                 type="text"
-                className="form-input"
+                className="sleek-input w-full"
                 placeholder="Enter question"
                 value={faq.question}
                 onChange={(e) => handleFAQChange(index, 'question', e.target.value)}
@@ -186,13 +188,13 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
             </div>
             
             <div>
-              <label className="form-label" htmlFor={`faq_${index}_answer`}>
+              <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={`faq_${index}_answer`}>
                 Answer
               </label>
               <textarea
                 id={`faq_${index}_answer`}
                 rows={4}
-                className="form-input"
+                className="sleek-input w-full"
                 placeholder="Enter answer"
                 value={faq.answer}
                 onChange={(e) => handleFAQChange(index, 'answer', e.target.value)}
@@ -206,7 +208,7 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
             <button
               type="button"
               onClick={addFAQ}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="primary-btn"
             >
               + Add Another FAQ
             </button>

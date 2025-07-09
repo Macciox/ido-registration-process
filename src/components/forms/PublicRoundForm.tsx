@@ -198,16 +198,16 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="sleek-card p-6 form-container">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">Public Round (IDO) | Metrics</h2>
+        <h2 className="text-lg font-medium text-text-primary">Public Round (IDO) | Metrics</h2>
         <div className="flex items-center">
-          <div className="mr-3 text-sm font-medium">
+          <div className="mr-3 text-sm font-medium text-text-primary">
             Completion: {completionPercentage}%
           </div>
-          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+          <div className="progress-bar w-32">
             <div 
-              className="bg-primary h-2.5 rounded-full" 
+              className="progress-fill" 
               style={{ width: `${completionPercentage}%` }}
             ></div>
           </div>
@@ -216,15 +216,15 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {fields.map((field) => (
-          <div key={field.id} className="border border-gray-200 rounded-md p-4">
-            <label className="form-label" htmlFor={field.id}>
+          <div key={field.id} className="border border-white/10 rounded-lg p-4 bg-white/5">
+            <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={field.id}>
               {field.label}
               {field.required ? '' : ' (Optional)'}
             </label>
             <input
               id={field.id}
               type={field.type}
-              className="form-input"
+              className="sleek-input w-full"
               placeholder={field.placeholder}
               {...register(`${field.id}.value`)}
               onChange={(e) => handleValueChange(field.id, e.target.value)}
@@ -235,14 +235,14 @@ const PublicRoundForm: React.FC<PublicRoundFormProps> = ({ projectId, onCompleti
                   <button
                     key={status}
                     type="button"
-                    className={`px-2 py-1 text-xs font-medium rounded ${
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                       formValues[field.id]?.status === status
                         ? status === 'Confirmed' 
-                          ? 'bg-green-500 text-white' 
+                          ? 'bg-secondary text-white' 
                           : status === 'Might Still Change'
                             ? 'bg-yellow-500 text-white'
                             : 'bg-gray-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-white/10 text-text-secondary hover:bg-white/20 hover:text-text-primary'
                     }`}
                     onClick={() => {
                       setValue(`${field.id}.status`, status as any);

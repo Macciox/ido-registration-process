@@ -176,16 +176,16 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="sleek-card p-6 form-container">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium">Marketing Kit</h2>
+        <h2 className="text-lg font-medium text-text-primary">Marketing Kit</h2>
         <div className="flex items-center">
-          <div className="mr-3 text-sm font-medium">
+          <div className="mr-3 text-sm font-medium text-text-primary">
             Completion: {completionPercentage}%
           </div>
-          <div className="w-32 bg-gray-200 rounded-full h-2.5">
+          <div className="progress-bar w-32">
             <div 
-              className="bg-primary h-2.5 rounded-full" 
+              className="progress-fill" 
               style={{ width: `${completionPercentage}%` }}
             ></div>
           </div>
@@ -204,14 +204,14 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
         </div>
       )}
       
-      <div className="mb-6 border border-gray-200 rounded-md p-4">
-        <label className="form-label" htmlFor="marketingKitUrl">
+      <div className="mb-6 border border-white/10 rounded-lg p-4 bg-white/5">
+        <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="marketingKitUrl">
           Google Drive Folder URL
         </label>
         <input
           id="marketingKitUrl"
           type="text"
-          className="form-input"
+          className="sleek-input w-full"
           placeholder="https://drive.google.com/..."
           {...register('marketingKitUrl.value')}
           onChange={(e) => handleValueChange('marketingKitUrl', e.target.value)}
@@ -222,14 +222,14 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
               <button
                 key={status}
                 type="button"
-                className={`px-2 py-1 text-xs font-medium rounded ${
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                   formValues.marketingKitUrl?.status === status
                     ? status === 'Confirmed' 
-                      ? 'bg-green-500 text-white' 
+                      ? 'bg-secondary text-white' 
                       : status === 'Might Still Change'
                         ? 'bg-yellow-500 text-white'
                         : 'bg-gray-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-white/10 text-text-secondary hover:bg-white/20 hover:text-text-primary'
                 }`}
                 onClick={() => {
                   setValue('marketingKitUrl.status', status as any);

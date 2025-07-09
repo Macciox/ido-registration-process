@@ -343,17 +343,17 @@ const LoginForm: React.FC = () => {
         .sleek-login-container::before {
           content: '';
           position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(128, 82, 241, 0.1) 0%, transparent 70%);
-          animation: rotate 20s linear infinite;
+          top: 0;
+          left: -100%;
+          width: 300%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent 0%, rgba(128, 82, 241, 0.1) 50%, transparent 100%);
+          animation: slideHorizontal 15s ease-in-out infinite;
         }
         
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @keyframes slideHorizontal {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(33.33%); }
         }
         
         .login-card {
