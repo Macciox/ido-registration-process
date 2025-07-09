@@ -193,14 +193,16 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
       </div>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="alert alert-error mb-4">
+          <div className="alert-icon">⚠</div>
+          <p>{error}</p>
         </div>
       )}
       
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
+        <div className="alert alert-success mb-4">
+          <div className="alert-icon">✓</div>
+          <p>{success}</p>
         </div>
       )}
       
@@ -241,17 +243,17 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
             ))}
           </div>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-text-muted">
           Please provide a Google Drive folder URL containing all marketing materials.
         </p>
       </div>
       
       <div className="mb-6">
         <p className="form-label">Or Upload Files</p>
-        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-white/20 border-dashed rounded-md bg-white/5">
           <div className="space-y-1 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-text-muted"
               stroke="currentColor"
               fill="none"
               viewBox="0 0 48 48"
@@ -264,10 +266,10 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
                 strokeLinejoin="round"
               />
             </svg>
-            <div className="flex text-sm text-gray-600">
+            <div className="flex text-sm text-text-secondary">
               <label
                 htmlFor="file-upload"
-                className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                className="relative cursor-pointer bg-white/10 rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary px-2 py-1"
               >
                 <span>Upload a file</span>
                 <input
@@ -278,10 +280,10 @@ const MarketingKitForm: React.FC<MarketingKitFormProps> = ({ projectId, onComple
               </label>
               <p className="pl-1">or drag and drop</p>
             </div>
-            <p className="text-xs text-gray-500">ZIP, PNG, JPG up to 10MB</p>
+            <p className="text-xs text-text-muted">ZIP, PNG, JPG up to 10MB</p>
           </div>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-text-muted">
           Note: File upload functionality will be implemented in the future with Supabase storage.
         </p>
       </div>

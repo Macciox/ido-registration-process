@@ -100,7 +100,7 @@ const AdminLoginForm: React.FC = () => {
           
           <button
             type="submit"
-            className="sleek-btn admin-btn"
+            className="btn-dark admin-btn"
             disabled={loading}
           >
             {loading ? (

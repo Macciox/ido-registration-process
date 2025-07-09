@@ -26,6 +26,22 @@ const LoginPage: React.FC = () => {
       </Head>
       <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
         <LoginForm />
+        
+        {/* Admin Login Toggle */}
+        <div className="fixed bottom-8 right-8">
+          <button 
+            onClick={() => setShowAdminLogin(!showAdminLogin)}
+            className="btn-light text-sm"
+          >
+            {showAdminLogin ? "Hide Admin" : "Admin"}
+          </button>
+          
+          {showAdminLogin && (
+            <div className="absolute bottom-full right-0 mb-4 sleek-card p-6 w-80">
+              <AdminLoginForm />
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
