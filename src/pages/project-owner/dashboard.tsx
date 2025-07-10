@@ -46,28 +46,15 @@ const ProjectOwnerDashboard: React.FC = () => {
 
   const loadUserProjects = async (email: string) => {
     try {
-      // Get projects where user is an owner
-      const { data: projectOwners, error } = await supabase
-        .from('project_owners')
-        .select(`
-          project_id,
-          projects (
-            id,
-            name,
-            created_at
-          )
-        `)
-        .eq('email', email)
-        .eq('status', 'registered');
+      // Get projects where user is the owner (by email)
+      const { data: userProjects, error } = await supabase
+        .from('projects')
+        .select('id, name, created_at')
+        .eq('owner_email', email);
 
       if (error) throw error;
 
-      const userProjects = projectOwners
-        ?.map(po => po.projects)
-        .filter(Boolean)
-        .flat() || [];
-
-      setProjects(userProjects);
+      setProjects(userProjects || []);
     } catch (err: any) {
       console.error('Error loading projects:', err);
       setError(err.message);
@@ -87,8 +74,9 @@ const ProjectOwnerDashboard: React.FC = () => {
   if (error) {
     return (
       <Layout>
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Error: {error}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠</div>
+          <p>Error: {error}</p>
         </div>
       </Layout>
     );
@@ -98,25 +86,25 @@ const ProjectOwnerDashboard: React.FC = () => {
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Project Owner Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.email}</p>
+          <h1 className="text-2xl font-bold text-white">My Projects</h1>
+          <p className="text-text-secondary">Welcome back, {user?.email}</p>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium mb-4">Your Projects</h2>
+        <div className="sleek-card p-6">
+          <h2 className="text-lg font-medium text-white mb-4">Your Projects</h2>
           
           {projects.length === 0 ? (
-            <p className="text-gray-500">No projects assigned to you yet.</p>
+            <p className="text-text-muted">No projects assigned to you yet.</p>
           ) : (
             <div className="grid gap-4">
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => router.push(`/project-owner/projects/${project.id}`)}
+                  className="border border-white/10 rounded-lg p-4 hover:bg-white/5 cursor-pointer bg-white/5"
+                  onClick={() => router.push(`/projects/${project.id}`)}
                 >
-                  <h3 className="font-medium text-gray-900">{project.name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-medium text-white">{project.name}</h3>
+                  <p className="text-sm text-text-muted">
                     Created: {new Date(project.created_at).toLocaleDateString()}
                   </p>
                 </div>

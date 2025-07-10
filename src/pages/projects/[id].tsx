@@ -19,6 +19,7 @@ const ProjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tabCompletions, setTabCompletions] = useState<{[key: string]: number}>({});
+  const [user, setUser] = useState<any>(null);
   
   // Tabs configuration
   const tabs = [
@@ -33,11 +34,12 @@ const ProjectPage = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await getCurrentUser();
-        if (!user) {
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
           router.push('/login');
           return;
         }
+        setUser(currentUser);
       } catch (err) {
         console.error('Auth check error:', err);
         router.push('/login');
@@ -49,7 +51,7 @@ const ProjectPage = () => {
   
   useEffect(() => {
     const loadProject = async () => {
-      if (!id) return;
+      if (!id || !user) return;
       
       setLoading(true);
       try {
@@ -63,6 +65,12 @@ const ProjectPage = () => {
         if (projectError) {
           console.error('Error loading project:', projectError);
           setError('Project not found');
+          return;
+        }
+        
+        // Check access permissions
+        if (user.role !== 'admin' && project.owner_email !== user.email) {
+          setError('Access denied. You do not have permission to view this project.');
           return;
         }
         
@@ -101,10 +109,10 @@ const ProjectPage = () => {
       }
     };
     
-    if (id) {
+    if (id && user) {
       loadProject();
     }
-  }, [id]);
+  }, [id, user]);
   
   // Calculate completion percentages for all tabs
   const calculateAllTabCompletions = async (projectId: string) => {
@@ -216,11 +224,12 @@ const ProjectPage = () => {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading project...</p>
+            <p className="mt-4 text-text-secondary">Loading project...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="alert alert-error mb-4">
+            <div className="alert-icon">⚠</div>
+            <p>{error}</p>
           </div>
         ) : (
           <>
@@ -233,7 +242,7 @@ const ProjectPage = () => {
                 
                 <div className="mt-4 md:mt-0">
                   <button
-                    onClick={() => router.push('/admin/dashboard')}
+                    onClick={() => router.push(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')}
                     className="btn-light flex items-center gap-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

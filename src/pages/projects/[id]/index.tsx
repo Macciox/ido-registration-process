@@ -21,6 +21,7 @@ const ProjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tabCompletions, setTabCompletions] = useState<{[key: string]: number}>({});
+  const [user, setUser] = useState<any>(null);
   
   // Tabs configuration
   const tabs = [
@@ -35,13 +36,14 @@ const ProjectPage = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await getCurrentUser();
-        if (!user) {
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
           router.push('/login');
           return;
         }
         
-        setIsAdmin(user.role === 'admin');
+        setUser(currentUser);
+        setIsAdmin(currentUser.role === 'admin');
       } catch (err) {
         console.error('Auth check error:', err);
         router.push('/login');
@@ -53,7 +55,7 @@ const ProjectPage = () => {
   
   useEffect(() => {
     const loadProject = async () => {
-      if (!id) return;
+      if (!id || !user) return;
       
       setLoading(true);
       try {
@@ -67,6 +69,12 @@ const ProjectPage = () => {
         if (projectError) {
           console.error('Error loading project:', projectError);
           setError('Project not found');
+          return;
+        }
+        
+        // Check access permissions
+        if (user.role !== 'admin' && project.owner_email !== user.email) {
+          setError('Access denied. You do not have permission to view this project.');
           return;
         }
         
@@ -102,10 +110,10 @@ const ProjectPage = () => {
       }
     };
     
-    if (id) {
+    if (id && user) {
       loadProject();
     }
-  }, [id]);
+  }, [id, user]);
   
   const handleTabCompletionUpdate = (tabId: string, percentage: number) => {
     setTabCompletions(prev => ({
@@ -175,7 +183,7 @@ const ProjectPage = () => {
                     onClick={() => {
                       setLoading(true);
                       setTimeout(() => {
-                        window.location.href = '/admin/dashboard';
+                        window.location.href = user?.role === 'admin' ? '/admin/dashboard' : '/dashboard';
                       }, 100);
                     }}
                     className="btn-light"

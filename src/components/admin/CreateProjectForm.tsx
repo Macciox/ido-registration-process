@@ -34,8 +34,7 @@ const CreateProjectForm: React.FC = () => {
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .insert([{ 
-          name: data.name,
-          owner_email: emails[0] // Keep the first email as the primary for backward compatibility
+          name: data.name
         }])
         .select('id')
         .single();
