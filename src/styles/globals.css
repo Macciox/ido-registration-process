@@ -205,6 +205,23 @@ body {
   color: #FFFFFF;
 }
 
+/* Projects tab - always inactive style */
+.nav-item.projects {
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.nav-item.projects:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+/* Settings tab - can be active */
+.nav-item.settings.active {
+  background: radial-gradient(46.21% 61.1% at 49.66% 100%, #CDAFFF 0%, #8858FF 100%);
+  color: #FFFFFF;
+}
+
 /* Status Badges */
 .status-badge {
   padding: 4px 12px;

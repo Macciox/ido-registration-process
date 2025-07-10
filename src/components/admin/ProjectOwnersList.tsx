@@ -218,7 +218,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     // Role badge
     if (owner.is_primary) {
       badges.push(
-        <span key="role" className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+        <span key="role" className="text-blue-400 text-xs font-medium">
           Primary
         </span>
       );
@@ -227,19 +227,19 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     // Registration status badge
     if (owner.status === 'registered') {
       badges.push(
-        <span key="status" className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+        <span key="status" className="text-green-400 text-xs font-medium">
           Verified
         </span>
       );
     } else if (owner.status === 'pending_verification') {
       badges.push(
-        <span key="status" className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+        <span key="status" className="text-orange-400 text-xs font-medium">
           Pending Verification
         </span>
       );
     } else {
       badges.push(
-        <span key="status" className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+        <span key="status" className="text-yellow-400 text-xs font-medium">
           Not Registered
         </span>
       );
@@ -249,22 +249,25 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="sleek-card p-6">
       <div className="flex justify-between items-start mb-4">
-        <h2 className="text-lg font-medium">Project Owners</h2>
-        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+        <h2 className="text-lg font-medium text-white">Project Owners</h2>
+        <div className="text-xs text-text-muted bg-white/5 p-2 rounded border border-white/10">
           <div><strong>Primary Owner:</strong> Can invite others</div>
           <div><strong>Secondary Owners:</strong> Project access only</div>
         </div>
       </div>
       
       {message && (
-        <div className={`p-4 mb-4 rounded ${
-          message.type === 'success' ? 'bg-green-100 text-green-700' : 
-          message.type === 'warning' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-red-100 text-red-700'
+        <div className={`alert mb-4 ${
+          message.type === 'success' ? 'alert-success' : 
+          message.type === 'warning' ? 'alert-warning' :
+          'alert-error'
         }`}>
+          <div className="alert-icon">{message.type === 'success' ? '✓' : '⚠'}</div>
+          <p>
           {message.text}
+          </p>
         </div>
       )}
       
@@ -275,11 +278,11 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       ) : (
         <div className="mb-6">
           {owners.length === 0 ? (
-            <p className="text-gray-500">No owners found for this project.</p>
+            <p className="text-text-muted">No owners found for this project.</p>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <ul className="divide-y divide-white/10">
               {owners.map((owner) => (
-                <li key={owner.id} className="py-3 border-b border-gray-200">
+                <li key={owner.id} className="py-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-3 flex-1">
                       {editingOwner === owner.id ? (
@@ -287,10 +290,10 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                           type="email"
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
-                          className="form-input flex-1 max-w-xs"
+                          className="sleek-input flex-1 max-w-xs"
                         />
                       ) : (
-                        <span className="text-gray-900">{owner.email}</span>
+                        <span className="text-white">{owner.email}</span>
                       )}
                       {getStatusBadges(owner)}
                     </div>
@@ -300,13 +303,13 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                         <>
                           <button
                             onClick={() => saveEdit(owner.id)}
-                            className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+                            className="btn-light text-xs"
                           >
                             Save
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                            className="btn-light text-xs"
                           >
                             Cancel
                           </button>
@@ -315,23 +318,19 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                         <>
                           <button
                             onClick={() => startEdit(owner)}
-                            className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                            className="btn-light text-xs"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => togglePrimary(owner.id)}
-                            className={`px-2 py-1 text-xs rounded ${
-                              owner.is_primary 
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                            }`}
+                            className="btn-light text-xs"
                           >
                             {owner.is_primary ? 'Remove Primary' : 'Make Primary'}
                           </button>
                           <button
                             onClick={() => removeOwner(owner.id)}
-                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            className="btn-light text-xs"
                             disabled={removingOwnerId === owner.id}
                           >
                             {removingOwnerId === owner.id ? 'Removing...' : 'Remove'}
@@ -351,7 +350,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         <div className="flex">
           <input
             type="email"
-            className="form-input flex-1 rounded-r-none"
+            className="sleek-input flex-1"
             placeholder="Add new owner email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
@@ -359,7 +358,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           />
           <button
             type="submit"
-            className="btn btn-primary rounded-l-none"
+            className="btn-dark ml-3"
             disabled={addingOwner}
           >
             {addingOwner ? (
