@@ -141,19 +141,20 @@ const ProjectPage = () => {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading project...</p>
+            <p className="mt-4 text-text-secondary">Loading project...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="alert alert-error mb-4">
+            <div className="alert-icon">⚠</div>
+            <p>{error}</p>
           </div>
         ) : (
           <>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{projectName}</h1>
-                  <p className="text-gray-600">Complete the following information for your project</p>
+                  <h1 className="text-2xl font-bold text-white">{projectName}</h1>
+                  <p className="text-text-secondary">Complete the following information for your project</p>
                   {id && <ProjectCompletionBar projectId={id as string} />}
                 </div>
                 <div className="flex space-x-4">
@@ -165,7 +166,7 @@ const ProjectPage = () => {
                           window.location.href = `/projects/${id}/owners`;
                         }, 100);
                       }}
-                      className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors"
+                      className="btn-dark"
                     >
                       Manage Owners
                     </button>
@@ -177,7 +178,7 @@ const ProjectPage = () => {
                         window.location.href = '/admin/dashboard';
                       }, 100);
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="btn-light"
                   >
                     Back to Dashboard
                   </button>

@@ -201,9 +201,9 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
       
       <div>
         {questions.map((question, index) => (
-          <div key={index} className="mb-6 p-4 border border-white/10 rounded-md bg-bg-secondary">
+          <div key={index} className="mb-6 p-6 border border-white/10 rounded-lg bg-white/5">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-md font-medium text-white">Question #{index + 1}</h3>
+              <h3 className="text-lg font-medium text-white">Question #{index + 1}</h3>
               {questions.length > 1 && (
                 <button
                   type="button"
@@ -215,50 +215,52 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
               )}
             </div>
             
-            <div className="mb-4">
-              <label className="form-label text-text-secondary" htmlFor={`question_${index}`}>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={`question_${index}`}>
                 Question
               </label>
               <input
                 id={`question_${index}`}
                 type="text"
-                className="sleek-input"
-                placeholder="Enter question"
+                className="sleek-input w-full"
+                placeholder="Enter your quiz question here..."
                 value={question.question}
                 onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
               />
             </div>
             
-            {['A', 'B', 'C', 'D'].map((option, optionIndex) => (
-              <div className="mb-4" key={optionIndex}>
-                <label className="form-label text-text-secondary" htmlFor={`question_${index}_option_${option.toLowerCase()}`}>
-                  Option {option}
-                </label>
-                <input
-                  id={`question_${index}_option_${option.toLowerCase()}`}
-                  type="text"
-                  className="sleek-input"
-                  placeholder={`Enter option ${option}`}
-                  value={question.options[optionIndex]}
-                  onChange={(e) => handleQuestionChange(index, 'option', e.target.value, optionIndex)}
-                />
-              </div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {['A', 'B', 'C', 'D'].map((option, optionIndex) => (
+                <div key={optionIndex}>
+                  <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={`question_${index}_option_${option.toLowerCase()}`}>
+                    Option {option}
+                  </label>
+                  <input
+                    id={`question_${index}_option_${option.toLowerCase()}`}
+                    type="text"
+                    className="sleek-input w-full"
+                    placeholder={`Answer option ${option}...`}
+                    value={question.options[optionIndex]}
+                    onChange={(e) => handleQuestionChange(index, 'option', e.target.value, optionIndex)}
+                  />
+                </div>
+              ))}
+            </div>
             
             <div>
-              <label className="form-label text-text-secondary" htmlFor={`question_${index}_correct`}>
+              <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor={`question_${index}_correct`}>
                 Correct Answer
               </label>
               <select
                 id={`question_${index}_correct`}
-                className="sleek-input"
+                className="sleek-input w-full"
                 value={question.correctAnswer}
                 onChange={(e) => handleQuestionChange(index, 'correctAnswer', e.target.value)}
               >
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
+                <option value="A">Option A</option>
+                <option value="B">Option B</option>
+                <option value="C">Option C</option>
+                <option value="D">Option D</option>
               </select>
             </div>
           </div>

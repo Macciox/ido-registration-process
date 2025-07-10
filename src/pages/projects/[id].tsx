@@ -227,7 +227,7 @@ const ProjectPage = () => {
             <div className="mb-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold project-name">{projectName}</h1>
+                  <h1 className="text-2xl font-bold text-white">{projectName}</h1>
                   <p className="text-text-secondary">Complete the following information for your project</p>
                 </div>
                 
