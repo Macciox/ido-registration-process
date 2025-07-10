@@ -99,19 +99,6 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
           setMessage({ text: `This user already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
           return;
         }
-      } else {
-        // Check if email already pending for another project
-        const { data: existingPending } = await supabase
-          .from('project_owners')
-          .select('project_id')
-          .eq('email', newEmail.trim())
-          .neq('project_id', projectId)
-          .single();
-        
-        if (existingPending) {
-          setMessage({ text: 'This email is already pending registration for another project. Each user can only own one project.', type: 'error' });
-          return;
-        }
       }
       // Add project owner with pending status
       const { data, error } = await supabase
@@ -183,19 +170,6 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         
         if (existingProject) {
           setMessage({ text: `This user already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
-          return;
-        }
-      } else {
-        // Check if email already pending for another project
-        const { data: existingPending } = await supabase
-          .from('project_owners')
-          .select('project_id')
-          .eq('email', editEmail.trim())
-          .neq('project_id', projectId)
-          .single();
-        
-        if (existingPending) {
-          setMessage({ text: 'This email is already pending registration for another project. Each user can only own one project.', type: 'error' });
           return;
         }
       }

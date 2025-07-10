@@ -83,22 +83,9 @@ const NewProject: React.FC = () => {
         }
         
         ownerId = ownerData.id;
-      } else {
-        // Check if email already pending for another project
-        const { data: existingPending } = await supabase
-          .from('project_owners')
-          .select('*')
-          .eq('email', ownerEmail.trim())
-          .single();
-        
-        if (existingPending) {
-          setError(`This email is already pending registration for another project. Each user can only own one project.`);
-          setCreating(false);
-          return;
-        }
       }
       
-      // Create the project first
+      // Create the project
       const { data, error } = await supabase
         .from('projects')
         .insert([
@@ -114,21 +101,6 @@ const NewProject: React.FC = () => {
       
       if (!data || data.length === 0) {
         throw new Error('No data returned from project creation');
-      }
-      
-      // If owner not registered, add to project_owners whitelist with project_id
-      if (!ownerData) {
-        const { error: whitelistError } = await supabase
-          .from('project_owners')
-          .insert({
-            email: ownerEmail.trim(),
-            status: 'pending',
-            project_id: data[0].id
-          });
-        
-        if (whitelistError && whitelistError.code !== '23505') {
-          throw whitelistError;
-        }
       }
       
       router.push(`/projects/${data[0].id}`);
