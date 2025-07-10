@@ -59,17 +59,55 @@ const NewProject: React.FC = () => {
     setError(null);
     
     try {
-      // Get the owner's user ID from their email
-      const { data: ownerData, error: ownerError } = await supabase
+      // Check if owner already exists in profiles
+      const { data: ownerData } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', ownerEmail.trim())
         .single();
       
-      if (ownerError) {
-        setError(`Owner not found: ${ownerEmail}. They must register first.`);
-        setCreating(false);
-        return;
+      let ownerId = null;
+      
+      if (ownerData) {
+        // Owner already registered - check if already owns another project
+        const { data: existingProject } = await supabase
+          .from('projects')
+          .select('name')
+          .eq('owner_id', ownerData.id)
+          .single();
+        
+        if (existingProject) {
+          setError(`This user already owns project: "${existingProject.name}". Each user can only own one project.`);
+          setCreating(false);
+          return;
+        }
+        
+        ownerId = ownerData.id;
+      } else {
+        // Check if email already pending for another project
+        const { data: existingPending } = await supabase
+          .from('project_owners')
+          .select('*')
+          .eq('email', ownerEmail.trim())
+          .single();
+        
+        if (existingPending) {
+          setError(`This email is already pending registration for another project. Each user can only own one project.`);
+          setCreating(false);
+          return;
+        }
+        
+        // Add to project_owners whitelist for registration
+        const { error: whitelistError } = await supabase
+          .from('project_owners')
+          .insert({
+            email: ownerEmail.trim(),
+            status: 'pending'
+          });
+        
+        if (whitelistError) {
+          throw whitelistError;
+        }
       }
       
       // Create the project
@@ -78,8 +116,8 @@ const NewProject: React.FC = () => {
         .insert([
           { 
             name: projectName.trim(),
-            owner_email: ownerEmail.trim(), // Keep for backward compatibility
-            owner_id: ownerData.id // Add the owner's user ID
+            owner_email: ownerEmail.trim(),
+            owner_id: ownerId
           }
         ])
         .select();
