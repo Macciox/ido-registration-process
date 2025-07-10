@@ -114,12 +114,12 @@ const NewProject: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="md:flex md:items-center md:justify-between mb-6">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900">Create New Project</h1>
+              <h1 className="text-2xl font-bold text-white">Create New Project</h1>
             </div>
             <div className="mt-4 md:mt-0">
               <button
                 onClick={() => router.push('/admin/dashboard')}
-                className="btn btn-outline flex items-center"
+                className="btn-light flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -129,22 +129,23 @@ const NewProject: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="sleek-card p-6">
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
+              <div className="alert alert-error mb-4">
+                <div className="alert-icon">⚠</div>
+                <p>{error}</p>
               </div>
             )}
             
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label className="form-label" htmlFor="project-name">
+                <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="project-name">
                   Project Name
                 </label>
                 <input
                   id="project-name"
                   type="text"
-                  className="form-input"
+                  className="sleek-input w-full"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   placeholder="Enter project name"
@@ -153,19 +154,19 @@ const NewProject: React.FC = () => {
               </div>
               
               <div className="mb-6">
-                <label className="form-label" htmlFor="owner-email">
+                <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="owner-email">
                   Project Owner Email
                 </label>
                 <input
                   id="owner-email"
                   type="email"
-                  className="form-input"
+                  className="sleek-input w-full"
                   value={ownerEmail}
                   onChange={(e) => setOwnerEmail(e.target.value)}
                   placeholder="Enter owner email"
                   required
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-text-muted mt-1">
                   The owner must have a registered account with this email.
                 </p>
               </div>
@@ -173,7 +174,7 @@ const NewProject: React.FC = () => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="btn-dark"
                   disabled={creating}
                 >
                   {creating ? (

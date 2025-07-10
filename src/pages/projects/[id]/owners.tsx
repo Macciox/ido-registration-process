@@ -82,8 +82,9 @@ const ProjectOwnersPage: React.FC = () => {
       <Layout>
         <div className="py-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+            <div className="alert alert-error mb-4">
+              <div className="alert-icon">⚠</div>
+              <p>{error}</p>
             </div>
             <button
               onClick={() => {
@@ -92,7 +93,7 @@ const ProjectOwnersPage: React.FC = () => {
                   window.location.href = '/admin/dashboard';
                 }, 100);
               }}
-              className="px-4 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300"
+              className="btn-light"
             >
               Back to Dashboard
             </button>
@@ -107,7 +108,7 @@ const ProjectOwnersPage: React.FC = () => {
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-white">
               Project Owners: {projectName}
             </h1>
             <div className="flex space-x-4">
@@ -118,7 +119,7 @@ const ProjectOwnersPage: React.FC = () => {
                     window.location.href = `/projects/${id}`;
                   }, 100);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="btn-light"
               >
                 View Project
               </button>
@@ -129,7 +130,7 @@ const ProjectOwnersPage: React.FC = () => {
                     window.location.href = '/admin/dashboard';
                   }, 100);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="btn-light"
               >
                 Back to Dashboard
               </button>

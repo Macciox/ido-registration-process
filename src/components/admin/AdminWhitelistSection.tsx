@@ -114,19 +114,19 @@ const AdminWhitelistSection: React.FC = () => {
   const getStatusBadge = (entry: AdminWhitelistEntry) => {
     if (entry.status === 'registered') {
       return (
-        <span className="status-success">
+        <span className="text-green-400 text-sm font-medium">
           Registered
         </span>
       );
     } else if (entry.status === 'pending_verification') {
       return (
-        <span className="status-warning">
+        <span className="text-orange-400 text-sm font-medium">
           Pending Verification
         </span>
       );
     } else {
       return (
-        <span className="status-warning">
+        <span className="text-yellow-400 text-sm font-medium">
           Not Registered
         </span>
       );
@@ -168,10 +168,10 @@ const AdminWhitelistSection: React.FC = () => {
         </div>
       )}
       <form onSubmit={addEmail} className="mt-4">
-        <div className="flex">
+        <div className="flex gap-3">
           <input
             type="email"
-            className="sleek-input flex-1 rounded-r-none"
+            className="sleek-input flex-1"
             placeholder="Add admin email"
             value={newEmail}
             onChange={e => setNewEmail(e.target.value)}
@@ -179,7 +179,7 @@ const AdminWhitelistSection: React.FC = () => {
           />
           <button
             type="submit"
-            className="btn-dark rounded-l-none"
+            className="btn-dark"
           >
             Add
           </button>
