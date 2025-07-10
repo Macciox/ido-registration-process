@@ -271,7 +271,7 @@ const L2EQuizForm: React.FC<L2EQuizFormProps> = ({ projectId, onCompletionUpdate
             <button
               type="button"
               onClick={addQuestion}
-              className="btn-light"
+              className="btn-action neutral"
             >
               + Add Another Question
             </button>

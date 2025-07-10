@@ -157,7 +157,7 @@ const AdminWhitelistSection: React.FC = () => {
                 </div>
                 <button
                   onClick={() => removeEmail(entry.id)}
-                  className="btn-light text-sm"
+                  className="btn-action danger"
                   disabled={removingId === entry.id}
                 >
                   {removingId === entry.id ? 'Removing...' : 'Remove'}
@@ -179,7 +179,7 @@ const AdminWhitelistSection: React.FC = () => {
           />
           <button
             type="submit"
-            className="btn-dark"
+            className="btn-action success"
           >
             Add
           </button>
