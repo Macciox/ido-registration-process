@@ -102,9 +102,20 @@ const NewProject: React.FC = () => {
         throw new Error('No data returned from project creation');
       }
       
-
-      
-
+      // Add owner to projectowner_whitelist (this will trigger email)
+      if (!ownerData) {
+        const { error: whitelistError } = await supabase
+          .from('projectowner_whitelist')
+          .insert({
+            email: ownerEmail.trim(),
+            project_id: data[0].id,
+            status: 'pending'
+          });
+        
+        if (whitelistError) {
+          console.error('Error adding to whitelist:', whitelistError);
+        }
+      }
       
       router.push(`/projects/${data[0].id}`);
     } catch (err: any) {
