@@ -208,7 +208,7 @@ const FAQForm: React.FC<FAQFormProps> = ({ projectId, onCompletionUpdate }) => {
             <button
               type="button"
               onClick={addFAQ}
-              className="btn-action neutral"
+              className="btn-light"
             >
               + Add Another FAQ
             </button>

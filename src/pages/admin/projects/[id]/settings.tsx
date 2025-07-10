@@ -141,30 +141,33 @@ const ProjectSettings: React.FC = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Project Settings</h1>
+          <h1 className="text-2xl font-bold text-white">Project Settings</h1>
           <button
             onClick={() => router.back()}
-            className="btn btn-secondary"
+            className="btn-light"
           >
             ← Back
           </button>
         </div>
 
         {message && (
-          <div className={`p-4 rounded ${
-            message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          <div className={`alert ${
+            message.type === 'success' ? 'alert-success' : 'alert-error'
           }`}>
+            <div className="alert-icon">{message.type === 'success' ? '✓' : '⚠'}</div>
+            <p>
             {message.text}
+            </p>
           </div>
         )}
 
         {/* Project Name Section */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium mb-4">Project Information</h2>
+        <div className="sleek-card p-6">
+          <h2 className="text-lg font-medium text-white mb-4">Project Information</h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Project Name
               </label>
               {editingName ? (
@@ -173,11 +176,11 @@ const ProjectSettings: React.FC = () => {
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="form-input flex-1"
+                    className="sleek-input flex-1"
                   />
                   <button
                     onClick={updateProjectName}
-                    className="btn btn-primary"
+                    className="btn-dark"
                   >
                     Save
                   </button>
@@ -186,17 +189,17 @@ const ProjectSettings: React.FC = () => {
                       setEditingName(false);
                       setNewName(project.name);
                     }}
-                    className="btn btn-secondary"
+                    className="btn-light"
                   >
                     Cancel
                   </button>
                 </div>
               ) : (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-900">{project.name}</span>
+                  <span className="text-white">{project.name}</span>
                   <button
                     onClick={() => setEditingName(true)}
-                    className="btn btn-secondary btn-sm"
+                    className="btn-light"
                   >
                     Edit
                   </button>
@@ -205,10 +208,10 @@ const ProjectSettings: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Created
               </label>
-              <span className="text-gray-900">
+              <span className="text-white">
                 {new Date(project.created_at).toLocaleDateString()}
               </span>
             </div>
@@ -220,21 +223,21 @@ const ProjectSettings: React.FC = () => {
 
         {/* Danger Zone - Only for Admins */}
         {user?.role === 'admin' && (
-          <div className="bg-white shadow rounded-lg p-6 border-l-4 border-red-500">
-            <h2 className="text-lg font-medium text-red-600 mb-4">Danger Zone</h2>
+          <div className="sleek-card p-6 border-l-4 border-red-500">
+            <h2 className="text-lg font-medium text-red-400 mb-4">Danger Zone</h2>
             
-            <div className="bg-red-50 p-4 rounded-md">
+            <div className="bg-red-900/20 p-4 rounded-md border border-red-500/30">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm font-medium text-red-800">Delete Project</h3>
-                  <p className="text-sm text-red-700 mt-1">
+                  <h3 className="text-sm font-medium text-red-400">Delete Project</h3>
+                  <p className="text-sm text-red-300 mt-1">
                     Permanently delete this project and all associated data. This action cannot be undone.
                   </p>
                 </div>
                 <button
                   onClick={deleteProject}
                   disabled={deleting}
-                  className="btn bg-red-600 hover:bg-red-700 text-white ml-4"
+                  className="btn-dark bg-red-600 hover:bg-red-700 ml-4"
                 >
                   {deleting ? 'Deleting...' : 'Delete Project'}
                 </button>
