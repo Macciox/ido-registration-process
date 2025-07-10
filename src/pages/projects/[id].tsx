@@ -69,9 +69,20 @@ const ProjectPage = () => {
         }
         
         // Check access permissions
-        if (user.role !== 'admin' && project.owner_email !== user.email) {
-          setError('Access denied. You do not have permission to view this project.');
-          return;
+        if (user.role !== 'admin') {
+          // Check if user is in projectowner_whitelist for this project
+          const { data: whitelistEntry } = await supabase
+            .from('projectowner_whitelist')
+            .select('id')
+            .eq('email', user.email)
+            .eq('project_id', id)
+            .eq('status', 'registered')
+            .single();
+          
+          if (!whitelistEntry) {
+            setError('Access denied. You do not have permission to view this project.');
+            return;
+          }
         }
         
         setProjectName(project.name);

@@ -46,15 +46,28 @@ const ProjectOwnerDashboard: React.FC = () => {
 
   const loadUserProjects = async (email: string) => {
     try {
-      // Get projects where user is the owner (by email)
-      const { data: userProjects, error } = await supabase
-        .from('projects')
-        .select('id, name, created_at')
-        .eq('owner_email', email);
+      // Get projects where user is in projectowner_whitelist with registered status
+      const { data: whitelistEntries, error } = await supabase
+        .from('projectowner_whitelist')
+        .select(`
+          project_id,
+          projects (
+            id,
+            name,
+            created_at
+          )
+        `)
+        .eq('email', email)
+        .eq('status', 'registered');
 
       if (error) throw error;
 
-      setProjects(userProjects || []);
+      const userProjects = whitelistEntries
+        ?.map(entry => entry.projects)
+        .filter(Boolean)
+        .flat() || [];
+
+      setProjects(userProjects);
     } catch (err: any) {
       console.error('Error loading projects:', err);
       setError(err.message);

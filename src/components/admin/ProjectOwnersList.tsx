@@ -43,12 +43,12 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       setLoading(true);
       setMessage(null);
       
-      // Load all project owners directly from project_owners table
+      // Load all project owners from projectowner_whitelist table
       const { data: projectOwners, error } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .select('*')
         .eq('project_id', projectId)
-        .order('is_primary', { ascending: false });
+        .order('created_at', { ascending: true });
       
       if (error) {
         console.error('Error loading project owners:', error);
@@ -80,21 +80,21 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
-      // Check if email already owns another project
-      const { data: existingProject } = await supabase
-        .from('projects')
-        .select('name')
-        .eq('owner_email', newEmail.trim())
-        .neq('id', projectId)
+      // Check if email already in whitelist for another project
+      const { data: existingWhitelist } = await supabase
+        .from('projectowner_whitelist')
+        .select('project_id, projects(name)')
+        .eq('email', newEmail.trim())
+        .neq('project_id', projectId)
         .single();
       
-      if (existingProject) {
-        setMessage({ text: `This email already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
+      if (existingWhitelist) {
+        setMessage({ text: `This email is already assigned to another project. Each user can only own one project.`, type: 'error' });
         return;
       }
-      // Add project owner with pending status
+      // Add project owner to whitelist with pending status
       const { data, error } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .insert({
           project_id: projectId,
           email: newEmail.trim(),
@@ -122,7 +122,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       }
       if (data && data.length > 0) {
         setOwners(prev => [...prev, data[0]]);
-        setMessage({ text: 'Project owner added and invitation sent!', type: 'success' });
+        setMessage({ text: 'Project owner added successfully', type: 'success' });
         setNewEmail('');
       }
     } catch (err: any) {
@@ -145,21 +145,21 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
 
   const saveEdit = async (ownerId: string) => {
     try {
-      // Check if new email already owns another project
-      const { data: existingProject } = await supabase
-        .from('projects')
-        .select('name')
-        .eq('owner_email', editEmail.trim())
-        .neq('id', projectId)
+      // Check if new email already in whitelist for another project
+      const { data: existingWhitelist } = await supabase
+        .from('projectowner_whitelist')
+        .select('project_id')
+        .eq('email', editEmail.trim())
+        .neq('project_id', projectId)
         .single();
       
-      if (existingProject) {
-        setMessage({ text: `This email already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
+      if (existingWhitelist) {
+        setMessage({ text: `This email is already assigned to another project. Each user can only own one project.`, type: 'error' });
         return;
       }
       
       const { error } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .update({ email: editEmail.trim() })
         .eq('id', ownerId);
       
@@ -182,11 +182,9 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       const owner = owners.find(o => o.id === ownerId);
       if (!owner) return;
       
-      // Toggle primary status
-      const { error } = await supabase
-        .from('project_owners')
-        .update({ is_primary: !owner.is_primary })
-        .eq('id', ownerId);
+      // Note: Primary status not implemented in whitelist yet
+      setMessage({ text: 'Primary status feature coming soon', type: 'warning' });
+      return;
       
       if (error) throw error;
       
@@ -219,7 +217,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       
       // Try to remove from database
       const { error } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .delete()
         .eq('id', ownerId);
       

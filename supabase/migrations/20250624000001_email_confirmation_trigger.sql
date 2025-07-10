@@ -17,10 +17,10 @@ BEGIN
       VALUES (NEW.id, NEW.email, 'admin')
       ON CONFLICT (id) DO NOTHING;
       
-    -- Check if user is in project owners
-    ELSIF EXISTS (SELECT 1 FROM project_owners WHERE email = NEW.email) THEN
-      -- Update project owners status
-      UPDATE project_owners 
+    -- Check if user is in projectowner whitelist
+    ELSIF EXISTS (SELECT 1 FROM projectowner_whitelist WHERE email = NEW.email) THEN
+      -- Update projectowner whitelist status
+      UPDATE projectowner_whitelist 
       SET status = 'registered' 
       WHERE email = NEW.email;
       
