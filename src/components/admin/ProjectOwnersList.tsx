@@ -178,22 +178,8 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   };
 
   const togglePrimary = async (ownerId: string) => {
-    try {
-      const owner = owners.find(o => o.id === ownerId);
-      if (!owner) return;
-      
-      // Note: Primary status not implemented in whitelist yet
-      setMessage({ text: 'Primary status feature coming soon', type: 'warning' });
-      return;
-      
-      if (error) throw error;
-      
-      const action = owner.is_primary ? 'removed from' : 'set as';
-      setMessage({ text: `Owner ${action} primary successfully`, type: 'success' });
-      loadProjectData(); // Reload to get fresh data
-    } catch (err: any) {
-      setMessage({ text: `Failed to update primary status: ${err.message}`, type: 'error' });
-    }
+    // Note: Primary status not implemented in whitelist yet
+    setMessage({ text: 'Primary status feature coming soon', type: 'warning' });
   };
 
   const removeOwner = async (ownerId: string) => {
