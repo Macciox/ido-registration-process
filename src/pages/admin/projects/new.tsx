@@ -73,7 +73,7 @@ const NewProject: React.FC = () => {
         const { data: existingProject } = await supabase
           .from('projects')
           .select('name')
-          .eq('owner_id', ownerData.id)
+          .eq('owner_email', ownerEmail.trim())
           .single();
         
         if (existingProject) {
@@ -91,8 +91,7 @@ const NewProject: React.FC = () => {
         .insert([
           { 
             name: projectName.trim(),
-            owner_email: ownerEmail.trim(),
-            owner_id: ownerId
+            owner_email: ownerEmail.trim()
           }
         ])
         .select();
@@ -102,6 +101,10 @@ const NewProject: React.FC = () => {
       if (!data || data.length === 0) {
         throw new Error('No data returned from project creation');
       }
+      
+
+      
+
       
       router.push(`/projects/${data[0].id}`);
     } catch (err: any) {

@@ -80,25 +80,17 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
         return;
       }
       
-      // Check if user already owns another project
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', newEmail.trim())
+      // Check if email already owns another project
+      const { data: existingProject } = await supabase
+        .from('projects')
+        .select('name')
+        .eq('owner_email', newEmail.trim())
+        .neq('id', projectId)
         .single();
       
-      if (existingProfile) {
-        const { data: existingProject } = await supabase
-          .from('projects')
-          .select('name')
-          .eq('owner_id', existingProfile.id)
-          .neq('id', projectId)
-          .single();
-        
-        if (existingProject) {
-          setMessage({ text: `This user already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
-          return;
-        }
+      if (existingProject) {
+        setMessage({ text: `This email already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
+        return;
       }
       // Add project owner with pending status
       const { data, error } = await supabase
@@ -130,7 +122,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       }
       if (data && data.length > 0) {
         setOwners(prev => [...prev, data[0]]);
-        setMessage({ text: 'Project owner added successfully', type: 'success' });
+        setMessage({ text: 'Project owner added and invitation sent!', type: 'success' });
         setNewEmail('');
       }
     } catch (err: any) {
@@ -154,24 +146,16 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const saveEdit = async (ownerId: string) => {
     try {
       // Check if new email already owns another project
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', editEmail.trim())
+      const { data: existingProject } = await supabase
+        .from('projects')
+        .select('name')
+        .eq('owner_email', editEmail.trim())
+        .neq('id', projectId)
         .single();
       
-      if (existingProfile) {
-        const { data: existingProject } = await supabase
-          .from('projects')
-          .select('name')
-          .eq('owner_id', existingProfile.id)
-          .neq('id', projectId)
-          .single();
-        
-        if (existingProject) {
-          setMessage({ text: `This user already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
-          return;
-        }
+      if (existingProject) {
+        setMessage({ text: `This email already owns project: "${existingProject.name}". Each user can only own one project.`, type: 'error' });
+        return;
       }
       
       const { error } = await supabase
