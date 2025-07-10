@@ -96,21 +96,9 @@ const NewProject: React.FC = () => {
           setCreating(false);
           return;
         }
-        
-        // Add to project_owners whitelist for registration
-        const { error: whitelistError } = await supabase
-          .from('project_owners')
-          .insert({
-            email: ownerEmail.trim(),
-            status: 'pending'
-          });
-        
-        if (whitelistError) {
-          throw whitelistError;
-        }
       }
       
-      // Create the project
+      // Create the project first
       const { data, error } = await supabase
         .from('projects')
         .insert([
@@ -124,11 +112,26 @@ const NewProject: React.FC = () => {
       
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        router.push(`/projects/${data[0].id}`);
-      } else {
+      if (!data || data.length === 0) {
         throw new Error('No data returned from project creation');
       }
+      
+      // If owner not registered, add to project_owners whitelist with project_id
+      if (!ownerData) {
+        const { error: whitelistError } = await supabase
+          .from('project_owners')
+          .insert({
+            email: ownerEmail.trim(),
+            status: 'pending',
+            project_id: data[0].id
+          });
+        
+        if (whitelistError && whitelistError.code !== '23505') {
+          throw whitelistError;
+        }
+      }
+      
+      router.push(`/projects/${data[0].id}`);
     } catch (err: any) {
       console.error('Error creating project:', err);
       setError(err.message || 'Failed to create project');
@@ -205,7 +208,7 @@ const NewProject: React.FC = () => {
                   required
                 />
                 <p className="text-sm text-text-muted mt-1">
-                  The owner must have a registered account with this email.
+                  If the owner doesn't have an account, they will receive an invitation to register.
                 </p>
               </div>
               
