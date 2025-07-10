@@ -79,18 +79,10 @@ const LoginForm: React.FC = () => {
                 .eq('email', email)
                 .maybeSingle();
                 
-              const { data: projectOwner } = await supabase
-                .from('project_owners')
-                .select('id, status')
-                .eq('email', email)
-                .maybeSingle();
-                
               // Determine role
-              let role = 'user';
+              let role = 'project_owner'; // Default role for new users
               if (adminWhitelist && (adminWhitelist.status === 'registered' || adminWhitelist.status === 'pending_verification')) {
                 role = 'admin';
-              } else if (projectOwner && (projectOwner.status === 'registered' || projectOwner.status === 'pending_verification')) {
-                role = 'project_owner';
               }
               
               // Create profile
@@ -142,17 +134,11 @@ const LoginForm: React.FC = () => {
           .eq('email', email)
           .maybeSingle();
           
-        const { data: projectOwner } = await supabase
-          .from('project_owners')
-          .select('id, status')
-          .eq('email', email)
-          .maybeSingle();
-          
         // Determine role
         if (adminWhitelist && (adminWhitelist.status === 'registered' || adminWhitelist.status === 'pending_verification')) {
           userRole = 'admin';
-        } else if (projectOwner && (projectOwner.status === 'registered' || projectOwner.status === 'pending_verification')) {
-          userRole = 'project_owner';
+        } else {
+          userRole = 'project_owner'; // Default role for non-admin users
         }
         
         // Create profile if it doesn't exist
