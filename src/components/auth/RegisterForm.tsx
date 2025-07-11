@@ -38,7 +38,7 @@ const RegisterForm: React.FC = () => {
         .maybeSingle();
       
       const { data: projectOwners } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .select('id, status, project_id')
         .eq('email', email);
       
@@ -87,7 +87,7 @@ const RegisterForm: React.FC = () => {
       if (projectOwners && projectOwners.length > 0) {
         for (const owner of projectOwners) {
           await supabase
-            .from('project_owners')
+            .from('projectowner_whitelist')
             .update({ status: 'pending_verification' })
             .eq('id', owner.id);
         }
