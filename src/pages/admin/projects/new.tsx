@@ -103,17 +103,21 @@ const NewProject: React.FC = () => {
       }
       
       // Add owner to projectowner_whitelist (this will trigger email if not registered)
-      const { error: whitelistError } = await supabase
+      const { data: whitelistData, error: whitelistError } = await supabase
         .from('projectowner_whitelist')
         .insert({
           email: ownerEmail.trim(),
           project_id: data[0].id,
           status: ownerData ? 'registered' : 'pending'
-        });
+        })
+        .select();
       
       if (whitelistError) {
         console.error('Error adding to whitelist:', whitelistError);
+        throw new Error(`Failed to add owner to whitelist: ${whitelistError.message}`);
       }
+      
+      console.log('Successfully added to whitelist:', whitelistData);
       
       router.push(`/projects/${data[0].id}`);
     } catch (err: any) {
