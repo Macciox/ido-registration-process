@@ -42,7 +42,13 @@ const RegisterForm: React.FC = () => {
         .select('id, status, project_id')
         .eq('email', email);
       
-      console.log('Whitelist check:', { adminWhitelist, projectOwners });
+      console.log('Whitelist check:', { 
+        adminWhitelist, 
+        projectOwners,
+        email: email,
+        adminFound: !!adminWhitelist,
+        projectOwnersFound: projectOwners?.length || 0
+      });
       
       if (!adminWhitelist && (!projectOwners || projectOwners.length === 0)) {
         setError('Registration is restricted. Your email is not in the allowed list.');
