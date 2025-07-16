@@ -79,18 +79,28 @@ const ProjectSettings: React.FC = () => {
   };
 
   const deleteProject = async () => {
-    if (!project || !user || user.role !== 'admin') return;
+    console.log('Delete project called', { project, user });
+    
+    if (!project || !user || user.role !== 'admin') {
+      console.log('Delete blocked - missing requirements');
+      return;
+    }
     
     const confirmed = window.confirm(
       `Are you sure you want to delete "${project.name}"? This action cannot be undone.`
     );
     
-    if (!confirmed) return;
+    if (!confirmed) {
+      console.log('Delete cancelled by user');
+      return;
+    }
     
     try {
+      console.log('Starting delete process...');
       setDeleting(true);
       
       // Delete project owners from whitelist first
+      console.log('Deleting project owners...');
       const { error: ownersError } = await supabase
         .from('projectowner_whitelist')
         .delete()
@@ -99,16 +109,23 @@ const ProjectSettings: React.FC = () => {
       if (ownersError) {
         console.error('Error deleting project owners from whitelist:', ownersError);
         // Continue anyway, might not exist
+      } else {
+        console.log('Project owners deleted successfully');
       }
       
       // Delete project
+      console.log('Deleting project...');
       const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', project.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Project delete error:', error);
+        throw error;
+      }
       
+      console.log('Project deleted successfully, redirecting...');
       router.push('/admin/dashboard');
     } catch (err: any) {
       console.error('Delete project error:', err);
@@ -235,6 +252,7 @@ const ProjectSettings: React.FC = () => {
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={deleteProject}
                   disabled={deleting}
                   className="btn-dark bg-red-600 hover:bg-red-700 ml-4"
