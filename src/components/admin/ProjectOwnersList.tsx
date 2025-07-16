@@ -122,7 +122,10 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
       }
       if (data && data.length > 0) {
         setOwners(prev => [...prev, data[0]]);
+        
+        // Email will be sent when user registers
         setMessage({ text: 'Project owner added successfully', type: 'success' });
+        
         setNewEmail('');
       }
     } catch (err: any) {

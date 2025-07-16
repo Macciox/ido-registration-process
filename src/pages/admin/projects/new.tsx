@@ -119,6 +119,8 @@ const NewProject: React.FC = () => {
       
       console.log('Successfully added to whitelist:', whitelistData);
       
+      // Email will be sent automatically when user registers with supabase.auth.signUp()
+      
       router.push(`/projects/${data[0].id}`);
     } catch (err: any) {
       console.error('Error creating project:', err);
