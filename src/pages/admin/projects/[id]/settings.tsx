@@ -90,14 +90,14 @@ const ProjectSettings: React.FC = () => {
     try {
       setDeleting(true);
       
-      // Delete project owners first
+      // Delete project owners from whitelist first
       const { error: ownersError } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .delete()
         .eq('project_id', project.id);
       
       if (ownersError) {
-        console.error('Error deleting project owners:', ownersError);
+        console.error('Error deleting project owners from whitelist:', ownersError);
         // Continue anyway, might not exist
       }
       
