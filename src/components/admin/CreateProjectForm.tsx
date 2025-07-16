@@ -41,7 +41,7 @@ const CreateProjectForm: React.FC = () => {
       
       if (projectError) throw projectError;
       
-      // Add all emails to project_owners table with pending status
+      // Add all emails to projectowner_whitelist table with pending status
       const projectOwners = emails.map((email, index) => ({
         project_id: projectData.id,
         email,
