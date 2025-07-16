@@ -22,9 +22,9 @@ const ProjectOwnerLoginForm: React.FC = () => {
         return;
       }
       
-      // Check if user has projects in project_owners table
+      // Check if user has projects in projectowner_whitelist table
       const { data: projectOwners, error: projectError } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .select('project_id, projects(id, name)')
         .eq('email', data.email)
         .eq('status', 'registered');

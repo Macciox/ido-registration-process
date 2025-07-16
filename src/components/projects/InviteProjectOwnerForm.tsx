@@ -27,9 +27,9 @@ const InviteProjectOwnerForm: React.FC<InviteProjectOwnerFormProps> = ({
     setMessage(null);
     
     try {
-      // Check if email already exists in project_owners for this project
+      // Check if email already exists in projectowner_whitelist for this project
       const { data: existingOwner, error: checkError } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .select('*')
         .eq('project_id', projectId)
         .eq('email', data.email)
@@ -43,15 +43,13 @@ const InviteProjectOwnerForm: React.FC<InviteProjectOwnerFormProps> = ({
         throw new Error('This email is already associated with this project');
       }
 
-      // Add email to project_owners table with pending status
+      // Add email to projectowner_whitelist table with pending status
       const { error: ownerError } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .insert([{
           project_id: projectId,
           email: data.email,
-          status: 'pending',
-          is_primary: data.isPrimary,
-          user_id: null // Will be set when user registers
+          status: 'pending'
         }]);
       
       if (ownerError) throw ownerError;

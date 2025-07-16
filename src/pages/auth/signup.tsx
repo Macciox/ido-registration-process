@@ -42,10 +42,10 @@ export default function SignUp() {
       if (signUpError) throw signUpError
 
       if (project_id && typeof project_id === 'string') {
-        // Update project_owners status to active
+        // Update projectowner_whitelist status to registered
         const { error: updateError } = await supabase
-          .from('project_owners')
-          .update({ status: 'active' })
+          .from('projectowner_whitelist')
+          .update({ status: 'registered' })
           .eq('project_id', project_id)
           .eq('email', data.email)
 

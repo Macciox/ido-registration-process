@@ -60,12 +60,13 @@ const ProjectSettings: React.FC = () => {
       
       if (!hasAccess) {
         try {
-          // Check if user is in project_owners
+          // Check if user is in projectowner_whitelist
           const { data: projectOwner, error: ownerError } = await supabase
-            .from('project_owners')
+            .from('projectowner_whitelist')
             .select('*')
             .eq('project_id', projectId)
             .eq('email', currentUser.email)
+            .eq('status', 'registered')
             .maybeSingle();
           
           if (!ownerError && projectOwner) {

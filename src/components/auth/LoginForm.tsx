@@ -127,7 +127,7 @@ const LoginForm: React.FC = () => {
       if (profileError || !profileData) {
         console.error('Profile error:', profileError);
         
-        // Check if the user is in admin_whitelist or project_owners
+        // Check if the user is in admin_whitelist or projectowner_whitelist
         const { data: adminWhitelist } = await supabase
           .from('admin_whitelist')
           .select('id, status')

@@ -45,10 +45,10 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
       
       setPrimaryOwner(project.owner_email);
       
-      // Get additional owners from project_owners table (waitlist)
+      // Get additional owners from projectowner_whitelist table
       try {
         const { data: additionalOwners, error: ownersError } = await supabase
-          .from('project_owners')
+          .from('projectowner_whitelist')
           .select('*')
           .eq('project_id', projectId);
         
@@ -65,7 +65,7 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
               id: owner.id,
               email: owner.email,
               status: owner.status,
-              verified_at: owner.verified_at
+              verified_at: null
             }))
           ];
           
@@ -111,9 +111,9 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     }
     
     try {
-      // Add to project_owners table (waitlist)
+      // Add to projectowner_whitelist table
       const { data, error } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .insert({
           project_id: projectId,
           email: newEmail.trim(),
@@ -131,7 +131,7 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
           id: data[0].id,
           email: data[0].email,
           status: data[0].status,
-          verified_at: data[0].verified_at
+          verified_at: null
         }]);
         setMessage('Project owner added to waitlist successfully');
         setNewEmail('');
@@ -150,7 +150,7 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     
     try {
       const { error } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .delete()
         .eq('id', id);
       

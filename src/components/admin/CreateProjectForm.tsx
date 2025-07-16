@@ -50,7 +50,7 @@ const CreateProjectForm: React.FC = () => {
       }));
       
       const { error: ownersError } = await supabase
-        .from('project_owners')
+        .from('projectowner_whitelist')
         .insert(projectOwners);
       
       if (ownersError) throw ownersError;
