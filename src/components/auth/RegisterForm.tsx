@@ -68,7 +68,7 @@ const RegisterForm: React.FC = () => {
         email,
         password,
         options: {
-          emailRedirectTo: 'https://decubateido.com/dashboard'
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
 
@@ -93,7 +93,7 @@ const RegisterForm: React.FC = () => {
         }
       }
 
-      setMessage('Registrazione avvenuta! Controlla la tua email per confermare l\'account.');
+      setMessage('Registration successful! Check your email to confirm your account.');
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred during registration');
