@@ -97,35 +97,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const deleteProject = async (projectId: string, projectName: string) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${projectName}"? This action cannot be undone.`
-    );
-    
-    if (!confirmed) return;
-    
-    try {
-      // Delete project owners from whitelist first
-      await supabase
-        .from('projectowner_whitelist')
-        .delete()
-        .eq('project_id', projectId);
-      
-      // Delete project
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId);
-      
-      if (error) throw error;
-      
-      setMessage({ text: 'Project deleted successfully', type: 'success' });
-      loadProjects(); // Reload the list
-    } catch (err: any) {
-      console.error('Delete project error:', err);
-      setMessage({ text: `Failed to delete project: ${err.message}`, type: 'error' });
-    }
-  };
+
 
   if (loading) {
     return (
@@ -267,16 +239,6 @@ const AdminDashboard: React.FC = () => {
                                   <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                                 </svg>
                               </a>
-                              <button
-                                onClick={() => deleteProject(project.id, project.name)}
-                                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-                                title="Delete Project"
-                              >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                              </button>
                             </div>
                           </td>
                         </tr>

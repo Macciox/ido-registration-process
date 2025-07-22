@@ -5,11 +5,10 @@ import { getCurrentUser, signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/database.types';
 
-const AdminSettingsPage: React.FC = () => {
+const ProjectOwnerSettingsPage: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMessage, setPasswordMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -20,7 +19,7 @@ const AdminSettingsPage: React.FC = () => {
     const loadUser = async () => {
       try {
         const currentUser = await getCurrentUser();
-        if (!currentUser || currentUser.role !== 'admin') {
+        if (!currentUser || currentUser.role !== 'project_owner') {
           router.push('/login');
           return;
         }
@@ -58,7 +57,6 @@ const AdminSettingsPage: React.FC = () => {
       if (error) throw error;
 
       setPasswordMessage({ type: 'success', text: 'Password updated successfully' });
-
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
@@ -76,31 +74,33 @@ const AdminSettingsPage: React.FC = () => {
     }
 
     try {
-      // First update admin status in whitelist
+      // First update project owner status in whitelist
       if (user) {
+        // Get all projects associated with this project owner
+        const { data: ownerProjects } = await supabase
+          .from('projectowner_whitelist')
+          .select('project_id')
+          .eq('email', user.email);
+        
+        // Update status to deleted but keep the record for project history
         await supabase
-          .from('admin_whitelist')
+          .from('projectowner_whitelist')
           .update({ status: 'deleted' })
           .eq('email', user.email);
         
-        // Check if admin is associated with any projects
-        const { data: projects } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('created_by', user.id);
-        
-        if (projects && projects.length > 0) {
-          // Update projects to mark the creator as deleted but preserve the project data
-          for (const project of projects) {
+        // Update project owner status in each project they own
+        if (ownerProjects && ownerProjects.length > 0) {
+          for (const ownerProject of ownerProjects) {
             await supabase
-              .from('projects')
-              .update({ creator_status: 'deleted' })
-              .eq('id', project.id);
+              .from('project_owners')
+              .update({ status: 'deleted' })
+              .eq('project_id', ownerProject.project_id)
+              .eq('user_id', user.id);
           }
         }
       }
 
-      // Then delete the user authentication but keep the profile record
+      // Then delete the user authentication but keep related records
       const { error } = await supabase.auth.admin.deleteUser(user?.id || '');
       if (error) throw error;
 
@@ -208,4 +208,4 @@ const AdminSettingsPage: React.FC = () => {
   );
 };
 
-export default AdminSettingsPage;
+export default ProjectOwnerSettingsPage;

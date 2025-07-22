@@ -177,78 +177,109 @@ const ProjectSettings: React.FC = () => {
             </p>
           </div>
         )}
-
-        {/* Project Name Section */}
-        <div className="sleek-card p-6">
-          <h2 className="text-lg font-medium text-white mb-4">Project Information</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Project Name
-              </label>
-              {editingName ? (
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="sleek-input flex-1"
-                  />
-                  <button
-                    onClick={updateProjectName}
-                    className="btn-dark"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingName(false);
-                      setNewName(project.name);
-                    }}
-                    className="btn-light"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className="flex justify-between items-center">
-                  <span className="text-white">{project.name}</span>
-                  <button
-                    onClick={() => setEditingName(true)}
-                    className="btn-light"
-                  >
-                    Edit
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Created
-              </label>
-              <span className="text-white">
-                {new Date(project.created_at).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
+        
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-white/10 mb-6">
+          <button
+            onClick={() => router.push(`/admin/projects/${project.id}/settings`)}
+            className="px-4 py-2 border-b-2 border-primary text-white font-medium"
+          >
+            Project Information
+          </button>
+          <button
+            onClick={() => router.push(`/admin/projects/${project.id}/settings?tab=owners`)}
+            className={`px-4 py-2 ${router.query.tab === 'owners' ? 'border-b-2 border-primary text-white font-medium' : 'text-text-secondary hover:text-white'}`}
+          >
+            Project Owners
+          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => router.push(`/admin/projects/${project.id}/settings?tab=danger`)}
+              className={`px-4 py-2 ${router.query.tab === 'danger' ? 'border-b-2 border-red-500 text-red-400 font-medium' : 'text-text-secondary hover:text-white'}`}
+            >
+              Delete Project
+            </button>
+          )}
         </div>
 
+        {/* Project Information Section */}
+        {(!router.query.tab || router.query.tab === 'info') && (
+          <div className="sleek-card p-6">
+            <h2 className="text-lg font-medium text-white mb-4">Project Information</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Project Name
+                </label>
+                {editingName ? (
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="sleek-input flex-1"
+                    />
+                    <button
+                      onClick={updateProjectName}
+                      className="btn-dark"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingName(false);
+                        setNewName(project.name);
+                      }}
+                      className="btn-light"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-white">{project.name}</span>
+                    <button
+                      onClick={() => setEditingName(true)}
+                      className="btn-light"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Created
+                </label>
+                <span className="text-white">
+                  {new Date(project.created_at).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Project Owners Section */}
-        <ProjectOwnersList projectId={project.id} />
+        {router.query.tab === 'owners' && (
+          <div className="sleek-card p-6">
+            <h2 className="text-lg font-medium text-white mb-4">Project Owners</h2>
+            <ProjectOwnersList projectId={project.id} />
+          </div>
+        )}
 
         {/* Danger Zone - Only for Admins */}
-        {user?.role === 'admin' && (
+        {user?.role === 'admin' && router.query.tab === 'danger' && (
           <div className="sleek-card p-6 border-l-4 border-red-500">
-            <h2 className="text-lg font-medium text-red-400 mb-4">Danger Zone</h2>
+            <h2 className="text-lg font-medium text-red-400 mb-4">Delete Project</h2>
             
             <div className="bg-red-900/20 p-4 rounded-md border border-red-500/30">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm font-medium text-red-400">Delete Project</h3>
+                  <h3 className="text-sm font-medium text-red-400">Warning: This action cannot be undone</h3>
                   <p className="text-sm text-red-300 mt-1">
-                    Permanently delete this project and all associated data. This action cannot be undone.
+                    Permanently delete this project and all associated data. All project information, owners, and settings will be removed.
                   </p>
                 </div>
                 <button
@@ -263,6 +294,7 @@ const ProjectSettings: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
     </Layout>
   );

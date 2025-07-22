@@ -1,5 +1,23 @@
 # IDO Registration Platform - Changelog
 
+## 🔄 UI/UX Improvements - June 17, 2024
+
+### ✅ **NEW FEATURES & IMPROVEMENTS**
+- **Simplified Profile Menu** - Reduced to Settings and Logout options
+- **Dedicated Settings Pages** - Added separate settings pages for admin and project owners
+- **Project Settings Reorganization** - Structured into three clear sections: Project Information, Project Owners, and Delete Project
+- **Enhanced Security** - Improved account deletion process to preserve project data
+- **Z-index Fix** - Fixed dropdown menu display issues
+
+### 🔧 **TECHNICAL IMPLEMENTATION**
+- Added z-index priority to header dropdown menu
+- Created dedicated settings pages with password change and account deletion
+- Implemented safe account deletion that preserves project records
+- Added database migration for tracking creator status
+- Moved project deletion functionality from dashboard to dedicated section
+
+---
+
 ## 🎉 MAJOR BREAKTHROUGH - Email Verification System Complete! 
 
 ### ✅ **WORKING FEATURES**
