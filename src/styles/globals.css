@@ -424,7 +424,13 @@ body {
 
 /* Header dropdown z-index fix */
 .header-dropdown {
-  z-index: 9999 !important;
+  z-index: 999999 !important;
+}
+
+/* Portal dropdown fix */
+body > .header-dropdown {
+  z-index: 999999 !important;
+  position: fixed !important;
 }
 
 
