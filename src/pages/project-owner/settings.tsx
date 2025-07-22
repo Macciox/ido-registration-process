@@ -9,6 +9,7 @@ const ProjectOwnerSettingsPage: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMessage, setPasswordMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -39,6 +40,11 @@ const ProjectOwnerSettingsPage: React.FC = () => {
     e.preventDefault();
     setPasswordMessage(null);
 
+    if (!currentPassword) {
+      setPasswordMessage({ type: 'error', text: 'Current password is required' });
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setPasswordMessage({ type: 'error', text: 'New passwords do not match' });
       return;
@@ -50,6 +56,18 @@ const ProjectOwnerSettingsPage: React.FC = () => {
     }
 
     try {
+      // First verify the current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: currentPassword
+      });
+
+      if (signInError) {
+        setPasswordMessage({ type: 'error', text: 'Current password is incorrect' });
+        return;
+      }
+
+      // Then update to the new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -57,6 +75,7 @@ const ProjectOwnerSettingsPage: React.FC = () => {
       if (error) throw error;
 
       setPasswordMessage({ type: 'success', text: 'Password updated successfully' });
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
@@ -139,6 +158,17 @@ const ProjectOwnerSettingsPage: React.FC = () => {
             )}
             
             <form onSubmit={handleChangePassword}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="sleek-input w-full"
+                  required
+                />
+              </div>
+
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">New Password</label>
                 <input
