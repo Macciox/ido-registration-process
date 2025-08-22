@@ -43,6 +43,7 @@ const Header: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      setIsProfileMenuOpen(false);
       await signOut();
       router.push('/login');
     } catch (err) {
@@ -51,12 +52,8 @@ const Header: React.FC = () => {
   };
 
   const navigateTo = (path: string) => {
-    // Close menu first
     setIsProfileMenuOpen(false);
-    // Use setTimeout to ensure menu is closed before navigation
-    setTimeout(() => {
-      router.push(path);
-    }, 10);
+    router.push(path);
   };
 
   return (
@@ -117,11 +114,7 @@ const Header: React.FC = () => {
                       </div>
                       
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigateTo(`/${user.role === 'admin' ? 'admin' : 'project-owner'}/settings`);
-                        }}
+                        onClick={() => navigateTo(`/${user.role === 'admin' ? 'admin' : 'project-owner'}/settings`)}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -133,11 +126,7 @@ const Header: React.FC = () => {
                       <div className="border-t border-white/10 my-2"></div>
                       
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleLogout();
-                        }}
+                        onClick={handleLogout}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
