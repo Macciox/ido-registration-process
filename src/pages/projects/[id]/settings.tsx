@@ -150,9 +150,15 @@ const ProjectSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* Project Owners Section */}
+        {/* Project Team Management Section */}
         {hasAccess && projectId && typeof projectId === 'string' && (
-          <SimpleProjectOwnersList projectId={projectId} />
+          <div className="sleek-card p-6">
+            <h2 className="text-lg font-medium text-white mb-4">Team Management</h2>
+            <p className="text-text-secondary mb-6">
+              Manage project team members and invite new collaborators.
+            </p>
+            <SimpleProjectOwnersList projectId={projectId} />
+          </div>
         )}
         
         {/* Other settings sections can be added here */}
