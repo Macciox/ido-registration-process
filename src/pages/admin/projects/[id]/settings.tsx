@@ -68,6 +68,12 @@ const ProjectSettings: React.FC = () => {
   const updateProjectName = async () => {
     if (!project || !newName.trim()) return;
     
+    // Only admins can update project name
+    if (user?.role !== 'admin') {
+      setMessage({ text: 'Only administrators can modify project names', type: 'error' });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('projects')
@@ -220,7 +226,7 @@ const ProjectSettings: React.FC = () => {
                 <label className="block text-sm font-medium text-text-secondary mb-2">
                   Project Name
                 </label>
-                {editingName ? (
+                {editingName && user?.role === 'admin' ? (
                   <div className="flex space-x-2">
                     <input
                       type="text"
@@ -247,12 +253,14 @@ const ProjectSettings: React.FC = () => {
                 ) : (
                   <div className="flex justify-between items-center">
                     <span className="text-white">{project.name}</span>
-                    <button
-                      onClick={() => setEditingName(true)}
-                      className="btn-light"
-                    >
-                      Edit
-                    </button>
+                    {user?.role === 'admin' && (
+                      <button
+                        onClick={() => setEditingName(true)}
+                        className="btn-light"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
