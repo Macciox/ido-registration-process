@@ -132,19 +132,13 @@ const ProjectSettings: React.FC = () => {
   return (
     <Layout>
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Project Settings: {project.name}</h1>
+        <h1 className="text-2xl font-bold text-white mb-4 md:mb-0">Project Settings: {project.name}</h1>
         <div className="flex space-x-4">
           <button
             onClick={() => router.push(`/projects/${projectId}`)}
             className="btn btn-outline"
           >
             View Project
-          </button>
-          <button
-            onClick={() => router.push(`/projects/${projectId}/edit`)}
-            className="btn btn-primary"
-          >
-            Edit Project
           </button>
         </div>
       </div>

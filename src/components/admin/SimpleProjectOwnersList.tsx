@@ -14,11 +14,12 @@ interface ProjectOwner {
 
 const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ projectId }) => {
   const [owners, setOwners] = useState<ProjectOwner[]>([]);
-  const [primaryOwner, setPrimaryOwner] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editEmail, setEditEmail] = useState('');
 
   // Load project owners
   useEffect(() => {
@@ -34,62 +35,25 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     setError(null);
     
     try {
-      // Get primary owner
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .select('owner_email')
-        .eq('id', projectId)
-        .single();
+      // Get all owners from projectowner_whitelist table
+      const { data: allOwners, error: ownersError } = await supabase
+        .from('projectowner_whitelist')
+        .select('*')
+        .eq('project_id', projectId);
       
-      if (projectError) throw projectError;
+      if (ownersError) throw ownersError;
       
-      setPrimaryOwner(project.owner_email);
-      
-      // Get additional owners from projectowner_whitelist table
-      try {
-        const { data: additionalOwners, error: ownersError } = await supabase
-          .from('projectowner_whitelist')
-          .select('*')
-          .eq('project_id', projectId);
+      if (allOwners) {
+        const formattedOwners: ProjectOwner[] = allOwners.map(owner => ({
+          id: owner.id,
+          email: owner.email,
+          status: owner.status,
+          verified_at: owner.verified_at
+        }));
         
-        if (!ownersError && additionalOwners) {
-          // Filter out duplicates and format owners with primary owner first
-          const uniqueAdditionalOwners = additionalOwners.filter(
-            owner => owner.email.toLowerCase() !== project.owner_email.toLowerCase()
-          );
-          
-          const formattedOwners: ProjectOwner[] = [
-            {
-              id: 'primary',
-              email: project.owner_email,
-              status: 'primary',
-              verified_at: null
-            },
-            ...uniqueAdditionalOwners.map(owner => ({
-              id: owner.id,
-              email: owner.email,
-              status: owner.status,
-              verified_at: null
-            }))
-          ];
-          
-          setOwners(formattedOwners);
-        } else {
-          setOwners([{
-            id: 'primary',
-            email: project.owner_email,
-            status: 'primary',
-            verified_at: null
-          }]);
-        }
-      } catch (err) {
-        console.log('Error loading additional owners, using only primary owner');
-        setOwners([{
-          id: 'primary',
-          email: project.owner_email,
-          status: 'primary',
-          verified_at: null
-        }]);
+        setOwners(formattedOwners);
+      } else {
+        setOwners([]);
       }
     } catch (err: any) {
       console.error('Error loading owners:', err);
@@ -146,37 +110,50 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
     }
   };
 
-  const removeOwner = async (id: string) => {
-    if (id === 'primary') {
-      setError('Cannot remove the primary project owner');
+  const startEdit = (owner: ProjectOwner) => {
+    setEditingId(owner.id);
+    setEditEmail(owner.email);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditEmail('');
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editEmail.trim()) {
+      setError('Email cannot be empty');
       return;
     }
-    
+
+    if (owners.some(owner => owner.id !== id && owner.email.toLowerCase() === editEmail.trim().toLowerCase())) {
+      setError('This email is already an owner of this project');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('projectowner_whitelist')
-        .delete()
+        .update({ email: editEmail.trim() })
         .eq('id', id);
       
       if (error) throw error;
       
       // Update local state
-      setOwners(prev => prev.filter(owner => owner.id !== id));
-      setMessage('Project owner removed successfully');
+      setOwners(prev => prev.map(owner => 
+        owner.id === id ? { ...owner, email: editEmail.trim() } : owner
+      ));
+      setMessage('Email updated successfully');
+      setEditingId(null);
+      setEditEmail('');
     } catch (err: any) {
-      console.error('Error removing owner:', err);
-      setError(err.message || 'Failed to remove project owner');
+      console.error('Error updating email:', err);
+      setError(err.message || 'Failed to update email');
     }
   };
 
   const getStatusBadge = (owner: ProjectOwner) => {
-    if (owner.status === 'primary') {
-      return (
-        <span className="status-badge status-success">
-          Primary
-        </span>
-      );
-    } else if (owner.status === 'registered') {
+    if (owner.status === 'registered') {
       return (
         <span className="status-badge status-success">
           Active
@@ -223,23 +200,49 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
                 <tr>
                   <th className="text-left">Email</th>
                   <th className="text-left">Status</th>
-                  <th className="text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {owners.map((owner) => (
                   <tr key={owner.id}>
-                    <td className="text-white">{owner.email}</td>
-                    <td>{getStatusBadge(owner)}</td>
-                    <td>
-                      {owner.id !== 'primary' && (
-                        <button
-                          onClick={() => removeOwner(owner.id)}
-                          className="btn-action danger"
-                        >
-                          Remove
-                        </button>
+                    <td className="text-white">
+                      {editingId === owner.id ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            className="sleek-input flex-1"
+                          />
+                          <button
+                            onClick={() => saveEdit(owner.id)}
+                            className="btn-action success"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="btn-action"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        owner.email
                       )}
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-between">
+                        {getStatusBadge(owner)}
+                        {owner.status !== 'registered' && editingId !== owner.id && (
+                          <button
+                            onClick={() => startEdit(owner)}
+                            className="btn-action ml-2"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
