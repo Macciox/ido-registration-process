@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getCurrentUser, signOut } from '@/lib/auth';
 import { User } from '@/types/database.types';
-import Portal from '@/components/ui/Portal';
 
 const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -42,6 +41,7 @@ const Header: React.FC = () => {
   }, [profileMenuRef]);
 
   const handleLogout = async () => {
+    console.log('Logout clicked');
     try {
       setIsProfileMenuOpen(false);
       await signOut();
@@ -52,6 +52,7 @@ const Header: React.FC = () => {
   };
 
   const navigateTo = (path: string) => {
+    console.log('Navigate to:', path);
     setIsProfileMenuOpen(false);
     router.push(path);
   };
@@ -96,15 +97,9 @@ const Header: React.FC = () => {
                 </button>
                 
                 {isProfileMenuOpen && (
-                  <Portal>
                     <div 
-                      className="fixed sleek-card p-2 header-dropdown" 
+                      className="absolute right-0 top-full mt-2 w-56 sleek-card p-2 z-50" 
                       style={{
-                        zIndex: 2147483647,
-                        position: 'fixed',
-                        width: '14rem',
-                        top: profileMenuRef.current ? profileMenuRef.current.getBoundingClientRect().bottom + 8 : 0,
-                        left: profileMenuRef.current ? profileMenuRef.current.getBoundingClientRect().right - 224 : 0,
                         boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
                       }}
                     >
@@ -135,7 +130,6 @@ const Header: React.FC = () => {
                         Sign out
                       </button>
                     </div>
-                  </Portal>
                 )}
               </div>
             </div>
