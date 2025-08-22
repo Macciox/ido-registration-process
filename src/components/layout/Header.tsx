@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getCurrentUser, signOut } from '@/lib/auth';
 import { User } from '@/types/database.types';
-import Portal from '@/components/ui/Portal';
 
 const Header: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -99,18 +98,7 @@ const Header: React.FC = () => {
                 </button>
                 
                 {isProfileMenuOpen && (
-                  <Portal>
-                    <div 
-                      className="fixed sleek-card p-2 header-dropdown z-[999999]" 
-                      style={{
-                        zIndex: 999999,
-                        position: 'fixed',
-                        width: '14rem', // w-56
-                        top: profileMenuRef.current ? profileMenuRef.current.getBoundingClientRect().bottom + 8 : 0,
-                        left: profileMenuRef.current ? profileMenuRef.current.getBoundingClientRect().right - 224 : 0, // 224px = 14rem (w-56)
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-                      }}
-                    >
+                    <div className="absolute right-0 top-full mt-2 w-56 sleek-card p-2 z-[999999]" style={{ zIndex: 999999 }}>
                       <div className="px-3 py-2 border-b border-white/10 mb-2">
                         <p className="text-sm font-medium text-white">{user.email}</p>
                         <p className="text-xs text-text-secondary capitalize">{user.role} Account</p>
@@ -138,7 +126,6 @@ const Header: React.FC = () => {
                         Sign out
                       </button>
                     </div>
-                  </Portal>
                 )}
               </div>
             </div>
