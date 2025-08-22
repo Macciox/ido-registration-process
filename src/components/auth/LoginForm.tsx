@@ -115,6 +115,25 @@ const LoginForm: React.FC = () => {
         return;
       }
 
+      // Update projectowner_whitelist status to 'registered' if user has verified email
+      if (data.user?.email_confirmed_at) {
+        try {
+          const { error: updateError } = await supabase
+            .from('projectowner_whitelist')
+            .update({ status: 'registered' })
+            .eq('email', email)
+            .in('status', ['pending_verification', 'pending']);
+          
+          if (updateError) {
+            console.error('Error updating projectowner_whitelist on login:', updateError);
+          } else {
+            console.log('Updated projectowner_whitelist status to registered for:', email);
+          }
+        } catch (err) {
+          console.error('Error in projectowner_whitelist update on login:', err);
+        }
+      }
+
       // Check if the user has a profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
