@@ -53,7 +53,11 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
           .eq('project_id', projectId);
         
         if (!ownersError && additionalOwners) {
-          // Format owners with primary owner first
+          // Filter out duplicates and format owners with primary owner first
+          const uniqueAdditionalOwners = additionalOwners.filter(
+            owner => owner.email.toLowerCase() !== project.owner_email.toLowerCase()
+          );
+          
           const formattedOwners: ProjectOwner[] = [
             {
               id: 'primary',
@@ -61,7 +65,7 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
               status: 'primary',
               verified_at: null
             },
-            ...additionalOwners.map(owner => ({
+            ...uniqueAdditionalOwners.map(owner => ({
               id: owner.id,
               email: owner.email,
               status: owner.status,
@@ -168,25 +172,25 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
   const getStatusBadge = (owner: ProjectOwner) => {
     if (owner.status === 'primary') {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+        <span className="status-badge status-success">
           Primary
         </span>
       );
-    } else if (owner.status === 'verified') {
+    } else if (owner.status === 'registered') {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-          Verified
+        <span className="status-badge status-success">
+          Active
         </span>
       );
     } else if (owner.status === 'pending_verification') {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+        <span className="status-badge status-warning">
           Pending Verification
         </span>
       );
     } else {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+        <span className="status-badge status-warning">
           Pending
         </span>
       );
@@ -194,17 +198,15 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium mb-4">Project Owners</h2>
-      
+    <div>
       {error && (
-        <div className="p-4 mb-4 rounded bg-red-100 text-red-700">
+        <div className="mb-4 p-3 rounded bg-red-100/10 text-red-400 border border-red-400/30">
           {error}
         </div>
       )}
       
       {message && (
-        <div className="p-4 mb-4 rounded bg-green-100 text-green-700">
+        <div className="mb-4 p-3 rounded bg-green-100/10 text-green-400 border border-green-400/30">
           {message}
         </div>
       )}
@@ -215,45 +217,56 @@ const SimpleProjectOwnersList: React.FC<SimpleProjectOwnersListProps> = ({ proje
         </div>
       ) : (
         <div className="mb-6">
-          <ul className="divide-y divide-gray-200">
-            {owners.map((owner) => (
-              <li key={owner.id} className="py-3 flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                  <span className="text-gray-900">{owner.email}</span>
-                  {getStatusBadge(owner)}
-                </div>
-                {owner.id !== 'primary' && (
-                  <button
-                    onClick={() => removeOwner(owner.id)}
-                    className="px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
-                  >
-                    Remove
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="sleek-table">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="text-left">Email</th>
+                  <th className="text-left">Status</th>
+                  <th className="text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {owners.map((owner) => (
+                  <tr key={owner.id}>
+                    <td className="text-white">{owner.email}</td>
+                    <td>{getStatusBadge(owner)}</td>
+                    <td>
+                      {owner.id !== 'primary' && (
+                        <button
+                          onClick={() => removeOwner(owner.id)}
+                          className="btn-action danger"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       
       <form onSubmit={addOwner} className="mt-4">
-        <div className="flex">
+        <div className="flex gap-2">
           <input
             type="email"
-            className="form-input flex-1 rounded-r-none"
-            placeholder="Add new owner email"
+            className="sleek-input flex-1"
+            placeholder="Add new team member email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             required
           />
           <button
             type="submit"
-            className="btn btn-primary rounded-l-none"
+            className="btn-dark"
           >
-            Add
+            Invite
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-text-muted mt-2">
           The user will need to register with this email to access the project.
         </p>
       </form>
