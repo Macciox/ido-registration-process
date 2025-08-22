@@ -31,13 +31,19 @@ const ProjectSettings: React.FC = () => {
       }
       setUser(currentUser);
       
+      // Check if non-admin is trying to access danger tab
+      if (router.query.tab === 'danger' && currentUser.role !== 'admin') {
+        router.push(`/admin/projects/${id}/settings`);
+        return;
+      }
+      
       if (id) {
         await loadProject(id as string);
       }
     };
     
     init();
-  }, [id, router]);
+  }, [id, router, router.query.tab]);
 
   const loadProject = async (projectId: string) => {
     try {
@@ -81,8 +87,10 @@ const ProjectSettings: React.FC = () => {
   const deleteProject = async () => {
     console.log('Delete project called', { project, user });
     
+    // Strict admin-only check
     if (!project || !user || user.role !== 'admin') {
-      console.log('Delete blocked - missing requirements');
+      console.log('Delete blocked - user is not admin');
+      alert('Only administrators can delete projects.');
       return;
     }
     
