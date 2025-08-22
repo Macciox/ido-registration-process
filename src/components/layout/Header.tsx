@@ -117,7 +117,11 @@ const Header: React.FC = () => {
                       </div>
                       
                       <button
-                        onClick={() => navigateTo(`/${user.role === 'admin' ? 'admin' : 'project-owner'}/settings`)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigateTo(`/${user.role === 'admin' ? 'admin' : 'project-owner'}/settings`);
+                        }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -129,7 +133,11 @@ const Header: React.FC = () => {
                       <div className="border-t border-white/10 my-2"></div>
                       
                       <button
-                        onClick={handleLogout}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleLogout();
+                        }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

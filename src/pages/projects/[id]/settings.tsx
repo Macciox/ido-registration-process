@@ -104,7 +104,7 @@ const ProjectSettings: React.FC = () => {
           {error}
         </div>
         <button
-          onClick={() => router.push('/admin/dashboard')}
+          onClick={() => router.push(user?.role === 'admin' ? '/admin/dashboard' : '/project-owner/dashboard')}
           className="btn btn-primary"
         >
           Back to Dashboard
@@ -120,7 +120,7 @@ const ProjectSettings: React.FC = () => {
           Project not found
         </div>
         <button
-          onClick={() => router.push('/admin/dashboard')}
+          onClick={() => router.push(user?.role === 'admin' ? '/admin/dashboard' : '/project-owner/dashboard')}
           className="btn btn-primary"
         >
           Back to Dashboard

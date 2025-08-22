@@ -194,7 +194,7 @@ const ProjectPage = () => {
                     onClick={() => {
                       setLoading(true);
                       setTimeout(() => {
-                        window.location.href = user?.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+                        window.location.href = user?.role === 'admin' ? '/admin/dashboard' : '/project-owner/dashboard';
                       }, 100);
                     }}
                     className="btn-light"
