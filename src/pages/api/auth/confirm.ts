@@ -22,8 +22,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Verification result:', { error, data })
 
-    if (!error) {
-      console.log('Email verified successfully, redirecting to:', redirectTo)
+    if (!error && data.user) {
+      console.log('Email verified successfully for user:', data.user.email)
+      
+      // Update projectowner_whitelist status to 'registered'
+      if (data.user.email) {
+        try {
+          const { error: updateError } = await supabase
+            .from('projectowner_whitelist')
+            .update({ status: 'registered' })
+            .eq('email', data.user.email)
+            .eq('status', 'pending_verification')
+          
+          if (updateError) {
+            console.error('Error updating projectowner_whitelist:', updateError)
+          } else {
+            console.log('Updated projectowner_whitelist status to registered for:', data.user.email)
+          }
+        } catch (err) {
+          console.error('Error in projectowner_whitelist update:', err)
+        }
+      }
+      
+      console.log('Redirecting to:', redirectTo)
       return res.redirect(redirectTo)
     } else {
       console.error('Verification failed:', error)
