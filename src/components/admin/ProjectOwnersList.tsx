@@ -17,14 +17,11 @@ interface ProjectOwner {
 
 const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
   const [owners, setOwners] = useState<ProjectOwner[]>([]);
-  const [primaryOwner, setPrimaryOwner] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [addingOwner, setAddingOwner] = useState(false);
-  const [removingOwnerId, setRemovingOwnerId] = useState<string | null>(null);
   const [message, setMessage] = useState<{text: string, type: 'success' | 'error' | 'warning'} | null>(null);
-  const [verifiedOwners, setVerifiedOwners] = useState<Record<string, boolean>>({});
   const [editingOwner, setEditingOwner] = useState<string | null>(null);
   const [editEmail, setEditEmail] = useState('');
 
@@ -180,50 +177,7 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
     }
   };
 
-  const togglePrimary = async (ownerId: string) => {
-    // Note: Primary status not implemented in whitelist yet
-    setMessage({ text: 'Primary status feature coming soon', type: 'warning' });
-  };
 
-  const removeOwner = async (ownerId: string) => {
-    // Cannot remove the primary owner
-    if (ownerId === 'primary') {
-      setMessage({ text: 'Cannot remove the primary project owner', type: 'error' });
-      return;
-    }
-    
-    try {
-      setRemovingOwnerId(ownerId);
-      setMessage(null);
-      
-      // Check if this is a temporary owner (added locally)
-      if (ownerId.startsWith('temp-')) {
-        // Just remove from local state
-        setOwners(prev => prev.filter(owner => owner.id !== ownerId));
-        setMessage({ text: 'Project owner removed successfully', type: 'success' });
-        return;
-      }
-      
-      // Try to remove from database
-      const { error } = await supabase
-        .from('projectowner_whitelist')
-        .delete()
-        .eq('id', ownerId);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Remove the owner from the local state
-      setOwners(prev => prev.filter(owner => owner.id !== ownerId));
-      setMessage({ text: 'Project owner removed successfully', type: 'success' });
-    } catch (err: any) {
-      console.error('Error removing project owner:', err);
-      setMessage({ text: `Failed to remove project owner: ${err.message || 'Unknown error'}`, type: 'error' });
-    } finally {
-      setRemovingOwnerId(null);
-    }
-  };
 
   const getStatusBadges = (owner: ProjectOwner) => {
     const badges = [];
@@ -328,27 +282,14 @@ const ProjectOwnersList: React.FC<ProjectOwnersListProps> = ({ projectId }) => {
                           </button>
                         </>
                       ) : (
-                        <>
+                        owner.status !== 'registered' && (
                           <button
                             onClick={() => startEdit(owner)}
                             className="btn-light text-xs"
                           >
                             Edit
                           </button>
-                          <button
-                            onClick={() => togglePrimary(owner.id)}
-                            className="btn-light text-xs"
-                          >
-                            {owner.is_primary ? 'Remove Primary' : 'Make Primary'}
-                          </button>
-                          <button
-                            onClick={() => removeOwner(owner.id)}
-                            className="btn-light text-xs"
-                            disabled={removingOwnerId === owner.id}
-                          >
-                            {removingOwnerId === owner.id ? 'Removing...' : 'Remove'}
-                          </button>
-                        </>
+                        )
                       )}
                     </div>
                   </div>
