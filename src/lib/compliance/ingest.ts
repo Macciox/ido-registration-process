@@ -2,10 +2,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
 
-// Configure PDF.js worker
+// Configure PDF.js worker for Vercel
 if (typeof window === 'undefined') {
-  // Node.js environment
-  pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.js');
+  // Node.js environment - use CDN worker for Vercel compatibility
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
 export interface PageText {
