@@ -29,12 +29,13 @@ export async function extractTextFromPdf(fileOrBuffer: File | Buffer): Promise<P
     let arrayBuffer: ArrayBuffer;
     
     if (fileOrBuffer instanceof File) {
-      arrayBuffer = await fileOrBuffer.arrayBuffer();
+      const buffer = await fileOrBuffer.arrayBuffer();
+      arrayBuffer = buffer as ArrayBuffer;
     } else {
       arrayBuffer = fileOrBuffer.buffer.slice(
         fileOrBuffer.byteOffset,
         fileOrBuffer.byteOffset + fileOrBuffer.byteLength
-      );
+      ) as ArrayBuffer;
     }
 
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
