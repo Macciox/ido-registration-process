@@ -206,6 +206,12 @@ const ProjectSettings: React.FC = () => {
           >
             Project Owners
           </button>
+          <button
+            onClick={() => router.push(`/admin/projects/${project.id}/documents`)}
+            className="px-4 py-2 text-text-secondary hover:text-white"
+          >
+            Documents & KYB
+          </button>
           {user?.role === 'admin' && (
             <button
               onClick={() => router.push(`/admin/projects/${project.id}/settings?tab=danger`)}

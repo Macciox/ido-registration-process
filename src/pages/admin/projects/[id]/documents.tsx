@@ -1,0 +1,258 @@
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Layout from '@/components/layout/Layout';
+import { getCurrentUser } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+
+interface Document {
+  id: string;
+  document_type: string;
+  title: string;
+  description: string;
+  file_url?: string;
+  link_url?: string;
+  created_at: string;
+}
+
+const ProjectDocuments: React.FC = () => {
+  const router = useRouter();
+  const { id: projectId } = router.query;
+  const [user, setUser] = useState<any>(null);
+  const [project, setProject] = useState<any>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    document_type: 'legal',
+    title: '',
+    description: '',
+    link_url: ''
+  });
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== 'admin') {
+          router.push('/login');
+          return;
+        }
+        setUser(currentUser);
+        
+        if (projectId) {
+          await loadProject();
+          await loadDocuments();
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, [projectId, router]);
+
+  const loadProject = async () => {
+    const { data } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+    setProject(data);
+  };
+
+  const loadDocuments = async () => {
+    const { data } = await supabase
+      .from('project_documents')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
+    setDocuments(data || []);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from('project_documents')
+        .insert({
+          project_id: projectId,
+          ...formData,
+          uploaded_by: user.id
+        });
+
+      if (error) throw error;
+
+      setFormData({ document_type: 'legal', title: '', description: '', link_url: '' });
+      setShowForm(false);
+      await loadDocuments();
+    } catch (err: any) {
+      console.error('Error adding document:', err);
+    }
+  };
+
+  const handleDelete = async (docId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('project_documents')
+        .delete()
+        .eq('id', docId);
+
+      if (error) throw error;
+      await loadDocuments();
+    } catch (err: any) {
+      console.error('Error deleting document:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Project Documents</h1>
+            <p className="text-text-secondary">{project?.name} - KYB & Legal Documents</p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-dark"
+          >
+            Add Document
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="sleek-card p-6">
+            <h3 className="text-lg font-medium text-white mb-4">Add New Document</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Document Type</label>
+                <select
+                  value={formData.document_type}
+                  onChange={(e) => setFormData({ ...formData, document_type: e.target.value })}
+                  className="sleek-input w-full"
+                >
+                  <option value="legal">Legal Document</option>
+                  <option value="whitepaper">Whitepaper</option>
+                  <option value="kyb">KYB Document</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="sleek-input w-full"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="sleek-input w-full h-24"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Link URL</label>
+                <input
+                  type="url"
+                  value={formData.link_url}
+                  onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
+                  className="sleek-input w-full"
+                  placeholder="https://..."
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <button type="submit" className="btn-dark">Add Document</button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="btn-action neutral"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div className="sleek-card p-6">
+          <h3 className="text-lg font-medium text-white mb-4">Documents</h3>
+          
+          {documents.length === 0 ? (
+            <p className="text-text-muted">No documents uploaded yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {documents.map((doc) => (
+                <div key={doc.id} className="border border-white/10 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`status-badge ${
+                          doc.document_type === 'legal' ? 'status-error' :
+                          doc.document_type === 'whitepaper' ? 'status-success' :
+                          doc.document_type === 'kyb' ? 'status-warning' : 'status-badge'
+                        }`}>
+                          {doc.document_type.toUpperCase()}
+                        </span>
+                        <h4 className="text-white font-medium">{doc.title}</h4>
+                      </div>
+                      
+                      {doc.description && (
+                        <p className="text-text-secondary text-sm mb-2">{doc.description}</p>
+                      )}
+                      
+                      {doc.link_url && (
+                        <a
+                          href={doc.link_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline text-sm"
+                        >
+                          View Document →
+                        </a>
+                      )}
+                      
+                      <p className="text-text-muted text-xs mt-2">
+                        Added {new Date(doc.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleDelete(doc.id)}
+                      className="btn-action danger"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default ProjectDocuments;
