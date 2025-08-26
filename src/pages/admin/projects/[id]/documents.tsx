@@ -23,7 +23,7 @@ const ProjectDocuments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    document_type: 'legal',
+    document_type: 'launchpad',
     title: '',
     description: '',
     link_url: ''
@@ -83,7 +83,7 @@ const ProjectDocuments: React.FC = () => {
 
       if (error) throw error;
 
-      setFormData({ document_type: 'legal', title: '', description: '', link_url: '' });
+      setFormData({ document_type: 'launchpad', title: '', description: '', link_url: '' });
       setShowForm(false);
       await loadDocuments();
     } catch (err: any) {
@@ -138,16 +138,16 @@ const ProjectDocuments: React.FC = () => {
             <h3 className="text-lg font-medium text-white mb-4">Add New Document</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Document Type</label>
+                <label className="block text-sm font-medium mb-2">Document Section</label>
                 <select
                   value={formData.document_type}
                   onChange={(e) => setFormData({ ...formData, document_type: e.target.value })}
                   className="sleek-input w-full"
                 >
-                  <option value="legal">Legal Document</option>
-                  <option value="whitepaper">Whitepaper</option>
-                  <option value="kyb">KYB Document</option>
-                  <option value="other">Other</option>
+                  <option value="launchpad">Launchpad</option>
+                  <option value="tms">TMS</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="legal">Legal</option>
                 </select>
               </div>
               
@@ -196,60 +196,71 @@ const ProjectDocuments: React.FC = () => {
           </div>
         )}
 
-        <div className="sleek-card p-6">
-          <h3 className="text-lg font-medium text-white mb-4">Documents</h3>
+        {/* Document Sections */}
+        {['launchpad', 'tms', 'marketing', 'legal'].map((section) => {
+          const sectionDocs = documents.filter(doc => doc.document_type === section);
+          const sectionColors = {
+            launchpad: 'status-success',
+            tms: 'status-warning', 
+            marketing: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+            legal: 'status-error'
+          };
           
-          {documents.length === 0 ? (
-            <p className="text-text-muted">No documents uploaded yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {documents.map((doc) => (
-                <div key={doc.id} className="border border-white/10 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`status-badge ${
-                          doc.document_type === 'legal' ? 'status-error' :
-                          doc.document_type === 'whitepaper' ? 'status-success' :
-                          doc.document_type === 'kyb' ? 'status-warning' : 'status-badge'
-                        }`}>
-                          {doc.document_type.toUpperCase()}
-                        </span>
-                        <h4 className="text-white font-medium">{doc.title}</h4>
-                      </div>
-                      
-                      {doc.description && (
-                        <p className="text-text-secondary text-sm mb-2">{doc.description}</p>
-                      )}
-                      
-                      {doc.link_url && (
-                        <a
-                          href={doc.link_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline text-sm"
+          return (
+            <div key={section} className="sleek-card p-6">
+              <h3 className="text-lg font-medium text-white mb-4 capitalize">
+                {section === 'tms' ? 'TMS' : section} Documents
+              </h3>
+              
+              {sectionDocs.length === 0 ? (
+                <p className="text-text-muted">No {section} documents uploaded yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {sectionDocs.map((doc) => (
+                    <div key={doc.id} className="border border-white/10 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`status-badge ${sectionColors[section as keyof typeof sectionColors]}`}>
+                              {section === 'tms' ? 'TMS' : section.toUpperCase()}
+                            </span>
+                            <h4 className="text-white font-medium">{doc.title}</h4>
+                          </div>
+                          
+                          {doc.description && (
+                            <p className="text-text-secondary text-sm mb-2">{doc.description}</p>
+                          )}
+                          
+                          {doc.link_url && (
+                            <a
+                              href={doc.link_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-sm"
+                            >
+                              View Document →
+                            </a>
+                          )}
+                          
+                          <p className="text-text-muted text-xs mt-2">
+                            Added {new Date(doc.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        
+                        <button
+                          onClick={() => handleDelete(doc.id)}
+                          className="btn-action danger"
                         >
-                          View Document →
-                        </a>
-                      )}
-                      
-                      <p className="text-text-muted text-xs mt-2">
-                        Added {new Date(doc.created_at).toLocaleDateString()}
-                      </p>
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    
-                    <button
-                      onClick={() => handleDelete(doc.id)}
-                      className="btn-action danger"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     </Layout>
   );
