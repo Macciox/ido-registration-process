@@ -240,3 +240,55 @@ export async function saveChunks(
     throw new Error(`Failed to save chunks: ${error.message}`);
   }
 }
+
+/**
+ * Main document ingestion function
+ */
+export async function ingestDocument(
+  checkId: string,
+  documentPath: string,
+  inputType: 'pdf' | 'url'
+): Promise<void> {
+  try {
+    let chunks: Chunk[];
+
+    if (inputType === 'pdf') {
+      // Download PDF from Supabase Storage
+      const { supabase } = await import('@/lib/supabase');
+      const { data, error } = await supabase.storage
+        .from('compliance-documents')
+        .download(documentPath);
+
+      if (error || !data) {
+        throw new Error(`Failed to download PDF: ${error?.message}`);
+      }
+
+      // Convert blob to buffer
+      const arrayBuffer = await data.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Extract text from PDF
+      const pages = await extractTextFromPdf(buffer);
+      chunks = chunkPages(pages);
+    } else {
+      // Extract text from URL
+      const text = await extractTextFromUrl(documentPath);
+      const pages = [{ page: 1, text }];
+      chunks = chunkPages(pages);
+    }
+
+    if (chunks.length === 0) {
+      throw new Error('No text content extracted from document');
+    }
+
+    // Generate embeddings
+    const embeddings = await embedChunks(chunks);
+
+    // Save to database
+    await saveChunks(checkId, chunks, embeddings);
+
+  } catch (error) {
+    console.error('Document ingestion failed:', error);
+    throw error;
+  }
+}

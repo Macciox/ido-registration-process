@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/auth';
-import { ingestDocument } from '@/lib/compliance/ingestion';
+import { ingestDocument } from '@/lib/compliance/ingest';
 
 interface ProcessRequest {
   checkId: string;
