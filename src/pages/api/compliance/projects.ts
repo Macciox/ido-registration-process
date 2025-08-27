@@ -18,40 +18,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
-    // Get user's projects
+    // Get user's projects from existing IDO platform
     const { data: projects } = await serviceClient
       .from('projects')
-      .select('*')
+      .select('id, name, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     return res.status(200).json({ projects: projects || [] });
   }
 
-  if (req.method === 'POST') {
-    // Create new project
-    const { name, description } = req.body;
-    
-    if (!name) {
-      return res.status(400).json({ error: 'Project name required' });
-    }
-
-    const { data: project, error } = await serviceClient
-      .from('projects')
-      .insert({
-        name,
-        description: description || '',
-        user_id: user.id
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return res.status(500).json({ error: 'Failed to create project', message: error.message });
-    }
-
-    return res.status(201).json({ project });
-  }
+  // Don't allow creating projects here - use existing IDO projects only
 
   return res.status(405).json({ error: 'Method not allowed' });
 }

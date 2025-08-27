@@ -41,13 +41,9 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [selectedDocument, setSelectedDocument] = useState<string>('');
-  const [selectedProject, setSelectedProject] = useState<string>('');
-  const [newProjectName, setNewProjectName] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<'whitepaper' | 'legal'>('whitepaper');
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'existing'>('upload');
@@ -64,7 +60,6 @@ export default function CompliancePage() {
       setLoading(false);
       fetchTemplates();
       fetchDocuments();
-      fetchProjects();
     };
     init();
   }, [router]);
@@ -76,21 +71,6 @@ export default function CompliancePage() {
       setTemplates(data.templates || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
-    }
-  };
-
-  const fetchProjects = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/compliance/projects', {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      });
-      const data = await response.json();
-      setProjects(data.projects || []);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
     }
   };
 
@@ -329,61 +309,6 @@ export default function CompliancePage() {
           <div className="p-6">
             {activeTab === 'upload' ? (
               <form onSubmit={handleFileUpload} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-white">
-                    Project
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedProject}
-                      onChange={(e) => setSelectedProject(e.target.value)}
-                      className="flex-1 p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
-                    >
-                      <option value="">Choose existing project...</option>
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Or create new project"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      className="flex-1 p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-white">
-                    Document Type
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="whitepaper"
-                        checked={documentType === 'whitepaper'}
-                        onChange={(e) => setDocumentType(e.target.value as 'whitepaper' | 'legal')}
-                        className="mr-2"
-                      />
-                      <span className="text-white">Whitepaper</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="legal"
-                        checked={documentType === 'legal'}
-                        onChange={(e) => setDocumentType(e.target.value as 'whitepaper' | 'legal')}
-                        className="mr-2"
-                      />
-                      <span className="text-white">Legal Document</span>
-                    </label>
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
                     Select Compliance Template
