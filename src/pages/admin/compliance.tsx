@@ -188,6 +188,22 @@ export default function CompliancePage() {
     <Layout>
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">MiCA Compliance Checker</h1>
+        
+        <button 
+          onClick={async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            console.log('Session:', session ? 'Present' : 'Missing');
+            const response = await fetch('/api/test-auth', {
+              headers: {'Authorization': `Bearer ${session?.access_token}`}
+            });
+            const result = await response.json();
+            console.log('Auth test result:', result);
+            alert(JSON.stringify(result, null, 2));
+          }}
+          className="mb-4 bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          Test Auth
+        </button>
 
         {!results ? (
           <div className="bg-white rounded-lg shadow">
