@@ -178,9 +178,9 @@ export default function CompliancePage() {
         alert(`Test failed: ${result.error}`);
         console.error('Test error:', result);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Test error:', error);
-      alert('Test failed: ' + error.message);
+      alert('Test failed: ' + (error.message || 'Unknown error'));
     } finally {
       setIsUploading(false);
     }
