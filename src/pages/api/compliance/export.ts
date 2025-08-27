@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 - Overall Score: ${results.summary.overall_score}%
 
 ## Results
-${results.results.map(r => `
+${results.results.map((r: any) => `
 ### ${r.item_name}
 - **Status**: ${r.status}
 - **Score**: ${r.coverage_score}%
