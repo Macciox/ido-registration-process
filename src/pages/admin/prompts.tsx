@@ -86,9 +86,18 @@ export default function PromptsPage() {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Editor Prompt GPT-4</h1>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Editor Prompt GPT-4</h1>
+            <p className="text-text-secondary">Modifica i prompt utilizzati dall'AI per l'analisi</p>
+          </div>
+          <a href="/admin/tools" className="btn-secondary">
+            ← Back to Tools
+          </a>
+        </div>
+        
+        <div className="flex justify-between items-center">
           <div className="space-x-4">
             {hasChanges && (
               <span className="text-orange-600 font-medium">Modifiche non salvate</span>
@@ -109,7 +118,7 @@ export default function PromptsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow">
+        <div className="sleek-card">
           <div className="border-b">
             <nav className="flex space-x-8 px-6">
               {tabs.map((tab) => (

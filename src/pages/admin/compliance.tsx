@@ -204,10 +204,18 @@ export default function CompliancePage() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">MiCA Compliance Checker</h1>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">MiCA Compliance Checker</h1>
+            <p className="text-text-secondary">AI-powered compliance analysis for documents</p>
+          </div>
+          <a href="/admin/tools" className="btn-secondary">
+            ← Back to Tools
+          </a>
+        </div>
 
-        <div className="bg-white rounded-lg shadow">
+        <div className="sleek-card">
           <div className="border-b">
             <nav className="flex space-x-8 px-6">
               <button
