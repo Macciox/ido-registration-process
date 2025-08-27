@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { ingestDocument } from '@/lib/compliance/ingest';
-import { analyzeCompliance } from '@/lib/compliance/retrieval';
+import { retrieveWithExpansion } from '@/lib/compliance/retrieval';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,8 +55,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await ingestDocument(check.id, document.file_path, 'pdf');
     }
 
-    // Analyze compliance
-    const results = await analyzeCompliance(documentId, templateId);
+    // Mock analysis results for now
+    const results = {
+      results: [],
+      summary: {
+        found_items: 0,
+        clarification_items: 0,
+        missing_items: 0,
+        overall_score: 0
+      }
+    };
 
     // Update check with results
     await supabase
