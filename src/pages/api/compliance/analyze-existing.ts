@@ -51,6 +51,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Template not found' });
     }
 
+    // Create compliance check record
+    const { data: checkData, error: checkError } = await serviceClient
+      .from('compliance_checks')
+      .upsert({
+        document_id: documentId,
+        template_id: templateId,
+        status: 'processing',
+        created_at: new Date().toISOString()
+      }, {
+        onConflict: 'document_id,template_id'
+      })
+      .select()
+      .single();
+
+    if (checkError) {
+      return res.status(500).json({ error: 'Failed to create check', message: checkError.message });
+    }
+
     // Real GPT-4 analysis
     const results = [];
     
@@ -106,7 +124,7 @@ Respond ONLY in JSON format:
           
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
-            results.push({
+            const result = {
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
@@ -114,7 +132,38 @@ Respond ONLY in JSON format:
               coverage_score: parsed.coverage_score,
               reasoning: parsed.reasoning,
               evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
-            });
+            };
+            
+            // Save result to database
+            const { data: resultData } = await serviceClient
+              .from('check_results')
+              .upsert({
+                check_id: checkData.id,
+                item_id: item.id,
+                status: parsed.status,
+                coverage_score: parsed.coverage_score,
+                reasoning: parsed.reasoning,
+                created_at: new Date().toISOString()
+              }, {
+                onConflict: 'check_id,item_id'
+              })
+              .select()
+              .single();
+
+            // Save evidence
+            if (parsed.evidence_snippets?.length > 0) {
+              for (const snippet of parsed.evidence_snippets) {
+                await serviceClient
+                  .from('compliance_evidences')
+                  .upsert({
+                    result_id: resultData.id,
+                    snippet: snippet,
+                    created_at: new Date().toISOString()
+                  });
+              }
+            }
+            
+            results.push(result);
           } else {
             throw new Error('No JSON in response');
           }
@@ -123,7 +172,7 @@ Respond ONLY in JSON format:
         }
       } catch (error) {
         console.error(`Error analyzing ${item.item_name}:`, error);
-        results.push({
+        const errorResult = {
           item_id: item.id,
           item_name: item.item_name,
           category: item.category,
@@ -131,24 +180,49 @@ Respond ONLY in JSON format:
           coverage_score: 0,
           reasoning: `Analysis failed: ${error}`,
           evidence: []
-        });
+        };
+        
+        // Save error result to database
+        await serviceClient
+          .from('check_results')
+          .upsert({
+            check_id: checkData.id,
+            item_id: item.id,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Analysis failed: ${error}`,
+            created_at: new Date().toISOString()
+          }, {
+            onConflict: 'check_id,item_id'
+          });
+        
+        results.push(errorResult);
       }
     }
     
-    const mockResults = results;
-
+    // Update check status and summary
     const summary = {
-      found_items: mockResults.filter((r: any) => r.status === 'FOUND').length,
-      clarification_items: mockResults.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
-      missing_items: mockResults.filter((r: any) => r.status === 'MISSING').length,
-      overall_score: Math.round(mockResults.reduce((sum: number, r: any) => sum + r.coverage_score, 0) / mockResults.length)
+      found_items: results.filter((r: any) => r.status === 'FOUND').length,
+      clarification_items: results.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
+      missing_items: results.filter((r: any) => r.status === 'MISSING').length,
+      overall_score: Math.round(results.reduce((sum: number, r: any) => sum + r.coverage_score, 0) / results.length)
     };
 
+    await serviceClient
+      .from('compliance_checks')
+      .update({
+        status: 'completed',
+        summary: summary,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', checkData.id);
+
     res.status(200).json({
-      checkId: `check-${Date.now()}`,
-      results: mockResults,
+      checkId: checkData.id,
+      results: results,
       summary,
-      note: 'Real GPT-4 analysis for all items with PDF ingestion'
+      note: 'Real GPT-4 analysis saved to database',
+      completed_at: new Date().toISOString()
     });
 
   } catch (error: any) {

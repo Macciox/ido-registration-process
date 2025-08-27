@@ -146,6 +146,25 @@ export default function CompliancePage() {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!results?.checkId) return;
+    
+    try {
+      const response = await fetch('/api/compliance/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkId: results.checkId })
+      });
+      
+      const data = await response.json();
+      alert(`Regenerated ${data.updated_items} items`);
+      console.log('Regeneration result:', data);
+    } catch (error) {
+      console.error('Regenerate error:', error);
+      alert('Regeneration failed');
+    }
+  };
+
   const testAnalysis = async () => {
     if (!documents.length) {
       alert('No documents available for testing');
@@ -471,16 +490,28 @@ export default function CompliancePage() {
 
               {/* Export Buttons */}
               <div className="flex gap-3 mt-6">
-                <button className="btn-secondary">
+                <button 
+                  onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=json`)}
+                  className="btn-secondary"
+                >
                   Export JSON
                 </button>
-                <button className="btn-secondary">
+                <button 
+                  onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=md`)}
+                  className="btn-secondary"
+                >
                   Export Markdown
                 </button>
-                <button className="btn-secondary">
+                <button 
+                  onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=pdf`)}
+                  className="btn-secondary"
+                >
                   Export PDF
                 </button>
-                <button className="btn-primary">
+                <button 
+                  onClick={() => handleRegenerate()}
+                  className="btn-primary"
+                >
                   Regenerate Non-FOUND
                 </button>
                 <button 
