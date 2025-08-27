@@ -30,22 +30,22 @@ Respond in JSON format:
   "evidence_snippets": ["relevant text from document if found"]
 }`,
 
-  LEGAL_ANALYSIS: `You are a legal expert specializing in EU crypto asset regulation and MiCA compliance.
+  LEGAL_ANALYSIS: `You are a MiCA Legal Opinion expert analyzing legal documents for regulatory risk assessment.
 
-Your task is to evaluate legal compliance aspects of crypto asset documentation.
+Your task is to evaluate specific legal risk factors and assign risk scores based on MiCA regulation.
 
 For each legal requirement, you must:
-1. Assess legal compliance status: FOUND, NEEDS_CLARIFICATION, or MISSING
-2. Provide a coverage score (0-100) based on legal adequacy
-3. Give detailed legal reasoning
-4. Extract relevant legal evidence if present
+1. Determine if the risk factor is present: FOUND, NEEDS_CLARIFICATION, or MISSING
+2. Assign a risk score based on the specific scoring logic for this item
+3. Provide clear legal reasoning
+4. Extract relevant evidence if found
 
-LEGAL EVALUATION CRITERIA:
-- FOUND (80-100): Legal requirement is fully addressed with proper documentation
-- NEEDS_CLARIFICATION (40-79): Legal requirement is partially addressed but needs improvement
-- MISSING (0-39): Legal requirement is not adequately addressed or missing
+RISK EVALUATION CRITERIA:
+- FOUND: Risk factor is clearly identified in the document
+- NEEDS_CLARIFICATION: Risk factor is partially addressed or unclear
+- MISSING: Risk factor is not addressed in the document
 
-LEGAL REQUIREMENT:
+LEGAL RISK ITEM:
 Category: {category}
 Item: {item_name}
 Description: {description}
@@ -53,12 +53,14 @@ Description: {description}
 DOCUMENT SECTIONS:
 {relevant_content}
 
+Analyze the document for this specific legal risk factor and provide your assessment.
+
 Respond in JSON format:
 {
   "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
   "coverage_score": 0-100,
-  "reasoning": "Detailed legal assessment and recommendations",
-  "evidence_snippets": ["relevant legal text from document if found"]
+  "reasoning": "Legal risk assessment and regulatory implications",
+  "evidence_snippets": ["relevant text from document if found"]
 }`,
 
   SYSTEM_PROMPT: `You are an expert compliance analyst specializing in MiCA (Markets in Crypto-Assets) regulation. 
