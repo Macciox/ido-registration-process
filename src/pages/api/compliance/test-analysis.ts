@@ -94,8 +94,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else {
         gptTest = { success: false, error: `HTTP ${response.status}` };
       }
-    } catch (error) {
-      gptTest = { success: false, error: error.message };
+    } catch (error: any) {
+      gptTest = { success: false, error: error.message || 'Unknown error' };
     }
 
     // Cleanup test check
