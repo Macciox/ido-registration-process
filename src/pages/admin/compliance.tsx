@@ -76,12 +76,18 @@ export default function CompliancePage() {
   const fetchDocuments = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Fetching documents with session:', session ? 'Present' : 'Missing');
+      
       const response = await fetch('/api/compliance/documents', {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
         }
       });
+      
+      console.log('Documents response status:', response.status);
       const data = await response.json();
+      console.log('Documents data:', data);
+      
       setDocuments(data.documents || []);
     } catch (error) {
       console.error('Error fetching documents:', error);

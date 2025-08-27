@@ -13,15 +13,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('Documents endpoint called');
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
+      console.log('No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
 
     const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
     if (authError || !user) {
+      console.log('Auth error:', authError);
       return res.status(401).json({ error: 'Invalid token' });
     }
+    console.log('User authenticated:', user.id);
 
     const { data: documents, error } = await serviceClient
       .from('compliance_documents')
@@ -44,8 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+    
+    console.log('Found documents:', documents?.length || 0);
     res.status(200).json({ documents });
   } catch (error) {
     console.error('Error fetching documents:', error);
