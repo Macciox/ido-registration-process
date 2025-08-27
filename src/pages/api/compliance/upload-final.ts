@@ -41,17 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileName = `${user.id}-${Date.now()}-${file.originalFilename}`;
     const filePath = `whitepapers/${fileName}`;
 
-    // Upload to Supabase Storage with service role
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    // Upload to Supabase Storage
+    const { supabase } = await import('@/lib/supabase');
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('compliance-documents')
