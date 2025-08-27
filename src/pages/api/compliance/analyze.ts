@@ -3,34 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/auth';
 import { retrieveWithExpansion } from '@/lib/compliance/retrieval';
 import { Result, ResultType } from '@/lib/compliance/schema';
+import { getPromptForTemplate, formatPrompt, COMPLIANCE_PROMPTS } from '@/lib/compliance/prompts';
 
 interface AnalyzeRequest {
   check_id: string;
 }
 
-const SYSTEM_PROMPT = `You are a MiCA Whitepaper Compliance Checker. You evaluate a single checklist item at a time against document excerpts.
 
-Your task is to determine if the required information is present in the provided text excerpts.
-
-Respond with ONLY valid JSON that matches this exact schema:
-{
-  "status": "FOUND" | "NEEDS_CLARIFICATION" | "MISSING",
-  "coverage_score": number (0-100),
-  "evidence": [{"page": number, "snippet": "text excerpt"}],
-  "reasoning": "explanation of your assessment"
-}
-
-Rules:
-- FOUND: Information is clearly present and complete (requires ≥1 evidence)
-- NEEDS_CLARIFICATION: Information is partially present but incomplete or unclear
-- MISSING: Information is not found in the excerpts
-- coverage_score: 0-100 based on completeness and clarity
-- evidence: Include specific text snippets that support your assessment
-- reasoning: Brief explanation of why you chose this status`;
 
 async function analyzeItem(
   item: any,
   excerpts: any[],
+  templateType: string,
   retries: number = 2
 ): Promise<ResultType> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -38,18 +22,17 @@ async function analyzeItem(
     throw new Error('OPENAI_API_KEY not configured');
   }
 
-  const userPrompt = `
-Item to check: "${item.item_name}"
-Description: "${item.description}"
-Weight: ${item.weight}
+  const relevantContent = excerpts.map((excerpt, i) => 
+    `[Excerpt ${i + 1}${excerpt.page ? ` - Page ${excerpt.page}` : ''}]\n${excerpt.content}`
+  ).join('\n\n');
 
-Document excerpts:
-${excerpts.map((excerpt, i) => `
-[Excerpt ${i + 1}${excerpt.page ? ` - Page ${excerpt.page}` : ''}]
-${excerpt.content}
-`).join('\n')}
-
-Evaluate if this item is adequately covered in the excerpts.`;
+  const promptTemplate = getPromptForTemplate(templateType);
+  const userPrompt = formatPrompt(promptTemplate, {
+    category: item.category,
+    item_name: item.item_name,
+    description: item.description,
+    relevant_content: relevantContent
+  });
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -62,7 +45,7 @@ Evaluate if this item is adequately covered in the excerpts.`;
         body: JSON.stringify({
           model: 'gpt-4',
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
@@ -168,7 +151,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         );
 
         // Analyze with GPT-4
-        const analysis = await analyzeItem(item, excerpts);
+        const analysis = await analyzeItem(item, excerpts, checkData.checker_templates.type);
 
         // Save result to database
         const { data: resultData, error: resultError } = await supabase
