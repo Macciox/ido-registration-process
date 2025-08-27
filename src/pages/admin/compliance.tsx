@@ -212,7 +212,7 @@ export default function CompliancePage() {
     setIsUploading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/compliance/analyze-existing', {
+      const response = await fetch('/api/compliance/analyze-debug', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
