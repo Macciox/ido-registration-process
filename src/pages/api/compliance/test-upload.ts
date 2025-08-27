@@ -16,65 +16,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // 1. Check auth
     const user = await getCurrentUser();
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    console.log('User authenticated:', user.id);
-
-    const form = formidable({
-      maxFileSize: 10 * 1024 * 1024, // 10MB limit
-    });
-
+    // 2. Parse file
+    const form = formidable({ maxFileSize: 50 * 1024 * 1024 });
     const [fields, files] = await form.parse(req);
-    console.log('Form parsed, files:', Object.keys(files));
     
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     if (!file) {
-      return res.status(400).json({ error: 'No file provided' });
+      return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    console.log('File details:', {
-      originalFilename: file.originalFilename,
-      mimetype: file.mimetype,
-      size: file.size
-    });
-
-    // Test simple upload
+    // 3. Read file
     const fileBuffer = fs.readFileSync(file.filepath);
     const fileName = `test-${Date.now()}.pdf`;
-    
-    console.log('Attempting upload to storage...');
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage
+
+    // 4. Upload to Supabase
+    const { data, error } = await supabase.storage
       .from('compliance-documents')
-      .upload(`test/${fileName}`, fileBuffer, {
-        contentType: file.mimetype || 'application/pdf',
+      .upload(`whitepapers/${fileName}`, fileBuffer, {
+        contentType: 'application/pdf'
       });
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return res.status(500).json({ 
-        error: 'Upload failed', 
-        details: uploadError.message 
-      });
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
 
-    console.log('Upload successful:', uploadData);
-
-    res.status(200).json({
-      success: true,
-      path: uploadData.path,
-      message: 'Test upload successful'
+    res.status(200).json({ 
+      success: true, 
+      path: data.path,
+      message: 'Upload successful!'
     });
 
   } catch (error: any) {
-    console.error('Test upload error:', error);
-    res.status(500).json({ 
-      error: 'Test failed',
-      message: error.message,
-      stack: error.stack
-    });
+    res.status(500).json({ error: error.message });
   }
 }
