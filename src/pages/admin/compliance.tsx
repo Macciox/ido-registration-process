@@ -146,6 +146,46 @@ export default function CompliancePage() {
     }
   };
 
+  const testAnalysis = async () => {
+    if (!documents.length) {
+      alert('No documents available for testing');
+      return;
+    }
+
+    const testDoc = documents[0];
+    setIsUploading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/compliance/test-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          documentId: testDoc.id,
+          testQuery: 'token economics distribution'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`Test successful!\n\nIngestion: ${result.ingestion.chunks_created} chunks\nRetrieval: ${result.retrieval.chunks_found} relevant chunks\nGPT API: ${result.gpt_api.success ? 'Working' : 'Failed'}`);
+        console.log('Test results:', result);
+      } else {
+        alert(`Test failed: ${result.error}`);
+        console.error('Test error:', result);
+      }
+    } catch (error) {
+      console.error('Test error:', error);
+      alert('Test failed: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleAnalyzeExisting = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDocument || !selectedTemplate) return;
@@ -442,6 +482,12 @@ export default function CompliancePage() {
                 </button>
                 <button className="btn-primary">
                   Regenerate Non-FOUND
+                </button>
+                <button 
+                  onClick={() => testAnalysis()}
+                  className="btn-secondary"
+                >
+                  Test Analysis
                 </button>
               </div>
             </div>

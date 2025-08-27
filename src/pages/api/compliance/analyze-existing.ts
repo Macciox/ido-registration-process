@@ -132,7 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Ingest document if not already done
-    await ingestDocument(document.file_path, checkData.id);
+    await ingestDocument(checkData.id, document.file_path, 'pdf');
 
     const results = [];
     const prompt = getPromptForTemplate(template.type);
