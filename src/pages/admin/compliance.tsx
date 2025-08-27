@@ -75,11 +75,20 @@ export default function CompliancePage() {
       const uploadData = await uploadResponse.json();
       const checkId = uploadData.checkId || uploadData.Id;
 
-      // Step 2: Analyze compliance
-      const analyzeResponse = await fetch('/api/compliance/analyze', {
+      // Step 2: Process document
+      const processResponse = await fetch('/api/compliance/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ checkId }),
+      });
+
+      if (!processResponse.ok) throw new Error('Processing failed');
+
+      // Step 3: Analyze compliance
+      const analyzeResponse = await fetch('/api/compliance/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ check_id: checkId }),
       });
 
       if (!analyzeResponse.ok) throw new Error('Analysis failed');

@@ -1,9 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { extractTextFromPdf, extractTextFromUrl, chunkPages, embedChunks, saveChunks } from '@/lib/compliance/ingest';
+import { getCurrentUser } from '@/lib/auth';
+import { ingestDocument } from '@/lib/compliance/ingestion';
 
 interface ProcessRequest {
-  check_id: string;
+  checkId: string;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -11,94 +12,74 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { check_id }: ProcessRequest = req.body;
-
-  if (!check_id) {
-    return res.status(400).json({ error: 'check_id is required' });
-  }
-
   try {
-    // Get check details
+    const user = await getCurrentUser();
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { checkId }: ProcessRequest = req.body;
+
+    if (!checkId) {
+      return res.status(400).json({ error: 'checkId is required' });
+    }
+
+    // Get check data
     const { data: checkData, error: checkError } = await supabase
       .from('compliance_checks')
       .select('*')
-      .eq('id', check_id)
+      .eq('id', checkId)
+      .eq('user_id', user.id)
       .single();
 
     if (checkError || !checkData) {
-      throw new Error('Check not found');
+      return res.status(404).json({ error: 'Check not found' });
+    }
+
+    if (checkData.status !== 'uploaded') {
+      return res.status(400).json({ error: 'Check is not in uploaded status' });
     }
 
     // Update status to processing
     await supabase
       .from('compliance_checks')
       .update({ status: 'processing' })
-      .eq('id', check_id);
+      .eq('id', checkId);
 
-    let pages: any[] = [];
+    try {
+      // Process the document
+      await ingestDocument(checkId, checkData.document_path, checkData.input_type);
 
-    if (checkData.input_type === 'pdf') {
-      // Download PDF from storage
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('compliance-documents')
-        .download(checkData.document_path);
+      // Update status to ready
+      await supabase
+        .from('compliance_checks')
+        .update({ status: 'ready' })
+        .eq('id', checkId);
 
-      if (downloadError) {
-        throw new Error(`Failed to download PDF: ${downloadError.message}`);
-      }
+      res.status(200).json({
+        success: true,
+        message: 'Document processed successfully',
+        checkId: checkId
+      });
 
-      const buffer = Buffer.from(await fileData.arrayBuffer());
-      pages = await extractTextFromPdf(buffer);
+    } catch (error: any) {
+      // Update status to error
+      await supabase
+        .from('compliance_checks')
+        .update({ 
+          status: 'error',
+          error_text: error.message 
+        })
+        .eq('id', checkId);
 
-    } else if (checkData.input_type === 'url') {
-      const text = await extractTextFromUrl(checkData.document_url);
-      pages = [{ page: 1, text }];
+      throw error;
     }
-
-    if (pages.length === 0) {
-      throw new Error('No text extracted from document');
-    }
-
-    // Chunk the pages
-    const chunks = chunkPages(pages, 1600, 200);
-
-    if (chunks.length === 0) {
-      throw new Error('No chunks generated from text');
-    }
-
-    // Generate embeddings
-    const embeddings = await embedChunks(chunks);
-
-    // Save chunks to database
-    await saveChunks(check_id, chunks, embeddings);
-
-    // Update status to ready
-    await supabase
-      .from('compliance_checks')
-      .update({ status: 'ready' })
-      .eq('id', check_id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Processing completed successfully',
-      chunks_count: chunks.length,
-    });
 
   } catch (error: any) {
-    console.error('Processing error:', error);
-
-    // Update status to error
-    await supabase
-      .from('compliance_checks')
-      .update({ 
-        status: 'error',
-        error_text: error.message 
-      })
-      .eq('id', check_id);
-
+    console.error('Process error:', error);
     res.status(500).json({
       error: 'Processing failed',
-      message: error.message,
+      message: error.message
     });
   }
 }
