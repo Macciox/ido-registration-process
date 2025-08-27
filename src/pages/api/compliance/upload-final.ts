@@ -24,9 +24,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const { supabase: authClient } = await import('@/lib/supabase');
-    const { data: { user }, error } = await authClient.auth.getUser(token);
-    if (error || !user) {
-      console.log('Invalid token:', error);
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+    if (authError || !user) {
+      console.log('Invalid token:', authError);
       return res.status(401).json({ error: 'Invalid token' });
     }
     console.log('User authenticated:', user.id);
