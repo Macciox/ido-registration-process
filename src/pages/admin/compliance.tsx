@@ -297,7 +297,7 @@ export default function CompliancePage() {
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-card text-white [&>option]:bg-gray-800 [&>option]:text-white"
+                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
                     required
                   >
                     <option value="" className="bg-card text-white">Choose template...</option>
@@ -339,7 +339,7 @@ export default function CompliancePage() {
                   <select
                     value={selectedDocument}
                     onChange={(e) => setSelectedDocument(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-card text-white [&>option]:bg-gray-800 [&>option]:text-white"
+                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
                     required
                   >
                     <option value="" className="bg-card text-white">Choose document...</option>
@@ -358,7 +358,7 @@ export default function CompliancePage() {
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-card text-white [&>option]:bg-gray-800 [&>option]:text-white"
+                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
                     required
                   >
                     <option value="" className="bg-card text-white">Choose template...</option>
