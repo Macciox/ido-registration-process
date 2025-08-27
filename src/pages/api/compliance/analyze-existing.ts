@@ -5,7 +5,13 @@ import { retrieveWithExpansion } from '@/lib/compliance/retrieval';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -44,7 +44,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Upload to Supabase Storage with service role
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -63,17 +69,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Insert into database
+    // Insert document record
+    const { data: docData, error: docError } = await supabase
+      .from('compliance_documents')
+      .insert({
+        user_id: user.id,
+        filename: file.originalFilename,
+        file_path: uploadData.path,
+        file_size: fileBuffer.length,
+        mime_type: 'application/pdf'
+      })
+      .select()
+      .single();
+
+    if (docError) {
+      return res.status(500).json({
+        statusCode: '500',
+        error: 'Database Error',
+        message: docError.message
+      });
+    }
+
+    // Insert compliance check
+    const templateId = Array.isArray(fields.templateId) ? fields.templateId[0] : fields.templateId;
     const { data: checkData, error: checkError } = await supabase
       .from('compliance_checks')
       .insert({
-        user_id: user.id,
-        project_id: null,
-        template_id: '550e8400-e29b-41d4-a716-446655440001',
-        input_type: 'pdf',
-        document_url: null,
-        document_path: uploadData.path,
-        status: 'uploaded',
+        document_id: docData.id,
+        template_id: templateId,
+        status: 'uploaded'
       })
       .select()
       .single();
