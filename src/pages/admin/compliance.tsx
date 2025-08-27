@@ -99,17 +99,19 @@ export default function CompliancePage() {
       
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json();
-        throw new Error(errorData.error || 'Upload failed');
+        console.error('Upload response error:', errorData);
+        throw new Error(errorData.message || errorData.error || `HTTP ${uploadResponse.status}`);
       }
       
       const uploadData = await uploadResponse.json();
-      setResults(uploadData);
+      console.log('Upload successful:', uploadData);
+      alert(`Upload successful! Document ID: ${uploadData.checkId}`);
       setFile(null);
       setSelectedTemplate('');
       fetchDocuments();
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error processing document');
+    } catch (error: any) {
+      console.error('Upload error details:', error);
+      alert(`Upload failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsUploading(false);
     }

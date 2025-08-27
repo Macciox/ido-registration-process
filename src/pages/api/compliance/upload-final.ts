@@ -16,10 +16,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('Upload request received');
     const user = await getCurrentUser();
     if (!user) {
+      console.log('User not authenticated');
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    console.log('User authenticated:', user.id);
 
     const form = formidable({
       maxFileSize: 50 * 1024 * 1024,
@@ -30,12 +33,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     
     if (!file) {
+      console.log('No file provided in request');
       return res.status(400).json({ 
         statusCode: '400',
         error: 'Bad Request',
         message: 'No PDF file provided' 
       });
     }
+    console.log('File received:', file.originalFilename, file.size);
 
     const fileBuffer = fs.readFileSync(file.filepath);
     const fileName = `${user.id}-${Date.now()}-${file.originalFilename}`;
@@ -59,12 +64,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
     if (uploadError) {
+      console.error('Storage upload error:', uploadError);
       return res.status(500).json({
         statusCode: '500',
         error: 'Upload Failed',
         message: uploadError.message
       });
     }
+    console.log('File uploaded to storage:', uploadData.path);
 
     // Insert document record
     const { data: docData, error: docError } = await supabase
@@ -80,12 +87,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (docError) {
+      console.error('Document insert error:', docError);
       return res.status(500).json({
         statusCode: '500',
         error: 'Database Error',
         message: docError.message
       });
     }
+    console.log('Document record created:', docData.id);
 
     // Insert compliance check
     const templateId = Array.isArray(fields.templateId) ? fields.templateId[0] : fields.templateId;
@@ -100,12 +109,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (checkError) {
+      console.error('Check insert error:', checkError);
       return res.status(500).json({
         statusCode: '500',
         error: 'Database Error',
         message: checkError.message
       });
     }
+    console.log('Compliance check created:', checkData.id);
 
     // Return response in API format
     res.status(200).json({
@@ -115,6 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error: any) {
+    console.error('Upload handler error:', error);
     res.status(500).json({
       statusCode: '500',
       error: 'Internal Server Error',
