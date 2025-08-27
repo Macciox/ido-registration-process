@@ -1,6 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
+
+const serviceClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -18,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { data: documents, error } = await supabase
+    const { data: documents, error } = await serviceClient
       .from('compliance_documents')
       .select(`
         id,
@@ -36,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           )
         )
       `)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;

@@ -53,16 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileName = `${user.id}-${Date.now()}-${file.originalFilename}`;
     const filePath = `whitepapers/${fileName}`;
 
-    // Upload to Supabase Storage with service role (storage doesn't use RLS)
-    const storageClient = createClient(
+    // Use service role for both storage and database (RLS bypass needed for API endpoints)
+    const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
-    // Use normal client for database operations (with RLS)
-    const { supabase } = await import('@/lib/supabase');
 
-    const { data: uploadData, error: uploadError } = await storageClient.storage
+    const { data: uploadData, error: uploadError } = await serviceClient.storage
       .from('compliance-documents')
       .upload(filePath, fileBuffer, {
         contentType: 'application/pdf',
@@ -80,8 +77,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     console.log('File uploaded to storage:', uploadData.path);
 
-    // Insert document record
-    const { data: docData, error: docError } = await supabase
+    // Insert document record using service role
+    const { data: docData, error: docError } = await serviceClient
       .from('compliance_documents')
       .insert({
         user_id: user.id,
