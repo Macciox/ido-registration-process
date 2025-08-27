@@ -58,7 +58,7 @@ const AdminTools: React.FC = () => {
             </button>
           </div>
 
-          {/* Legal Checker */}
+          {/* MiCA Compliance Checker */}
           <div className="sleek-card p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -66,14 +66,14 @@ const AdminTools: React.FC = () => {
                   <path fillRule="evenodd" d="M10 2L3 7v11c0 5.55 3.84 7.74 9 9 5.16-1.26 9-3.45 9-9V7l-7-5zM8 11l-2-2 1.41-1.41L8 8.17l4.59-4.58L14 5l-6 6z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-white">Legal Checker</h3>
+              <h3 className="text-lg font-medium text-white">MiCA Compliance Checker</h3>
             </div>
             <p className="text-text-secondary text-sm mb-4">
-              Validate legal compliance and documentation status
+              AI-powered MiCA compliance analysis for whitepapers and legal documents
             </p>
-            <button className="btn-dark w-full" disabled>
-              Coming Soon
-            </button>
+            <a href="/admin/compliance" className="btn-primary w-full block text-center">
+              Launch Checker
+            </a>
           </div>
         </div>
       </div>
