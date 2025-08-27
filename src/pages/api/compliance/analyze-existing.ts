@@ -63,10 +63,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }));
 
     const summary = {
-      found_items: mockResults.filter(r => r.status === 'FOUND').length,
-      clarification_items: mockResults.filter(r => r.status === 'NEEDS_CLARIFICATION').length,
-      missing_items: mockResults.filter(r => r.status === 'MISSING').length,
-      overall_score: Math.round(mockResults.reduce((sum, r) => sum + r.coverage_score, 0) / mockResults.length)
+      found_items: mockResults.filter((r: any) => r.status === 'FOUND').length,
+      clarification_items: mockResults.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
+      missing_items: mockResults.filter((r: any) => r.status === 'MISSING').length,
+      overall_score: Math.round(mockResults.reduce((sum: number, r: any) => sum + r.coverage_score, 0) / mockResults.length)
     };
 
     res.status(200).json({
