@@ -17,6 +17,7 @@ interface Template {
     weight: number;
     sort_order: number;
     scoring_logic?: string;
+    field_type?: string;
   }>;
 }
 
@@ -210,6 +211,13 @@ export default function TemplatesPage() {
                             />
                           </div>
                         </div>
+                        <input
+                          type="text"
+                          value={editingItem.field_type || ''}
+                          onChange={(e) => setEditingItem({...editingItem, field_type: e.target.value})}
+                          className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                          placeholder="Field Type (e.g., Yes/No, Dropdown, Text field)"
+                        />
                         <textarea
                           value={editingItem.scoring_logic || ''}
                           onChange={(e) => setEditingItem({...editingItem, scoring_logic: e.target.value})}
@@ -251,6 +259,11 @@ export default function TemplatesPage() {
                         <div className="text-xs text-blue-400">
                           Weight: {item.weight}
                         </div>
+                        {item.field_type && (
+                          <div className="text-xs text-purple-400 mt-1">
+                            Type: {item.field_type}
+                          </div>
+                        )}
                         {item.scoring_logic && (
                           <div className="text-xs text-green-400 mt-1">
                             Scoring: {item.scoring_logic}
@@ -280,6 +293,7 @@ export default function TemplatesPage() {
                       category: formData.get('category'),
                       description: formData.get('description'),
                       weight: parseFloat(formData.get('weight') as string) || 1.0,
+                      field_type: formData.get('field_type'),
                       scoring_logic: formData.get('scoring_logic'),
                       sort_order: selectedTemplate.checker_items?.length || 0
                     });
@@ -310,6 +324,12 @@ export default function TemplatesPage() {
                         type="number"
                         step="0.1"
                         placeholder="Weight (default: 1.0)"
+                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                      />
+                      <input
+                        name="field_type"
+                        type="text"
+                        placeholder="Field Type (e.g., Yes/No, Dropdown, Text field)"
                         className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                       />
                       <textarea

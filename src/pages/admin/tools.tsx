@@ -72,9 +72,21 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary text-sm mb-4">
               Manage MiCA compliance templates and checklist items
             </p>
-            <a href="/admin/templates" className="btn-primary w-full block text-center">
-              Manage Templates
-            </a>
+            <div className="space-y-2">
+              <a href="/admin/templates" className="btn-primary w-full block text-center">
+                Manage Templates
+              </a>
+              <button
+                onClick={async () => {
+                  const response = await fetch('/api/compliance/create-legal-template', { method: 'POST' });
+                  const data = await response.json();
+                  alert(data.success ? 'Legal Opinion template updated!' : 'Error: ' + data.error);
+                }}
+                className="btn-secondary w-full text-sm"
+              >
+                Update Legal Opinion Template
+              </button>
+            </div>
           </div>
 
           {/* Document Storage */}
