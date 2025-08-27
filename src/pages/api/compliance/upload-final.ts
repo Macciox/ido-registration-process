@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
 import formidable from 'formidable';
 import fs from 'fs';
@@ -41,7 +41,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileName = `${user.id}-${Date.now()}-${file.originalFilename}`;
     const filePath = `whitepapers/${fileName}`;
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage with service role
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('compliance-documents')
       .upload(filePath, fileBuffer, {

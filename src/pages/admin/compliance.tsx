@@ -61,8 +61,8 @@ export default function CompliancePage() {
     formData.append('templateId', selectedTemplate);
 
     try {
-      // Step 1: Upload document (simplified test)
-      const uploadResponse = await fetch('/api/compliance/upload-simple', {
+      // Step 1: Upload document
+      const uploadResponse = await fetch('/api/compliance/upload-final', {
         method: 'POST',
         body: formData,
       });

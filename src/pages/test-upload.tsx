@@ -16,7 +16,7 @@ export default function TestUpload() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/compliance/test-upload', {
+      const response = await fetch('/api/compliance/upload-db', {
         method: 'POST',
         body: formData,
       });
