@@ -257,9 +257,9 @@ export default function CompliancePage() {
                     className="w-full p-3 border border-border rounded-lg bg-card text-white"
                     required
                   >
-                    <option value="">Choose template...</option>
+                    <option value="" className="bg-card text-white">Choose template...</option>
                     {templates.map((template) => (
-                      <option key={template.id} value={template.id}>
+                      <option key={template.id} value={template.id} className="bg-card text-white">
                         {template.name} ({template.checker_items?.length || 0} items)
                       </option>
                     ))}
@@ -299,9 +299,9 @@ export default function CompliancePage() {
                     className="w-full p-3 border border-border rounded-lg bg-card text-white"
                     required
                   >
-                    <option value="">Choose document...</option>
+                    <option value="" className="bg-card text-white">Choose document...</option>
                     {documents.map((doc) => (
-                      <option key={doc.id} value={doc.id}>
+                      <option key={doc.id} value={doc.id} className="bg-card text-white">
                         {doc.filename} ({new Date(doc.created_at).toLocaleDateString()})
                       </option>
                     ))}
@@ -318,9 +318,9 @@ export default function CompliancePage() {
                     className="w-full p-3 border border-border rounded-lg bg-card text-white"
                     required
                   >
-                    <option value="">Choose template...</option>
+                    <option value="" className="bg-card text-white">Choose template...</option>
                     {templates.map((template) => (
-                      <option key={template.id} value={template.id}>
+                      <option key={template.id} value={template.id} className="bg-card text-white">
                         {template.name} ({template.checker_items?.length || 0} items)
                       </option>
                     ))}
