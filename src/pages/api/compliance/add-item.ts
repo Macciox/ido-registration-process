@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { templateId, item_name, category, description, weight, sort_order } = req.body;
+  const { templateId, item_name, category, description, weight, sort_order, scoring_logic } = req.body;
 
   try {
     const { data, error } = await serviceClient
@@ -22,7 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         category,
         description,
         weight: weight || 1.0,
-        sort_order: sort_order || 0
+        sort_order: sort_order || 0,
+        scoring_logic
       })
       .select()
       .single();

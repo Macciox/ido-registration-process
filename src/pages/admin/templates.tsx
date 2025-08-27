@@ -16,6 +16,7 @@ interface Template {
     description: string;
     weight: number;
     sort_order: number;
+    scoring_logic?: string;
   }>;
 }
 
@@ -153,9 +154,28 @@ export default function TemplatesPage() {
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {selectedTemplate.checker_items?.map((item) => (
-                  <div key={item.id} className="bg-card-secondary p-4 rounded-lg">
+              <div className="space-y-4">
+                {(() => {
+                  // Group items by category
+                  const groupedItems = selectedTemplate.checker_items?.reduce((acc: any, item) => {
+                    if (!acc[item.category]) acc[item.category] = [];
+                    acc[item.category].push(item);
+                    return acc;
+                  }, {}) || {};
+
+                  return Object.entries(groupedItems).map(([category, items]: [string, any]) => (
+                    <div key={category} className="mb-6">
+                      <h3 className="text-lg font-medium text-white mb-3 pb-2 border-b border-border">
+                        {category}
+                      </h3>
+                      <div className="space-y-3">
+                        {items.map((item: any, index: number) => (
+                  <div key={item.id} className="bg-card-secondary p-4 rounded-lg border-l-4 border-blue-500/30">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400 text-sm font-medium">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
                     {editingItem?.id === item.id ? (
                       <div className="space-y-3">
                         <input
@@ -178,16 +198,24 @@ export default function TemplatesPage() {
                           className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white h-20"
                           placeholder="Description"
                         />
-                        <div className="flex gap-2">
-                          <label className="text-white text-sm">Weight:</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={editingItem.weight}
-                            onChange={(e) => setEditingItem({...editingItem, weight: parseFloat(e.target.value)})}
-                            className="w-20 p-1 bg-gray-800 border border-gray-600 rounded text-white text-sm"
-                          />
+                        <div className="flex gap-4">
+                          <div className="flex gap-2">
+                            <label className="text-white text-sm">Weight:</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={editingItem.weight}
+                              onChange={(e) => setEditingItem({...editingItem, weight: parseFloat(e.target.value)})}
+                              className="w-20 p-1 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                            />
+                          </div>
                         </div>
+                        <textarea
+                          value={editingItem.scoring_logic || ''}
+                          onChange={(e) => setEditingItem({...editingItem, scoring_logic: e.target.value})}
+                          className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white h-16 text-sm"
+                          placeholder="Scoring Logic (e.g., Yes = 1000, No = 0)"
+                        />
                         <div className="flex gap-2">
                           <button
                             onClick={() => updateItem(item.id, editingItem)}
@@ -223,10 +251,20 @@ export default function TemplatesPage() {
                         <div className="text-xs text-blue-400">
                           Weight: {item.weight}
                         </div>
+                        {item.scoring_logic && (
+                          <div className="text-xs text-green-400 mt-1">
+                            Scoring: {item.scoring_logic}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                ))}
+                    )}
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
 
               {/* Add Item Form */}
@@ -241,6 +279,7 @@ export default function TemplatesPage() {
                       category: formData.get('category'),
                       description: formData.get('description'),
                       weight: parseFloat(formData.get('weight') as string) || 1.0,
+                      scoring_logic: formData.get('scoring_logic'),
                       sort_order: selectedTemplate.checker_items?.length || 0
                     });
                   }}>
@@ -271,6 +310,11 @@ export default function TemplatesPage() {
                         step="0.1"
                         placeholder="Weight (default: 1.0)"
                         className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                      />
+                      <textarea
+                        name="scoring_logic"
+                        placeholder="Scoring Logic (e.g., Yes = 1000, No = 0)"
+                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white h-16 text-sm"
                       />
                       <div className="flex gap-2">
                         <button type="submit" className="btn-primary text-sm">
