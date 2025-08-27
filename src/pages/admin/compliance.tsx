@@ -61,8 +61,8 @@ export default function CompliancePage() {
     formData.append('templateId', selectedTemplate);
 
     try {
-      // Step 1: Upload and process document (using debug endpoint)
-      const uploadResponse = await fetch('/api/compliance/debug-upload', {
+      // Step 1: Upload and process document (using correct endpoint)
+      const uploadResponse = await fetch('/api/compliance/upload-correct', {
         method: 'POST',
         body: formData,
       });
