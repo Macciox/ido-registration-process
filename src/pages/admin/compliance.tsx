@@ -210,9 +210,12 @@ export default function CompliancePage() {
             <h1 className="text-2xl font-bold text-white">MiCA Compliance Checker</h1>
             <p className="text-text-secondary">AI-powered compliance analysis for documents</p>
           </div>
-          <a href="/admin/tools" className="btn-secondary">
+          <button 
+            onClick={() => router.push('/admin/tools')}
+            className="btn-secondary"
+          >
             ← Back to Tools
-          </a>
+          </button>
         </div>
 
         <div className="sleek-card">
@@ -245,13 +248,13 @@ export default function CompliancePage() {
             {activeTab === 'upload' ? (
               <form onSubmit={handleFileUpload} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-white">
                     Select Compliance Template
                   </label>
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="w-full p-3 border rounded-lg"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white"
                     required
                   >
                     <option value="">Choose template...</option>
@@ -264,14 +267,14 @@ export default function CompliancePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-white">
                     Upload Document (PDF)
                   </label>
                   <input
                     type="file"
                     accept=".pdf"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    className="w-full p-3 border rounded-lg"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/80"
                     required
                   />
                 </div>
@@ -279,7 +282,7 @@ export default function CompliancePage() {
                 <button
                   type="submit"
                   disabled={isUploading || !file || !selectedTemplate}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
+                  className="w-full btn-primary disabled:opacity-50"
                 >
                   {isUploading ? 'Uploading...' : 'Upload & Analyze'}
                 </button>
@@ -287,13 +290,13 @@ export default function CompliancePage() {
             ) : (
               <form onSubmit={handleAnalyzeExisting} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-white">
                     Select Document
                   </label>
                   <select
                     value={selectedDocument}
                     onChange={(e) => setSelectedDocument(e.target.value)}
-                    className="w-full p-3 border rounded-lg"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white"
                     required
                   >
                     <option value="">Choose document...</option>
@@ -306,13 +309,13 @@ export default function CompliancePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-white">
                     Select Compliance Template
                   </label>
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="w-full p-3 border rounded-lg"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white"
                     required
                   >
                     <option value="">Choose template...</option>
@@ -327,7 +330,7 @@ export default function CompliancePage() {
                 <button
                   type="submit"
                   disabled={isUploading || !selectedDocument || !selectedTemplate}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
+                  className="w-full btn-primary disabled:opacity-50"
                 >
                   {isUploading ? 'Analyzing...' : 'Analyze Document'}
                 </button>
