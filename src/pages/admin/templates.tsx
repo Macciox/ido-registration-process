@@ -162,22 +162,32 @@ export default function TemplatesPage() {
                           type="text"
                           value={editingItem.item_name}
                           onChange={(e) => setEditingItem({...editingItem, item_name: e.target.value})}
-                          className="w-full p-2 bg-card border border-border rounded text-white"
+                          className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                           placeholder="Item name"
                         />
                         <input
                           type="text"
                           value={editingItem.category}
                           onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                          className="w-full p-2 bg-card border border-border rounded text-white"
+                          className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                           placeholder="Category"
                         />
                         <textarea
                           value={editingItem.description}
                           onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                          className="w-full p-2 bg-card border border-border rounded text-white h-20"
+                          className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white h-20"
                           placeholder="Description"
                         />
+                        <div className="flex gap-2">
+                          <label className="text-white text-sm">Weight:</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={editingItem.weight}
+                            onChange={(e) => setEditingItem({...editingItem, weight: parseFloat(e.target.value)})}
+                            className="w-20 p-1 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                          />
+                        </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => updateItem(item.id, editingItem)}
@@ -207,8 +217,11 @@ export default function TemplatesPage() {
                         <div className="text-sm text-text-secondary mb-1">
                           Category: {item.category}
                         </div>
-                        <div className="text-sm text-text-secondary">
+                        <div className="text-sm text-text-secondary mb-1">
                           {item.description}
+                        </div>
+                        <div className="text-xs text-blue-400">
+                          Weight: {item.weight}
                         </div>
                       </div>
                     )}
@@ -227,7 +240,7 @@ export default function TemplatesPage() {
                       item_name: formData.get('item_name'),
                       category: formData.get('category'),
                       description: formData.get('description'),
-                      weight: 1.0,
+                      weight: parseFloat(formData.get('weight') as string) || 1.0,
                       sort_order: selectedTemplate.checker_items?.length || 0
                     });
                   }}>
@@ -236,21 +249,28 @@ export default function TemplatesPage() {
                         name="item_name"
                         type="text"
                         placeholder="Item name"
-                        className="w-full p-2 bg-card border border-border rounded text-white"
+                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                         required
                       />
                       <input
                         name="category"
                         type="text"
                         placeholder="Category"
-                        className="w-full p-2 bg-card border border-border rounded text-white"
+                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                         required
                       />
                       <textarea
                         name="description"
                         placeholder="Description"
-                        className="w-full p-2 bg-card border border-border rounded text-white h-20"
+                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white h-20"
                         required
+                      />
+                      <input
+                        name="weight"
+                        type="number"
+                        step="0.1"
+                        placeholder="Weight (default: 1.0)"
+                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                       />
                       <div className="flex gap-2">
                         <button type="submit" className="btn-primary text-sm">
