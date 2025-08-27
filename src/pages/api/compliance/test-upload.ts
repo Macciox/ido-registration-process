@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
 import formidable from 'formidable';
 import fs from 'fs';
@@ -32,7 +32,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileBuffer = fs.readFileSync(file.filepath);
     const fileName = `test-${Date.now()}.pdf`;
 
-    // 4. Upload to Supabase
+    // 4. Upload to Supabase with service role
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
     const { data, error } = await supabase.storage
       .from('compliance-documents')
       .upload(`whitepapers/${fileName}`, fileBuffer, {
