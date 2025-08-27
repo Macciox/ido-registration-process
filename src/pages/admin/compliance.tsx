@@ -47,6 +47,7 @@ export default function CompliancePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'existing'>('upload');
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -171,11 +172,13 @@ export default function CompliancePage() {
       
       const data = await response.json();
       setResults(data);
+      setShowResults(true);
       setSelectedDocument('');
       setSelectedTemplate('');
     } catch (error) {
       console.error('Error:', error);
       alert('Error analyzing document');
+      setShowResults(false);
     } finally {
       setIsUploading(false);
     }
@@ -338,6 +341,112 @@ export default function CompliancePage() {
             )}
           </div>
         </div>
+
+        {showResults && results && (
+          <div className="sleek-card">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-white">Analysis Results</h2>
+                <button
+                  onClick={() => setShowResults(false)}
+                  className="btn-secondary"
+                >
+                  Close Results
+                </button>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-400">
+                    {results.summary?.found_items || 0}
+                  </div>
+                  <div className="text-green-300 text-sm">Found</div>
+                </div>
+                <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-yellow-400">
+                    {results.summary?.clarification_items || 0}
+                  </div>
+                  <div className="text-yellow-300 text-sm">Needs Clarification</div>
+                </div>
+                <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-red-400">
+                    {results.summary?.missing_items || 0}
+                  </div>
+                  <div className="text-red-300 text-sm">Missing</div>
+                </div>
+                <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-400">
+                    {results.summary?.overall_score || 0}%
+                  </div>
+                  <div className="text-blue-300 text-sm">Overall Score</div>
+                </div>
+              </div>
+
+              {/* Results Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-white font-medium">Item</th>
+                      <th className="text-left py-3 px-4 text-white font-medium">Category</th>
+                      <th className="text-left py-3 px-4 text-white font-medium">Status</th>
+                      <th className="text-left py-3 px-4 text-white font-medium">Score</th>
+                      <th className="text-left py-3 px-4 text-white font-medium">Evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.results?.map((item: any, index: number) => (
+                      <tr key={index} className="border-b border-border/50">
+                        <td className="py-3 px-4 text-white">{item.item_name}</td>
+                        <td className="py-3 px-4 text-text-secondary">{item.category}</td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            item.status === 'FOUND' ? 'bg-green-500/20 text-green-400' :
+                            item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {item.status === 'FOUND' ? '✅' : item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : '❌'}
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
+                        <td className="py-3 px-4">
+                          {item.evidence?.length > 0 ? (
+                            <button 
+                              className="text-blue-400 hover:text-blue-300 text-sm"
+                              title={item.evidence[0].snippet}
+                            >
+                              View Evidence ({item.evidence.length})
+                            </button>
+                          ) : (
+                            <span className="text-text-secondary text-sm">No evidence</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Export Buttons */}
+              <div className="flex gap-3 mt-6">
+                <button className="btn-secondary">
+                  Export JSON
+                </button>
+                <button className="btn-secondary">
+                  Export Markdown
+                </button>
+                <button className="btn-secondary">
+                  Export PDF
+                </button>
+                <button className="btn-primary">
+                  Regenerate Non-FOUND
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
