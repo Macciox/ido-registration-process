@@ -96,11 +96,12 @@ export default function CompliancePage() {
 
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !selectedTemplate) return;
 
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('templateId', selectedTemplate);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -134,6 +135,7 @@ export default function CompliancePage() {
       console.log('Upload successful:', uploadData);
       alert(`Upload successful! File: ${uploadData.filename}`);
       setFile(null);
+      setSelectedTemplate('');
       fetchDocuments();
     } catch (error: any) {
       console.error('Upload error details:', error);
@@ -205,181 +207,126 @@ export default function CompliancePage() {
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">MiCA Compliance Checker</h1>
 
-        {!results ? (
-          <div className="bg-white rounded-lg shadow">
-            <div className="border-b">
-              <nav className="flex space-x-8 px-6">
-                <button
-                  onClick={() => setActiveTab('upload')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'upload'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Upload New Document
-                </button>
-                <button
-                  onClick={() => setActiveTab('existing')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'existing'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Analyze Existing Document
-                </button>
-              </nav>
-            </div>
-
-            <div className="p-6">
-              {activeTab === 'upload' ? (
-                <form onSubmit={handleFileUpload} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Upload Document (PDF)
-                    </label>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                      className="w-full p-3 border rounded-lg"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isUploading || !file}
-                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
-                  >
-                    {isUploading ? 'Uploading...' : 'Upload File'}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleAnalyzeExisting} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Select Document
-                    </label>
-                    <select
-                      value={selectedDocument}
-                      onChange={(e) => setSelectedDocument(e.target.value)}
-                      className="w-full p-3 border rounded-lg"
-                      required
-                    >
-                      <option value="">Choose document...</option>
-                      {documents.map((doc) => (
-                        <option key={doc.id} value={doc.id}>
-                          {doc.filename} ({new Date(doc.created_at).toLocaleDateString()})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Select Compliance Template
-                    </label>
-                    <select
-                      value={selectedTemplate}
-                      onChange={(e) => setSelectedTemplate(e.target.value)}
-                      className="w-full p-3 border rounded-lg"
-                      required
-                    >
-                      <option value="">Choose template...</option>
-                      {templates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name} ({template.checker_items?.length || 0} items)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isUploading || !selectedDocument || !selectedTemplate}
-                    className="w-full bg-green-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
-                  >
-                    {isUploading ? 'Analyzing...' : 'Analyze Document'}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Analysis Results</h2>
+        <div className="bg-white rounded-lg shadow">
+          <div className="border-b">
+            <nav className="flex space-x-8 px-6">
               <button
-                onClick={() => setResults(null)}
-                className="bg-gray-500 text-white px-4 py-2 rounded"
+                onClick={() => setActiveTab('upload')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'upload'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
               >
-                New Analysis
+                Upload New Document
               </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-green-100 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-800">
-                  {results.summary?.found_items || 0}
-                </div>
-                <div className="text-green-600">Found</div>
-              </div>
-              <div className="bg-yellow-100 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-800">
-                  {results.summary?.clarification_items || 0}
-                </div>
-                <div className="text-yellow-600">Needs Clarification</div>
-              </div>
-              <div className="bg-red-100 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-red-800">
-                  {results.summary?.missing_items || 0}
-                </div>
-                <div className="text-red-600">Missing</div>
-              </div>
-              <div className="bg-blue-100 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-blue-800">
-                  {results.summary?.overall_score || 0}%
-                </div>
-                <div className="text-blue-600">Overall Score</div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-4 border-b">
-                <h3 className="text-lg font-semibold">Detailed Results</h3>
-              </div>
-              <div className="divide-y">
-                {results.results?.map((item: any, index: number) => (
-                  <div key={index} className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="font-medium">{item.item_name}</h4>
-                        <p className="text-sm text-gray-600">{item.category}</p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        item.status === 'FOUND' ? 'bg-green-100 text-green-800' :
-                        item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </div>
-                    {item.reasoning && (
-                      <p className="text-sm text-gray-700 mb-2">{item.reasoning}</p>
-                    )}
-                    {item.evidences?.length > 0 && (
-                      <div className="text-xs text-gray-500">
-                        Evidence found on page {item.evidences[0].page}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+              <button
+                onClick={() => setActiveTab('existing')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'existing'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Analyze Existing Document
+              </button>
+            </nav>
           </div>
-        )}
+
+          <div className="p-6">
+            {activeTab === 'upload' ? (
+              <form onSubmit={handleFileUpload} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Select Compliance Template
+                  </label>
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="w-full p-3 border rounded-lg"
+                    required
+                  >
+                    <option value="">Choose template...</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name} ({template.checker_items?.length || 0} items)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Upload Document (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="w-full p-3 border rounded-lg"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUploading || !file || !selectedTemplate}
+                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
+                >
+                  {isUploading ? 'Uploading...' : 'Upload & Analyze'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleAnalyzeExisting} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Select Document
+                  </label>
+                  <select
+                    value={selectedDocument}
+                    onChange={(e) => setSelectedDocument(e.target.value)}
+                    className="w-full p-3 border rounded-lg"
+                    required
+                  >
+                    <option value="">Choose document...</option>
+                    {documents.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.filename} ({new Date(doc.created_at).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Select Compliance Template
+                  </label>
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="w-full p-3 border rounded-lg"
+                    required
+                  >
+                    <option value="">Choose template...</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name} ({template.checker_items?.length || 0} items)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUploading || !selectedDocument || !selectedTemplate}
+                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
+                >
+                  {isUploading ? 'Analyzing...' : 'Analyze Document'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );
