@@ -43,12 +43,12 @@ export default function PromptsPage() {
 
       if (response.ok) {
         setHasChanges(false);
-        alert('Prompt salvati con successo!');
+        alert('Prompts saved successfully!');
       } else {
-        throw new Error('Errore nel salvataggio');
+        throw new Error('Save error');
       }
     } catch (error) {
-      alert('Errore nel salvataggio dei prompt');
+      alert('Error saving prompts');
     }
   };
 
@@ -71,17 +71,17 @@ export default function PromptsPage() {
     return (
       <Layout>
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-red-600">Accesso Negato</h1>
-          <p className="text-gray-600 mt-2">Accesso admin richiesto</p>
+          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+          <p className="text-gray-600 mt-2">Admin access required</p>
         </div>
       </Layout>
     );
   }
 
   const tabs = [
-    { key: 'WHITEPAPER_ANALYSIS', label: 'Analisi Whitepaper' },
-    { key: 'LEGAL_ANALYSIS', label: 'Analisi Legale' },
-    { key: 'SYSTEM_PROMPT', label: 'Prompt Sistema' }
+    { key: 'WHITEPAPER_ANALYSIS', label: 'Whitepaper Analysis' },
+    { key: 'LEGAL_ANALYSIS', label: 'Legal Analysis' },
+    { key: 'SYSTEM_PROMPT', label: 'System Prompt' }
   ];
 
   return (
@@ -90,7 +90,7 @@ export default function PromptsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Editor Prompt GPT-4</h1>
-            <p className="text-text-secondary">Modifica i prompt utilizzati dall'AI per l'analisi</p>
+            <p className="text-text-secondary">Edit prompts used by AI for document analysis</p>
           </div>
           <a href="/admin/tools" className="btn-secondary">
             ← Back to Tools
@@ -100,7 +100,7 @@ export default function PromptsPage() {
         <div className="flex justify-between items-center">
           <div className="space-x-4">
             {hasChanges && (
-              <span className="text-orange-600 font-medium">Modifiche non salvate</span>
+              <span className="text-orange-600 font-medium">Unsaved changes</span>
             )}
             <button
               onClick={resetPrompts}
@@ -113,7 +113,7 @@ export default function PromptsPage() {
               disabled={!hasChanges}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              Salva Prompt
+              Save Prompts
             </button>
           </div>
         </div>
@@ -143,9 +143,9 @@ export default function PromptsPage() {
                 {tabs.find(t => t.key === activeTab)?.label}
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                {activeTab === 'WHITEPAPER_ANALYSIS' && 'Prompt per l\'analisi dei whitepaper MiCA. Usa le variabili: {category}, {item_name}, {description}, {relevant_content}'}
-                {activeTab === 'LEGAL_ANALYSIS' && 'Prompt per l\'analisi dei documenti legali. Usa le variabili: {category}, {item_name}, {description}, {relevant_content}'}
-                {activeTab === 'SYSTEM_PROMPT' && 'Prompt di sistema per definire il comportamento generale dell\'AI'}
+                {activeTab === 'WHITEPAPER_ANALYSIS' && 'Prompt for MiCA whitepaper analysis. Use variables: {category}, {item_name}, {description}, {relevant_content}'}
+                {activeTab === 'LEGAL_ANALYSIS' && 'Prompt for legal document analysis. Use variables: {category}, {item_name}, {description}, {relevant_content}'}
+                {activeTab === 'SYSTEM_PROMPT' && 'System prompt to define general AI behavior'}
               </p>
             </div>
 
@@ -153,28 +153,28 @@ export default function PromptsPage() {
               value={prompts[activeTab as keyof typeof prompts]}
               onChange={(e) => handlePromptChange(activeTab, e.target.value)}
               className="w-full h-96 p-4 border rounded-lg font-mono text-sm"
-              placeholder="Inserisci il prompt..."
+              placeholder="Enter the prompt..."
             />
 
             <div className="mt-4 text-sm text-gray-500">
-              <p><strong>Variabili disponibili:</strong></p>
+              <p><strong>Available variables:</strong></p>
               <ul className="list-disc list-inside mt-2">
-                <li><code>{'{category}'}</code> - Categoria dell'item da verificare</li>
-                <li><code>{'{item_name}'}</code> - Nome dell'item da verificare</li>
-                <li><code>{'{description}'}</code> - Descrizione dell'item</li>
-                <li><code>{'{relevant_content}'}</code> - Contenuto rilevante del documento</li>
+                <li><code>{'{category}'}</code> - Category of the item to verify</li>
+                <li><code>{'{item_name}'}</code> - Name of the item to verify</li>
+                <li><code>{'{description}'}</code> - Description of the item</li>
+                <li><code>{'{relevant_content}'}</code> - Relevant document content</li>
               </ul>
             </div>
           </div>
         </div>
 
         <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Importante</h4>
+          <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Important</h4>
           <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• I prompt devono restituire JSON valido con i campi: status, coverage_score, reasoning, evidence_snippets</li>
-            <li>• Status deve essere: FOUND, NEEDS_CLARIFICATION, o MISSING</li>
-            <li>• Coverage_score deve essere un numero da 0 a 100</li>
-            <li>• Le modifiche si applicano immediatamente alle nuove analisi</li>
+            <li>• Prompts must return valid JSON with fields: status, coverage_score, reasoning, evidence_snippets</li>
+            <li>• Status must be: FOUND, NEEDS_CLARIFICATION, or MISSING</li>
+            <li>• Coverage_score must be a number from 0 to 100</li>
+            <li>• Changes apply immediately to new analyses</li>
           </ul>
         </div>
       </div>
