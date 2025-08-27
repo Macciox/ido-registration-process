@@ -262,24 +262,24 @@ export default function CompliancePage() {
         </div>
 
         <div className="sleek-card">
-          <div className="border-b">
-            <nav className="flex space-x-8 px-6">
+          <div className="p-6 border-b border-border">
+            <nav className="flex gap-3">
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                   activeTab === 'upload'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'bg-primary text-white'
+                    : 'bg-card-secondary text-text-secondary hover:bg-primary/20 hover:text-white'
                 }`}
               >
                 Upload New Document
               </button>
               <button
                 onClick={() => setActiveTab('existing')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                   activeTab === 'existing'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'bg-primary text-white'
+                    : 'bg-card-secondary text-text-secondary hover:bg-primary/20 hover:text-white'
                 }`}
               >
                 Analyze Existing Document
@@ -297,7 +297,7 @@ export default function CompliancePage() {
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-card text-white"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white [&>option]:bg-gray-800 [&>option]:text-white"
                     required
                   >
                     <option value="" className="bg-card text-white">Choose template...</option>
@@ -339,7 +339,7 @@ export default function CompliancePage() {
                   <select
                     value={selectedDocument}
                     onChange={(e) => setSelectedDocument(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-card text-white"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white [&>option]:bg-gray-800 [&>option]:text-white"
                     required
                   >
                     <option value="" className="bg-card text-white">Choose document...</option>
@@ -358,7 +358,7 @@ export default function CompliancePage() {
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-card text-white"
+                    className="w-full p-3 border border-border rounded-lg bg-card text-white [&>option]:bg-gray-800 [&>option]:text-white"
                     required
                   >
                     <option value="" className="bg-card text-white">Choose template...</option>
