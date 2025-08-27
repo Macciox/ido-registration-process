@@ -61,13 +61,17 @@ export default function CompliancePage() {
     formData.append('templateId', selectedTemplate);
 
     try {
-      // Step 1: Upload and process document
-      const uploadResponse = await fetch('/api/compliance/ingest', {
+      // Step 1: Upload and process document (using debug endpoint)
+      const uploadResponse = await fetch('/api/compliance/debug-upload', {
         method: 'POST',
         body: formData,
       });
       
-      if (!uploadResponse.ok) throw new Error('Upload failed');
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        console.log('Debug logs:', errorData.logs);
+        throw new Error(errorData.message || 'Upload failed');
+      }
       const { checkId } = await uploadResponse.json();
 
       // Step 2: Analyze compliance

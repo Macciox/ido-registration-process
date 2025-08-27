@@ -39,7 +39,7 @@ const AdminTools: React.FC = () => {
           <p className="text-text-secondary">Administrative tools and utilities</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* MiCA Compliance Checker */}
           <div className="sleek-card p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -55,6 +55,24 @@ const AdminTools: React.FC = () => {
             </p>
             <a href="/admin/compliance" className="btn-primary w-full block text-center">
               Launch Checker
+            </a>
+          </div>
+
+          {/* Prompt Editor */}
+          <div className="sleek-card p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white">Editor Prompt GPT-4</h3>
+            </div>
+            <p className="text-text-secondary text-sm mb-4">
+              Modifica i prompt utilizzati dall'AI per l'analisi dei documenti
+            </p>
+            <a href="/admin/prompts" className="btn-primary w-full block text-center">
+              Apri Editor
             </a>
           </div>
         </div>
