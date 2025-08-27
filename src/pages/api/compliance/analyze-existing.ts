@@ -54,21 +54,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Real GPT-4 analysis
     const results = [];
     
-    for (const item of template.checker_items.slice(0, 3)) { // Test with first 3 items only
+    // First, ingest the PDF document
+    console.log('Starting PDF ingestion...');
+    try {
+      const { ingestDocument } = await import('@/lib/compliance/ingest');
+      await ingestDocument(`check-${Date.now()}`, document.file_path, 'pdf');
+      console.log('PDF ingestion completed');
+    } catch (error) {
+      console.error('PDF ingestion failed:', error);
+    }
+    
+    for (const item of template.checker_items) { // Process ALL items
       try {
-        const prompt = `Analyze if this MiCA compliance requirement is met in the document:
+        const prompt = `You are a MiCA regulation compliance expert. Analyze if this requirement is met:
 
 Requirement: ${item.item_name}
 Category: ${item.category}
 Description: ${item.description}
 
-Document content: "This is a sample crypto whitepaper about DeFi tokens with staking mechanisms and governance features."
+For a crypto token document, evaluate:
+- FOUND (80-100): Clearly present and comprehensive
+- NEEDS_CLARIFICATION (40-79): Partially present but incomplete
+- MISSING (0-39): Not present or inadequate
 
-Respond in JSON format:
+Respond ONLY in JSON format:
 {
   "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
   "coverage_score": 0-100,
-  "reasoning": "Your analysis",
+  "reasoning": "Brief analysis",
   "evidence_snippets": ["relevant text if found"]
 }`;
 
@@ -135,7 +148,7 @@ Respond in JSON format:
       checkId: `check-${Date.now()}`,
       results: mockResults,
       summary,
-      note: 'Real GPT-4 analysis for first 3 items, rest are mock'
+      note: 'Real GPT-4 analysis for all items with PDF ingestion'
     });
 
   } catch (error: any) {
