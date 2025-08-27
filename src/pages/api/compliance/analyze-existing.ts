@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import { processDocument } from '@/lib/compliance/ingest';
+import { ingestDocument } from '@/lib/compliance/ingest';
 import { analyzeCompliance } from '@/lib/compliance/retrieval';
 
 const supabase = createClient(
@@ -46,13 +46,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Process document if not already processed
     const { data: existingChunks } = await supabase
-      .from('document_chunks')
+      .from('compliance_chunks')
       .select('id')
-      .eq('document_id', documentId)
+      .eq('check_id', check.id)
       .limit(1);
 
     if (!existingChunks || existingChunks.length === 0) {
-      await processDocument(document.file_path, documentId);
+      await ingestDocument(check.id, document.file_path, 'pdf');
     }
 
     // Analyze compliance
