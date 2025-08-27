@@ -61,40 +61,25 @@ export default function CompliancePage() {
     formData.append('templateId', selectedTemplate);
 
     try {
-      // Step 1: Upload and process document (using final endpoint)
-      const uploadResponse = await fetch('/api/compliance/upload-final', {
+      // Step 1: Upload document (simplified test)
+      const uploadResponse = await fetch('/api/compliance/upload-simple', {
         method: 'POST',
         body: formData,
       });
       
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json();
-        console.log('Debug logs:', errorData.logs);
-        throw new Error(errorData.message || 'Upload failed');
+        console.error('Upload failed:', errorData);
+        throw new Error(errorData.error || 'Upload failed');
       }
-      const uploadData = await uploadResponse.json();
-      const checkId = uploadData.checkId || uploadData.Id;
-
-      // Step 2: Process document
-      const processResponse = await fetch('/api/compliance/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkId }),
-      });
-
-      if (!processResponse.ok) throw new Error('Processing failed');
-
-      // Step 3: Analyze compliance
-      const analyzeResponse = await fetch('/api/compliance/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ check_id: checkId }),
-      });
-
-      if (!analyzeResponse.ok) throw new Error('Analysis failed');
-      const analysisResults = await analyzeResponse.json();
       
-      setResults(analysisResults);
+      const uploadData = await uploadResponse.json();
+      console.log('Upload success:', uploadData);
+      
+      // For now, just show success message
+      alert(`Upload successful! Check ID: ${uploadData.checkId}`);
+      setFile(null);
+      setSelectedTemplate('');
     } catch (error) {
       console.error('Error:', error);
       alert('Error processing document');
