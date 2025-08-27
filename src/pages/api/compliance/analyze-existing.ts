@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import { processDocument } from '@/lib/compliance/ingestion';
+import { processDocument } from '@/lib/compliance/ingest';
 import { analyzeCompliance } from '@/lib/compliance/retrieval';
 
 const supabase = createClient(
