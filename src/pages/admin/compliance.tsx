@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
 interface Template {
   id: string;
@@ -74,7 +75,12 @@ export default function CompliancePage() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch('/api/compliance/documents');
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/compliance/documents', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
       const data = await response.json();
       setDocuments(data.documents || []);
     } catch (error) {
@@ -92,8 +98,12 @@ export default function CompliancePage() {
     formData.append('templateId', selectedTemplate);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const uploadResponse = await fetch('/api/compliance/upload-final', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: formData,
       });
       
@@ -123,9 +133,13 @@ export default function CompliancePage() {
 
     setIsUploading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/compliance/analyze-existing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           documentId: selectedDocument,
           templateId: selectedTemplate

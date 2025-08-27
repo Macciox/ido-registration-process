@@ -17,10 +17,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     console.log('Upload request received');
-    const user = await getCurrentUser();
-    if (!user) {
-      console.log('User not authenticated');
-      return res.status(401).json({ error: 'Unauthorized' });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      console.log('No token provided');
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const { supabase: authClient } = await import('@/lib/supabase');
+    const { data: { user }, error } = await authClient.auth.getUser(token);
+    if (error || !user) {
+      console.log('Invalid token:', error);
+      return res.status(401).json({ error: 'Invalid token' });
     }
     console.log('User authenticated:', user.id);
 
