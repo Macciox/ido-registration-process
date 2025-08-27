@@ -90,15 +90,17 @@ export default function CompliancePage() {
 
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !selectedTemplate) return;
+    if (!file) return;
 
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('templateId', selectedTemplate);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Starting upload with session:', session ? 'Present' : 'Missing');
+      console.log('File:', file.name, 'Template:', selectedTemplate);
+      
       const uploadResponse = await fetch('/api/compliance/upload-final', {
         method: 'POST',
         headers: {
@@ -107,17 +109,25 @@ export default function CompliancePage() {
         body: formData,
       });
       
+      console.log('Upload response status:', uploadResponse.status);
+      
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        console.error('Upload response error:', errorData);
+        const errorText = await uploadResponse.text();
+        console.error('Upload failed - Status:', uploadResponse.status);
+        console.error('Upload failed - Response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
         throw new Error(errorData.message || errorData.error || `HTTP ${uploadResponse.status}`);
       }
       
       const uploadData = await uploadResponse.json();
       console.log('Upload successful:', uploadData);
-      alert(`Upload successful! Document ID: ${uploadData.checkId}`);
+      alert(`Upload successful! File: ${uploadData.filename}`);
       setFile(null);
-      setSelectedTemplate('');
       fetchDocuments();
     } catch (error: any) {
       console.error('Upload error details:', error);
@@ -188,22 +198,6 @@ export default function CompliancePage() {
     <Layout>
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">MiCA Compliance Checker</h1>
-        
-        <button 
-          onClick={async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            console.log('Session:', session ? 'Present' : 'Missing');
-            const response = await fetch('/api/test-auth', {
-              headers: {'Authorization': `Bearer ${session?.access_token}`}
-            });
-            const result = await response.json();
-            console.log('Auth test result:', result);
-            alert(JSON.stringify(result, null, 2));
-          }}
-          className="mb-4 bg-gray-500 text-white px-4 py-2 rounded"
-        >
-          Test Auth
-        </button>
 
         {!results ? (
           <div className="bg-white rounded-lg shadow">
@@ -237,25 +231,6 @@ export default function CompliancePage() {
                 <form onSubmit={handleFileUpload} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Select Compliance Template
-                    </label>
-                    <select
-                      value={selectedTemplate}
-                      onChange={(e) => setSelectedTemplate(e.target.value)}
-                      className="w-full p-3 border rounded-lg"
-                      required
-                    >
-                      <option value="">Choose template...</option>
-                      {templates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name} ({template.checker_items?.length || 0} items)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
                       Upload Document (PDF)
                     </label>
                     <input
@@ -269,10 +244,10 @@ export default function CompliancePage() {
 
                   <button
                     type="submit"
-                    disabled={isUploading || !file || !selectedTemplate}
+                    disabled={isUploading || !file}
                     className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
                   >
-                    {isUploading ? 'Processing...' : 'Upload & Analyze'}
+                    {isUploading ? 'Uploading...' : 'Upload File'}
                   </button>
                 </form>
               ) : (

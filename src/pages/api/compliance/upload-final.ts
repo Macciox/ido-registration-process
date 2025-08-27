@@ -103,33 +103,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     console.log('Document record created:', docData.id);
 
-    // Insert compliance check
-    const templateId = Array.isArray(fields.templateId) ? fields.templateId[0] : fields.templateId;
-    const { data: checkData, error: checkError } = await supabase
-      .from('compliance_checks')
-      .insert({
-        document_id: docData.id,
-        template_id: templateId,
-        status: 'uploaded'
-      })
-      .select()
-      .single();
-
-    if (checkError) {
-      console.error('Check insert error:', checkError);
-      return res.status(500).json({
-        statusCode: '500',
-        error: 'Database Error',
-        message: checkError.message
-      });
-    }
-    console.log('Compliance check created:', checkData.id);
-
-    // Return response in API format
+    // Return simple success response
     res.status(200).json({
-      Id: checkData.id,
-      Key: `compliance-documents/${uploadData.path}`,
-      checkId: checkData.id
+      success: true,
+      documentId: docData.id,
+      filename: file.originalFilename,
+      path: uploadData.path,
+      message: 'File uploaded successfully'
     });
 
   } catch (error: any) {
