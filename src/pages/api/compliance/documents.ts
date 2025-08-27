@@ -29,22 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: documents, error } = await serviceClient
       .from('compliance_documents')
-      .select(`
-        id,
-        filename,
-        file_path,
-        created_at,
-        compliance_checks (
-          id,
-          template_id,
-          status,
-          created_at,
-          compliance_templates (
-            name,
-            type
-          )
-        )
-      `)
+      .select('id, filename, file_path, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
