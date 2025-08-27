@@ -78,9 +78,18 @@ const AdminTools: React.FC = () => {
               </a>
               <button
                 onClick={async () => {
-                  const response = await fetch('/api/compliance/create-legal-template', { method: 'POST' });
-                  const data = await response.json();
-                  alert(data.success ? 'Legal Opinion template updated!' : 'Error: ' + data.error);
+                  // First add columns
+                  const colResponse = await fetch('/api/compliance/add-columns', { method: 'POST' });
+                  const colData = await colResponse.json();
+                  
+                  if (colData.success) {
+                    // Then update template
+                    const response = await fetch('/api/compliance/create-legal-template', { method: 'POST' });
+                    const data = await response.json();
+                    alert(data.success ? 'Legal Opinion template updated!' : 'Error: ' + data.error);
+                  } else {
+                    alert('Error adding columns: ' + colData.error);
+                  }
                 }}
                 className="btn-secondary w-full text-sm"
               >
