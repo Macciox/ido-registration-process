@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
-import AdminLayout from '@/components/layout/AdminLayout';
+import Layout from '@/components/layout/Layout';
+import { getCurrentUser } from '@/lib/auth';
 
 interface Template {
   id: string;
@@ -18,8 +18,9 @@ interface Template {
 }
 
 export default function CompliancePage() {
-  const { user, profile } = useAuth();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
@@ -27,12 +28,18 @@ export default function CompliancePage() {
   const [results, setResults] = useState<any>(null);
 
   useEffect(() => {
-    if (!user || profile?.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    fetchTemplates();
-  }, [user, profile]);
+    const init = async () => {
+      const currentUser = await getCurrentUser();
+      if (!currentUser || currentUser.role !== 'admin') {
+        router.push('/login');
+        return;
+      }
+      setUser(currentUser);
+      setLoading(false);
+      fetchTemplates();
+    };
+    init();
+  }, [router]);
 
   const fetchTemplates = async () => {
     try {
@@ -82,12 +89,29 @@ export default function CompliancePage() {
     }
   };
 
-  if (!user || profile?.role !== 'admin') {
-    return <div>Access denied</div>;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+          <p className="text-gray-600 mt-2">Admin access required</p>
+        </div>
+      </Layout>
+    );
   }
 
   return (
-    <AdminLayout>
+    <Layout>
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">MiCA Compliance Checker</h1>
 
@@ -209,6 +233,6 @@ export default function CompliancePage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </Layout>
   );
 }
