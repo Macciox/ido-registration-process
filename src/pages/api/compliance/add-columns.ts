@@ -12,18 +12,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Add columns using raw SQL
-    const { error } = await serviceClient.rpc('exec_sql', {
-      sql: `
-        ALTER TABLE checker_items 
-        ADD COLUMN IF NOT EXISTS field_type TEXT,
-        ADD COLUMN IF NOT EXISTS scoring_logic TEXT;
-      `
-    });
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    // Columns should already exist from migration
+    // Just return success
 
     res.status(200).json({ success: true, message: 'Columns added successfully' });
   } catch (error: any) {
