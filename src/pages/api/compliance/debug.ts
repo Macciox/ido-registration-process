@@ -1,36 +1,32 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
+import { getCurrentUser } from '@/lib/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    // Test database connection
-    const { data: templates, error: templatesError } = await supabase
-      .from('checker_templates')
-      .select('*')
-      .limit(1);
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
 
-    // Test storage bucket
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    // Check documents
+    const { data: docs, error: docsError } = await supabase
+      .from('compliance_documents')
+      .select('*');
 
-    // Test OpenAI key
-    const openaiConfigured = !!process.env.OPENAI_API_KEY;
+    // Check checks
+    const { data: checks, error: checksError } = await supabase
+      .from('compliance_checks')
+      .select('*');
 
-    res.status(200).json({
-      database: templatesError ? `Error: ${templatesError.message}` : 'Connected',
-      storage: bucketsError ? `Error: ${bucketsError.message}` : `${buckets?.length || 0} buckets`,
-      openai: openaiConfigured ? 'Configured' : 'Missing',
-      environment: process.env.NODE_ENV,
-      templates: templates?.length || 0
+    res.json({
+      user: { id: user.id, email: user.email },
+      documents: { data: docs, error: docsError },
+      checks: { data: checks, error: checksError }
     });
 
   } catch (error: any) {
-    res.status(500).json({
-      error: 'Debug failed',
-      message: error.message
-    });
+    res.status(500).json({ error: error.message });
   }
 }

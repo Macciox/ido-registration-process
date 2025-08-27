@@ -41,10 +41,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileName = `${user.id}-${Date.now()}-${file.originalFilename}`;
     const filePath = `whitepapers/${fileName}`;
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage with service role (storage doesn't use RLS)
+    const storageClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
+    // Use normal client for database operations (with RLS)
     const { supabase } = await import('@/lib/supabase');
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await storageClient.storage
       .from('compliance-documents')
       .upload(filePath, fileBuffer, {
         contentType: 'application/pdf',
