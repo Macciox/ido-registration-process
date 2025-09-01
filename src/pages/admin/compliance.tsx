@@ -274,9 +274,9 @@ export default function CompliancePage() {
           </div>
           <button 
             onClick={() => router.push('/admin/tools')}
-            className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="btn-secondary"
           >
-            Back to Tools
+            ← Back to Tools
           </button>
         </div>
 
