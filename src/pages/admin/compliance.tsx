@@ -66,7 +66,7 @@ export default function CompliancePage() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/compliance/templates');
+      const response = await fetch(`/api/compliance/templates?t=${Date.now()}`);
       const data = await response.json();
       setTemplates(data.templates || []);
     } catch (error) {
