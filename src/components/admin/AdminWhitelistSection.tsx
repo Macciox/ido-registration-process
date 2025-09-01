@@ -157,7 +157,7 @@ const AdminWhitelistSection: React.FC = () => {
                 </div>
                 <button
                   onClick={() => removeEmail(entry.id)}
-                  className="btn-light text-sm"
+                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={removingId === entry.id}
                 >
                   {removingId === entry.id ? 'Removing...' : 'Remove'}
