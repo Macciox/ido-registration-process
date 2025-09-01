@@ -133,13 +133,13 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-text-secondary">Manage your IDO projects and platform settings</p>
               </div>
               
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 <a
                   href="/admin/dashboard"
-                  className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     activeTab === 'projects' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-600 hover:bg-gray-700 text-white'
+                      ? 'bg-white/10 text-white border border-white/20' 
+                      : 'text-text-secondary hover:text-white hover:bg-white/5'
                   }`}
                 >
                   Projects
@@ -149,24 +149,24 @@ const AdminDashboard: React.FC = () => {
                   <>
                     <a
                       href="/admin/projects/new"
-                      className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                      className="px-4 py-2 text-text-secondary hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors"
                     >
                       New Project
                     </a>
                     
                     <a
                       href="/admin/tools"
-                      className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                      className="px-4 py-2 text-text-secondary hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors"
                     >
                       Tools
                     </a>
                     
                     <a
                       href="/admin/dashboard?tab=settings"
-                      className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         router.query.tab === 'settings'
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-gray-600 hover:bg-gray-700 text-white'
+                          ? 'bg-white/10 text-white border border-white/20'
+                          : 'text-text-secondary hover:text-white hover:bg-white/5'
                       }`}
                     >
                       Settings
