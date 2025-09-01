@@ -61,9 +61,11 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary text-sm mb-4">
               AI-powered MiCA compliance analysis for whitepapers and legal documents
             </p>
-            <a href="/admin/compliance" className="w-full px-4 py-3 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
-              Launch Checker
-            </a>
+            <div className="space-y-3">
+              <a href="/admin/compliance" className="w-full px-4 py-3 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
+                Launch Checker
+              </a>
+            </div>
           </div>
 
           {/* Template Management */}
