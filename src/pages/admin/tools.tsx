@@ -81,8 +81,8 @@ const AdminTools: React.FC = () => {
                 <h4 className="text-white text-sm font-medium mb-2">Template Updates</h4>
                 <div className="space-y-2">
                   <button
-                    onClick={async () => {
-                      const btn = event.target as HTMLButtonElement;
+                    onClick={async (e) => {
+                      const btn = e.target as HTMLButtonElement;
                       btn.disabled = true;
                       btn.textContent = 'Updating...';
                       
@@ -106,8 +106,8 @@ const AdminTools: React.FC = () => {
                   </button>
                   
                   <button
-                    onClick={async () => {
-                      const btn = event.target as HTMLButtonElement;
+                    onClick={async (e) => {
+                      const btn = e.target as HTMLButtonElement;
                       btn.disabled = true;
                       btn.textContent = 'Updating...';
                       
