@@ -274,7 +274,7 @@ export default function CompliancePage() {
           </div>
           <button 
             onClick={() => router.push('/admin/tools')}
-            className="btn-secondary"
+            className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
           >
             ← Back to Tools
           </button>
@@ -344,9 +344,9 @@ export default function CompliancePage() {
                 <button
                   type="submit"
                   disabled={isUploading || !file || !selectedTemplate}
-                  className="w-full btn-primary disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? 'Uploading...' : 'Upload & Analyze'}
+                  {isUploading ? '⏳ Uploading...' : '🚀 Upload & Analyze'}
                 </button>
               </form>
             ) : (
@@ -392,9 +392,9 @@ export default function CompliancePage() {
                 <button
                   type="submit"
                   disabled={isUploading || !selectedDocument || !selectedTemplate}
-                  className="w-full btn-primary disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? 'Analyzing...' : 'Analyze Document'}
+                  {isUploading ? '⏳ Analyzing...' : '🔍 Analyze Document'}
                 </button>
               </form>
             )}
@@ -408,9 +408,9 @@ export default function CompliancePage() {
                 <h2 className="text-xl font-bold text-white">Analysis Results</h2>
                 <button
                   onClick={() => setShowResults(false)}
-                  className="btn-secondary"
+                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Close Results
+                  ✕ Close Results
                 </button>
               </div>
 
@@ -489,36 +489,36 @@ export default function CompliancePage() {
               </div>
 
               {/* Export Buttons */}
-              <div className="flex gap-3 mt-6">
+              <div className="flex flex-wrap gap-3 mt-6">
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=json`)}
-                  className="btn-secondary"
+                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Export JSON
+                  📄 Export JSON
                 </button>
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=md`)}
-                  className="btn-secondary"
+                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Export Markdown
+                  📝 Export Markdown
                 </button>
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=pdf`)}
-                  className="btn-secondary"
+                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Export PDF
+                  📋 Export PDF
                 </button>
                 <button 
                   onClick={() => handleRegenerate()}
-                  className="btn-primary"
+                  className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Regenerate Non-FOUND
+                  🔄 Regenerate Non-FOUND
                 </button>
                 <button 
                   onClick={() => testAnalysis()}
-                  className="btn-secondary"
+                  className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Test Analysis
+                  🧪 Test Analysis
                 </button>
               </div>
             </div>
