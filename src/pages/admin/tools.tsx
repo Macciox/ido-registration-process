@@ -80,12 +80,23 @@ const AdminTools: React.FC = () => {
                 onClick={async () => {
                   const response = await fetch('/api/compliance/restore-legal-items', { method: 'POST' });
                   const data = await response.json();
-                  alert(data.success ? 'Legal Opinion items restored!' : 'Error: ' + data.error);
+                  alert(data.success ? 'Legal Opinion updated with 21 items!' : 'Error: ' + data.error);
                   window.location.reload();
                 }}
                 className="btn-secondary w-full text-sm"
               >
-                Restore Legal Opinion Items
+                Update Legal Opinion (21 items)
+              </button>
+              <button
+                onClick={async () => {
+                  const response = await fetch('/api/compliance/update-whitepaper-items', { method: 'POST' });
+                  const data = await response.json();
+                  alert(data.success ? 'Whitepaper updated with 50 items!' : 'Error: ' + data.error);
+                  window.location.reload();
+                }}
+                className="btn-secondary w-full text-sm"
+              >
+                Update Whitepaper (50 items)
               </button>
             </div>
           </div>
