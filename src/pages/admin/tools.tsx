@@ -72,9 +72,22 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary text-sm mb-4">
               View and edit MiCA compliance templates and checklist items
             </p>
-            <a href="/admin/templates-simple" className="btn-primary w-full block text-center">
-              Manage Templates
-            </a>
+            <div className="space-y-2">
+              <a href="/admin/templates-simple" className="btn-primary w-full block text-center">
+                Manage Templates
+              </a>
+              <button
+                onClick={async () => {
+                  const response = await fetch('/api/compliance/restore-legal-items', { method: 'POST' });
+                  const data = await response.json();
+                  alert(data.success ? 'Legal Opinion items restored!' : 'Error: ' + data.error);
+                  window.location.reload();
+                }}
+                className="btn-secondary w-full text-sm"
+              >
+                Restore Legal Opinion Items
+              </button>
+            </div>
           </div>
         </div>
       </div>
