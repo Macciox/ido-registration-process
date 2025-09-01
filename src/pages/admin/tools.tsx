@@ -61,7 +61,7 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary text-sm mb-4">
               AI-powered MiCA compliance analysis for whitepapers and legal documents
             </p>
-            <a href="/admin/compliance" className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
+            <a href="/admin/compliance" className="w-full px-4 py-3 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
               Launch Checker
             </a>
           </div>
@@ -81,7 +81,7 @@ const AdminTools: React.FC = () => {
               View and edit MiCA compliance templates and checklist items
             </p>
             <div className="space-y-3">
-              <a href="/admin/templates-simple" className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
+              <a href="/admin/templates-simple" className="w-full px-4 py-3 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
                 Manage Templates
               </a>
               
@@ -107,7 +107,7 @@ const AdminTools: React.FC = () => {
                         alert('Error: ' + data.error);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-3 py-2 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     Update Legal Opinion
                     <span className="text-xs bg-blue-500 px-2 py-1 rounded-full">21 items</span>
@@ -132,7 +132,7 @@ const AdminTools: React.FC = () => {
                         alert('Error: ' + data.error);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-3 py-2 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     Update Whitepaper
                     <span className="text-xs bg-purple-500 px-2 py-1 rounded-full">50 items</span>
