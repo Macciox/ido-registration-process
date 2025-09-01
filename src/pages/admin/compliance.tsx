@@ -276,7 +276,7 @@ export default function CompliancePage() {
             onClick={() => router.push('/admin/tools')}
             className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
           >
-            ← Back to Tools
+            Back to Tools
           </button>
         </div>
 
@@ -346,7 +346,7 @@ export default function CompliancePage() {
                   disabled={isUploading || !file || !selectedTemplate}
                   className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? '⏳ Uploading...' : '🚀 Upload & Analyze'}
+                  {isUploading ? 'Uploading...' : 'Upload & Analyze'}
                 </button>
               </form>
             ) : (
@@ -394,7 +394,7 @@ export default function CompliancePage() {
                   disabled={isUploading || !selectedDocument || !selectedTemplate}
                   className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? '⏳ Analyzing...' : '🔍 Analyze Document'}
+                  {isUploading ? 'Analyzing...' : 'Analyze Document'}
                 </button>
               </form>
             )}
@@ -410,7 +410,7 @@ export default function CompliancePage() {
                   onClick={() => setShowResults(false)}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  ✕ Close Results
+                  Close Results
                 </button>
               </div>
 
@@ -494,31 +494,31 @@ export default function CompliancePage() {
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=json`)}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  📄 Export JSON
+                  Export JSON
                 </button>
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=md`)}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  📝 Export Markdown
+                  Export Markdown
                 </button>
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=pdf`)}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  📋 Export PDF
+                  Export PDF
                 </button>
                 <button 
                   onClick={() => handleRegenerate()}
                   className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  🔄 Regenerate Non-FOUND
+                  Regenerate Non-FOUND
                 </button>
                 <button 
                   onClick={() => testAnalysis()}
                   className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  🧪 Test Analysis
+                  Test Analysis
                 </button>
               </div>
             </div>
