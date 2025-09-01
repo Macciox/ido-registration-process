@@ -34,9 +34,17 @@ const AdminTools: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Admin Tools</h1>
-          <p className="text-text-secondary">Administrative tools and utilities</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Admin Tools</h1>
+            <p className="text-text-secondary">Administrative tools and utilities</p>
+          </div>
+          <button 
+            onClick={() => router.push('/admin')}
+            className="btn-secondary"
+          >
+            ← Back to Admin
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -53,8 +61,8 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary text-sm mb-4">
               AI-powered MiCA compliance analysis for whitepapers and legal documents
             </p>
-            <a href="/admin/compliance" className="btn-primary w-full block text-center">
-              Launch Checker
+            <a href="/admin/compliance" className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
+              🚀 Launch Checker
             </a>
           </div>
 
@@ -73,7 +81,7 @@ const AdminTools: React.FC = () => {
               View and edit MiCA compliance templates and checklist items
             </p>
             <div className="space-y-3">
-              <a href="/admin/templates-simple" className="btn-primary w-full block text-center">
+              <a href="/admin/templates-simple" className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
                 📝 Manage Templates
               </a>
               
