@@ -72,32 +72,65 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary text-sm mb-4">
               View and edit MiCA compliance templates and checklist items
             </p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <a href="/admin/templates-simple" className="btn-primary w-full block text-center">
-                Manage Templates
+                📝 Manage Templates
               </a>
-              <button
-                onClick={async () => {
-                  const response = await fetch('/api/compliance/restore-legal-items', { method: 'POST' });
-                  const data = await response.json();
-                  alert(data.success ? 'Legal Opinion updated with 21 items!' : 'Error: ' + data.error);
-                  window.location.reload();
-                }}
-                className="btn-secondary w-full text-sm"
-              >
-                Update Legal Opinion (21 items)
-              </button>
-              <button
-                onClick={async () => {
-                  const response = await fetch('/api/compliance/update-whitepaper-items', { method: 'POST' });
-                  const data = await response.json();
-                  alert(data.success ? 'Whitepaper updated with 50 items!' : 'Error: ' + data.error);
-                  window.location.reload();
-                }}
-                className="btn-secondary w-full text-sm"
-              >
-                Update Whitepaper (50 items)
-              </button>
+              
+              <div className="border-t border-border pt-3">
+                <h4 className="text-white text-sm font-medium mb-2">Template Updates</h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={async () => {
+                      const btn = event.target as HTMLButtonElement;
+                      btn.disabled = true;
+                      btn.textContent = 'Updating...';
+                      
+                      const response = await fetch('/api/compliance/restore-legal-items', { method: 'POST' });
+                      const data = await response.json();
+                      
+                      if (data.success) {
+                        btn.textContent = '✅ Updated!';
+                        btn.className = 'w-full px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium';
+                        setTimeout(() => window.location.reload(), 1000);
+                      } else {
+                        btn.textContent = '❌ Error';
+                        btn.className = 'w-full px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium';
+                        alert('Error: ' + data.error);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    ⚖️ Update Legal Opinion
+                    <span className="text-xs bg-blue-500 px-2 py-1 rounded-full">21 items</span>
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      const btn = event.target as HTMLButtonElement;
+                      btn.disabled = true;
+                      btn.textContent = 'Updating...';
+                      
+                      const response = await fetch('/api/compliance/update-whitepaper-items', { method: 'POST' });
+                      const data = await response.json();
+                      
+                      if (data.success) {
+                        btn.textContent = '✅ Updated!';
+                        btn.className = 'w-full px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium';
+                        setTimeout(() => window.location.reload(), 1000);
+                      } else {
+                        btn.textContent = '❌ Error';
+                        btn.className = 'w-full px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium';
+                        alert('Error: ' + data.error);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    📄 Update Whitepaper
+                    <span className="text-xs bg-purple-500 px-2 py-1 rounded-full">50 items</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
