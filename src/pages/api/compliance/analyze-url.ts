@@ -105,8 +105,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const batch = template.checker_items.slice(i, i + batchSize);
       
       try {
-        // Use comprehensive document content (first 30 chunks for token limits)
-        const batchContent = chunks.slice(0, 30).map(chunk => chunk.content).join('\n\n');
+        // Use limited document content to stay within token limits
+        const batchContent = chunks.slice(0, 5).map(chunk => chunk.content).join('\n\n').substring(0, 15000); // Max 15k chars
         
         if (batchContent.length < 100) {
           console.log('❌ Content too short:', batchContent.length, 'chars');
@@ -162,10 +162,10 @@ Respond with a JSON array (one object per requirement in exact order):
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-3.5-turbo',
             messages: [{ role: 'user', content: batchPrompt }],
             temperature: 0.1,
-            max_tokens: 2000,
+            max_tokens: 1000,
           }),
         });
 
@@ -225,6 +225,11 @@ Respond with a JSON array (one object per requirement in exact order):
             evidence: []
           });
         });
+      }
+      
+      // Add delay between batches to avoid rate limiting
+      if (i + batchSize < template.checker_items.length) {
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
       }
     }
 

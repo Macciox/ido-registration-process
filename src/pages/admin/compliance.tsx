@@ -322,6 +322,11 @@ export default function CompliancePage() {
       
       const data = await response.json();
       
+      // Debug: log the full response
+      console.log('🔍 FULL API RESPONSE:', JSON.stringify(data, null, 2));
+      console.log('📊 Results count:', data.results?.length || 0);
+      console.log('🎯 First result example:', data.results?.[0]);
+      
       setResults({
         ...data,
         actualTemplateUsed: selectedTemplate
