@@ -67,12 +67,18 @@ export async function saveAnalysis(
     const templateName = template?.name || 'Unknown Template';
     
     // Check existing analyses for this document
-  const { data: existingChecks } = await serviceClient
+  const { data: existingChecks, error: fetchError } = await serviceClient
     .from('compliance_checks')
     .select('id, version')
     .eq('document_id', docId)
     .eq('template_id', templateId)
     .order('version', { ascending: false });
+    
+  if (fetchError) {
+    console.error('Error fetching existing checks:', fetchError);
+  }
+  
+  console.log('Existing checks for doc/template:', { docId, templateId, existingChecks });
 
   let checkId: string;
   let version: number;
@@ -106,6 +112,7 @@ export async function saveAnalysis(
     } else {
       // Create new version
       version = latestCheck.version + 1;
+      console.log('Creating new version:', version, 'for document:', docId);
       
       const { data: newCheck, error: insertError } = await serviceClient
         .from('compliance_checks')
@@ -134,6 +141,7 @@ export async function saveAnalysis(
   } else {
     // First analysis for this document
     version = 1;
+    console.log('Creating first analysis version 1 for document:', docId);
     
     const { data: newCheck, error: insertError } = await serviceClient
       .from('compliance_checks')
