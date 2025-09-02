@@ -395,7 +395,7 @@ export default function CompliancePage() {
                   {isUploading ? 'Uploading...' : 'Upload & Analyze'}
                 </button>
               </form>
-            ) : (
+            ) : activeTab === 'existing' ? (
               <form onSubmit={handleAnalyzeExisting} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
