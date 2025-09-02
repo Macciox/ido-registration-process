@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Toast';
+import { LoadingButton, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface Template {
   id: string;
@@ -51,6 +53,16 @@ export default function CompliancePage() {
   const [showResults, setShowResults] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showVersionsModal, setShowVersionsModal] = useState(false);
+  const [selectedDocumentForVersions, setSelectedDocumentForVersions] = useState<string>('');
+  const [versions, setVersions] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [minScore, setMinScore] = useState('');
+  const [maxScore, setMaxScore] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [deletingAnalysis, setDeletingAnalysis] = useState<string>('');
+  const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
     const init = async () => {
@@ -80,13 +92,28 @@ export default function CompliancePage() {
 
   const fetchSavedAnalyses = async () => {
     try {
-      const response = await fetch('/api/analyses');
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (minScore) params.append('minScore', minScore);
+      if (maxScore) params.append('maxScore', maxScore);
+      if (statusFilter) params.append('status', statusFilter);
+      
+      const response = await fetch(`/api/analyses?${params}`);
       const data = await response.json();
       setSavedAnalyses(data.analyses || []);
     } catch (error) {
       console.error('Error fetching saved analyses:', error);
+      showToast('Failed to fetch analyses', 'error');
     }
   };
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSavedAnalyses();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, minScore, maxScore, statusFilter]);
 
   const handleSaveAnalysis = async (overwrite: boolean) => {
     if (!results) return;
@@ -111,14 +138,14 @@ export default function CompliancePage() {
       const data = await response.json();
       
       if (data.success) {
-        alert(data.message);
-        fetchSavedAnalyses(); // Refresh saved analyses
+        showToast(data.message, 'success');
+        fetchSavedAnalyses();
       } else {
         throw new Error(data.error);
       }
 
     } catch (error: any) {
-      alert('Save failed: ' + error.message);
+      showToast('Save failed: ' + error.message, 'error');
     } finally {
       setSaving(false);
       setShowSaveModal(false);
@@ -467,7 +494,44 @@ export default function CompliancePage() {
               </form>
             ) : (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-white mb-4">Saved Analyses</h3>
+                <div className="flex flex-col gap-4 mb-6">
+                  <h3 className="text-lg font-medium text-white">Saved Analyses</h3>
+                  
+                  {/* Search and Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Search by name, hash, or version..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="px-3 py-2 bg-card-secondary border border-border rounded-lg text-white placeholder-text-secondary"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Min Score"
+                      value={minScore}
+                      onChange={(e) => setMinScore(e.target.value)}
+                      className="px-3 py-2 bg-card-secondary border border-border rounded-lg text-white placeholder-text-secondary"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max Score"
+                      value={maxScore}
+                      onChange={(e) => setMaxScore(e.target.value)}
+                      className="px-3 py-2 bg-card-secondary border border-border rounded-lg text-white placeholder-text-secondary"
+                    />
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 py-2 bg-card-secondary border border-border rounded-lg text-white"
+                    >
+                      <option value="">All Status</option>
+                      <option value="completed">Completed</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                </div>
                 {savedAnalyses.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-text-secondary">No saved analyses found</div>
@@ -527,12 +591,31 @@ export default function CompliancePage() {
                                       setResults(data);
                                       setShowResults(true);
                                     } catch (error) {
-                                      alert('Error loading analysis');
+                                      showToast('Error loading analysis', 'error');
                                     }
                                   }}
                                   className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
                                 >
                                   View
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    setSelectedDocumentForVersions(analysis.document_id);
+                                    setLoadingVersions(true);
+                                    setShowVersionsModal(true);
+                                    try {
+                                      const response = await fetch(`/api/analysis/${analysis.document_id}/versions`);
+                                      const data = await response.json();
+                                      setVersions(data.versions || []);
+                                    } catch (error) {
+                                      showToast('Error loading versions', 'error');
+                                    } finally {
+                                      setLoadingVersions(false);
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-colors"
+                                >
+                                  Versions
                                 </button>
                                 {analysis.document_url && (
                                   <button
@@ -542,6 +625,34 @@ export default function CompliancePage() {
                                     Download
                                   </button>
                                 )}
+                                <LoadingButton
+                                  loading={deletingAnalysis === analysis.check_id}
+                                  onClick={async () => {
+                                    if (!confirm('Are you sure you want to delete this analysis?')) return;
+                                    
+                                    setDeletingAnalysis(analysis.check_id);
+                                    try {
+                                      const response = await fetch(`/api/analysis/${analysis.check_id}`, {
+                                        method: 'DELETE'
+                                      });
+                                      const data = await response.json();
+                                      
+                                      if (data.success) {
+                                        showToast(data.message, 'success');
+                                        fetchSavedAnalyses();
+                                      } else {
+                                        throw new Error(data.error);
+                                      }
+                                    } catch (error: any) {
+                                      showToast('Delete failed: ' + error.message, 'error');
+                                    } finally {
+                                      setDeletingAnalysis('');
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                                >
+                                  Delete
+                                </LoadingButton>
                               </div>
                             </td>
                           </tr>
@@ -716,6 +827,97 @@ export default function CompliancePage() {
             </div>
           </div>
         )}
+
+        {/* Versions Modal */}
+        {showVersionsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">Document Versions</h3>
+                <button
+                  onClick={() => setShowVersionsModal(false)}
+                  className="text-white/60 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {loadingVersions ? (
+                <div className="flex justify-center py-8">
+                  <LoadingSpinner size="lg" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-4 text-white font-medium">Version</th>
+                        <th className="text-left py-3 px-4 text-white font-medium">Score</th>
+                        <th className="text-left py-3 px-4 text-white font-medium">Status</th>
+                        <th className="text-left py-3 px-4 text-white font-medium">Date</th>
+                        <th className="text-left py-3 px-4 text-white font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {versions.map((version) => (
+                        <tr key={version.id} className="border-b border-border/50">
+                          <td className="py-3 px-4 text-white">v{version.version}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center">
+                              <div className={`w-3 h-3 rounded-full mr-2 ${
+                                version.overall_score >= 80 ? 'bg-green-500' :
+                                version.overall_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}></div>
+                              <span className="text-white">{version.overall_score}%</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              version.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                              version.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {version.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-text-secondary">
+                            {new Date(version.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/compliance/get-analysis?checkId=${version.id}`);
+                                  const data = await response.json();
+                                  setResults(data);
+                                  setShowResults(true);
+                                  setShowVersionsModal(false);
+                                } catch (error) {
+                                  showToast('Error loading version', 'error');
+                                }
+                              }}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {versions.length === 0 && (
+                    <div className="text-center py-8 text-text-secondary">
+                      No versions found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <ToastContainer />
       </div>
     </Layout>
   );

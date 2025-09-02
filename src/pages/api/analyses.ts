@@ -7,7 +7,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const analyses = await getLatestAnalyses();
+    const { search, minScore, maxScore, status } = req.query;
+    
+    let analyses = await getLatestAnalyses();
+    
+    // Apply filters
+    if (search) {
+      const searchTerm = search.toString().toLowerCase();
+      analyses = analyses.filter(analysis => 
+        analysis.filename.toLowerCase().includes(searchTerm) ||
+        analysis.doc_hash?.toLowerCase().includes(searchTerm) ||
+        analysis.version.toString().includes(searchTerm)
+      );
+    }
+    
+    if (minScore) {
+      analyses = analyses.filter(analysis => 
+        analysis.overall_score >= parseInt(minScore.toString())
+      );
+    }
+    
+    if (maxScore) {
+      analyses = analyses.filter(analysis => 
+        analysis.overall_score <= parseInt(maxScore.toString())
+      );
+    }
+    
+    if (status) {
+      analyses = analyses.filter(analysis => 
+        analysis.status === status.toString()
+      );
+    }
     
     res.status(200).json({
       success: true,

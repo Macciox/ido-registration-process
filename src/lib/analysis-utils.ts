@@ -54,7 +54,7 @@ export async function saveAnalysis(
   templateId: string,
   analysisData: AnalysisData,
   overwrite: boolean = false
-): Promise<{ checkId: string; version: number }> {
+): Promise<{ success: boolean; checkId?: string; version?: number; message: string }> {
   
   // Check existing analyses for this document
   const { data: existingChecks } = await serviceClient
@@ -162,14 +162,20 @@ export async function saveAnalysis(
       .eq('id', docId);
   }
 
-  return { checkId, version };
+  return { 
+    success: true, 
+    checkId, 
+    version, 
+    message: overwrite ? 'Analysis updated successfully' : 'New analysis version created'
+  };
 }
 
 /**
  * Get latest analyses for all documents
  */
-export async function getLatestAnalyses() {
-  const { data } = await serviceClient
+export async function getLatestAnalyses(): Promise<any[]> {
+  try {
+    const { data, error } = await serviceClient
     .from('compliance_documents')
     .select(`
       id,
@@ -190,7 +196,12 @@ export async function getLatestAnalyses() {
       )
     `);
 
-  if (!data) return [];
+    if (error) {
+      console.error('Error fetching analyses:', error);
+      return [];
+    }
+    
+    if (!data) return [];
 
   // Get only the latest version for each document
   const latestAnalyses = data.map(doc => {
@@ -215,5 +226,9 @@ export async function getLatestAnalyses() {
     };
   });
 
-  return latestAnalyses;
+    return latestAnalyses;
+  } catch (error) {
+    console.error('Error in getLatestAnalyses:', error);
+    return [];
+  }
 }
