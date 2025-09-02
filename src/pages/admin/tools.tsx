@@ -40,7 +40,7 @@ const AdminTools: React.FC = () => {
             <p className="text-text-secondary">Administrative tools and utilities</p>
           </div>
           <button 
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/admin/dashboard')}
             className="btn-secondary"
           >
             ← Back to Dashboard
