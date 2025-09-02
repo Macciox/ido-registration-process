@@ -120,10 +120,13 @@ export default function CompliancePage() {
     
     setSaving(true);
     try {
-      const templateIdToUse = results.templateId || selectedTemplate;
-      console.log('Saving analysis with:', {
-        docId: results.documentId || selectedDocument,
-        templateId: templateIdToUse,
+      // Use the template that was ACTUALLY used for analysis
+      const templateIdToUse = results.actualTemplateUsed || results.templateId || selectedTemplate;
+      console.log('Saving analysis with CORRECT template:', {
+        actualTemplateUsed: results.actualTemplateUsed,
+        resultsTemplateId: results.templateId,
+        selectedTemplate,
+        usingTemplateId: templateIdToUse,
         resultsCount: results.results?.length || 0
       });
       
@@ -319,11 +322,13 @@ export default function CompliancePage() {
       setResults({
         ...data,
         documentId: selectedDocument,
-        templateId: selectedTemplate
+        templateId: selectedTemplate,
+        actualTemplateUsed: selectedTemplate // Store the ACTUAL template used
       });
       setShowResults(true);
+      // Don't reset selectedTemplate until after potential save
       setSelectedDocument('');
-      setSelectedTemplate('');
+      // setSelectedTemplate(''); // Keep this for saving
       
       // Analysis completed (not saved)
     } catch (error: any) {
