@@ -145,7 +145,7 @@ Respond with a JSON array (one object per requirement in exact order):
         console.log(`Batch ${i + 1}: ${batch.length} items`);
         console.log(`Content length: ${batchContent.length} chars`);
         console.log(`First 200 chars: ${batchContent.substring(0, 200)}...`);
-        console.log(`Requirements: ${batch.map(item => item.item_name).join(', ')}`);
+        console.log(`Requirements: ${batch.map((item: any) => item.item_name).join(', ')}`);
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
