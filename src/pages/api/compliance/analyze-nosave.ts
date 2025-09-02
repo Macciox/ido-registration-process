@@ -75,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const batch = template.checker_items.slice(i, i + batchSize);
       
       try {
-        const requirementsList = batch.map((item, idx) => 
+        const requirementsList = batch.map((item: any, idx: number) => 
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
@@ -146,7 +146,7 @@ Respond ONLY with a JSON array (one object per requirement in order):
         }
       } catch (error) {
         console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
-        batch.forEach(item => {
+        batch.forEach((item: any) => {
           results.push({
             item_id: item.id,
             item_name: item.item_name,
