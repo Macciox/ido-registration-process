@@ -1,0 +1,219 @@
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+
+const serviceClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export interface DocumentHash {
+  docHash: string;
+  fileName: string;
+}
+
+export interface AnalysisResult {
+  item_id: string;
+  item_name: string;
+  category: string;
+  status: 'FOUND' | 'NEEDS_CLARIFICATION' | 'MISSING';
+  coverage_score: number;
+  reasoning: string;
+  evidence: Array<{ snippet: string }>;
+}
+
+export interface AnalysisData {
+  results: AnalysisResult[];
+  summary: {
+    found_items: number;
+    clarification_items: number;
+    missing_items: number;
+    overall_score: number;
+  };
+}
+
+/**
+ * Calculate SHA-256 hash of document content
+ */
+export function getDocumentHash(content: Buffer | string, fileName: string): DocumentHash {
+  const hash = crypto.createHash('sha256');
+  hash.update(content);
+  
+  return {
+    docHash: hash.digest('hex'),
+    fileName: fileName
+  };
+}
+
+/**
+ * Save analysis results to database
+ */
+export async function saveAnalysis(
+  docId: string,
+  docHash: string,
+  docName: string,
+  templateId: string,
+  analysisData: AnalysisData,
+  overwrite: boolean = false
+): Promise<{ checkId: string; version: number }> {
+  
+  // Check existing analyses for this document
+  const { data: existingChecks } = await serviceClient
+    .from('compliance_checks')
+    .select('id, version')
+    .eq('document_id', docId)
+    .eq('template_id', templateId)
+    .order('version', { ascending: false });
+
+  let checkId: string;
+  let version: number;
+
+  if (existingChecks && existingChecks.length > 0) {
+    const latestCheck = existingChecks[0];
+    
+    if (overwrite) {
+      // Update existing analysis
+      checkId = latestCheck.id;
+      version = latestCheck.version;
+      
+      // Update compliance_checks
+      await serviceClient
+        .from('compliance_checks')
+        .update({
+          overall_score: analysisData.summary.overall_score,
+          found_items: analysisData.summary.found_items,
+          clarification_items: analysisData.summary.clarification_items,
+          missing_items: analysisData.summary.missing_items,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', checkId);
+
+      // Delete old results
+      await serviceClient
+        .from('compliance_results')
+        .delete()
+        .eq('check_id', checkId);
+        
+    } else {
+      // Create new version
+      version = latestCheck.version + 1;
+      
+      const { data: newCheck } = await serviceClient
+        .from('compliance_checks')
+        .insert({
+          document_id: docId,
+          template_id: templateId,
+          document_name: docName,
+          template_name: 'MiCA Compliance Template', // You might want to fetch this
+          status: 'completed',
+          version: version,
+          overall_score: analysisData.summary.overall_score,
+          found_items: analysisData.summary.found_items,
+          clarification_items: analysisData.summary.clarification_items,
+          missing_items: analysisData.summary.missing_items
+        })
+        .select('id')
+        .single();
+        
+      checkId = newCheck!.id;
+    }
+  } else {
+    // First analysis for this document
+    version = 1;
+    
+    const { data: newCheck } = await serviceClient
+      .from('compliance_checks')
+      .insert({
+        document_id: docId,
+        template_id: templateId,
+        document_name: docName,
+        template_name: 'MiCA Compliance Template',
+        status: 'completed',
+        version: version,
+        overall_score: analysisData.summary.overall_score,
+        found_items: analysisData.summary.found_items,
+        clarification_items: analysisData.summary.clarification_items,
+        missing_items: analysisData.summary.missing_items
+      })
+      .select('id')
+      .single();
+      
+    checkId = newCheck!.id;
+  }
+
+  // Insert detailed results
+  const resultsToInsert = analysisData.results.map(result => ({
+    check_id: checkId,
+    item_id: result.item_id,
+    status: result.status,
+    coverage_score: result.coverage_score,
+    reasoning: result.reasoning,
+    evidence_snippets: result.evidence.map(e => e.snippet)
+  }));
+
+  await serviceClient
+    .from('compliance_results')
+    .insert(resultsToInsert);
+
+  // Update document hash if provided
+  if (docHash) {
+    await serviceClient
+      .from('compliance_documents')
+      .update({ doc_hash: docHash })
+      .eq('id', docId);
+  }
+
+  return { checkId, version };
+}
+
+/**
+ * Get latest analyses for all documents
+ */
+export async function getLatestAnalyses() {
+  const { data } = await serviceClient
+    .from('compliance_documents')
+    .select(`
+      id,
+      filename,
+      doc_hash,
+      document_url,
+      created_at,
+      compliance_checks!inner (
+        id,
+        version,
+        overall_score,
+        found_items,
+        clarification_items,
+        missing_items,
+        status,
+        created_at,
+        template_name
+      )
+    `);
+
+  if (!data) return [];
+
+  // Get only the latest version for each document
+  const latestAnalyses = data.map(doc => {
+    const latestCheck = doc.compliance_checks
+      .sort((a: any, b: any) => b.version - a.version)[0];
+    
+    return {
+      document_id: doc.id,
+      filename: doc.filename,
+      doc_hash: doc.doc_hash,
+      document_url: doc.document_url,
+      document_created_at: doc.created_at,
+      check_id: latestCheck.id,
+      version: latestCheck.version,
+      overall_score: latestCheck.overall_score,
+      found_items: latestCheck.found_items,
+      clarification_items: latestCheck.clarification_items,
+      missing_items: latestCheck.missing_items,
+      status: latestCheck.status,
+      analysis_created_at: latestCheck.created_at,
+      template_name: latestCheck.template_name
+    };
+  });
+
+  return latestAnalyses;
+}
