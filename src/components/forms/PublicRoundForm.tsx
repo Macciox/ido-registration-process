@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
-import Toast from '@/components/ui/Toast';
+import { Toast } from '@/components/ui/Toast';
 
 interface PublicRoundFormProps {
   projectId: string;
