@@ -7,7 +7,7 @@ const serviceClient = createClient(
 );
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { checkId } = req.query;
+  const { id: checkId } = req.query;
 
   if (req.method === 'DELETE') {
     try {

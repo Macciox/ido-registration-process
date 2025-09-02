@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { documentId } = req.query;
+  const { id: documentId } = req.query;
 
   try {
     const { data: versions, error } = await serviceClient
