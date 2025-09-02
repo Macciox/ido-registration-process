@@ -904,6 +904,61 @@ export default function CompliancePage() {
                 </table>
               </div>
 
+              {/* Analyzed Text Section (for URL analysis) */}
+              {results.processing && results.processing.title && (
+                <div className="mt-8">
+                  <div className="border-t border-border pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-white">📄 Analyzed Website Content</h3>
+                      <div className="text-sm text-text-secondary">
+                        {results.processing.chunksCount} sections • {results.processing.totalWords} words
+                      </div>
+                    </div>
+                    
+                    <div className="bg-card-secondary rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <div className="text-sm text-text-secondary mb-2">
+                        Source: <a href={results.processing.url || '#'} target="_blank" className="text-primary hover:underline">
+                          {results.processing.title}
+                        </a>
+                      </div>
+                      
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/debug/chunks?documentId=${results.documentId}`);
+                            const data = await response.json();
+                            
+                            const fullText = data.chunks.map((chunk: any) => chunk.fullContent).join('\n\n');
+                            
+                            const newWindow = window.open('', '_blank');
+                            if (newWindow) {
+                              newWindow.document.write(`
+                                <html>
+                                  <head><title>Analyzed Content - ${results.processing.title}</title></head>
+                                  <body style="font-family: Arial; padding: 20px; line-height: 1.6;">
+                                    <h1>Analyzed Website Content</h1>
+                                    <p><strong>Source:</strong> ${results.processing.title}</p>
+                                    <p><strong>Chunks:</strong> ${data.totalChunks} sections</p>
+                                    <hr>
+                                    <pre style="white-space: pre-wrap; font-family: inherit;">${fullText}</pre>
+                                  </body>
+                                </html>
+                              `);
+                              newWindow.document.close();
+                            }
+                          } catch (error) {
+                            alert('Error loading content: ' + error);
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                      >
+                        📖 View Full Analyzed Text
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 mt-6">
                 <button 

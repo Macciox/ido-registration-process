@@ -205,7 +205,11 @@ Respond with a JSON array (one object per requirement in exact order):
       templateId: templateId,
       results,
       summary,
-      processing: processingResult,
+      processing: {
+        ...processingResult,
+        url: url,
+        hostname: new URL(url).hostname
+      },
       debug: debugInfo,
       note: 'Batch web content analysis with debug info'
     });
