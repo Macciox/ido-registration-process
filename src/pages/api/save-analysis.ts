@@ -41,12 +41,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       overwrite
     );
 
-    res.status(200).json({
-      success: true,
-      checkId: result.checkId,
-      version: result.version,
-      message: overwrite ? 'Analysis updated successfully' : 'New analysis version created'
-    });
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        checkId: result.checkId,
+        version: result.version,
+        message: result.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.message
+      });
+    }
 
   } catch (error: any) {
     console.error('Save analysis error:', error);

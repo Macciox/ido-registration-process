@@ -56,7 +56,8 @@ export async function saveAnalysis(
   overwrite: boolean = false
 ): Promise<{ success: boolean; checkId?: string; version?: number; message: string }> {
   
-  // Check existing analyses for this document
+  try {
+    // Check existing analyses for this document
   const { data: existingChecks } = await serviceClient
     .from('compliance_checks')
     .select('id, version')
@@ -162,12 +163,19 @@ export async function saveAnalysis(
       .eq('id', docId);
   }
 
-  return { 
-    success: true, 
-    checkId, 
-    version, 
-    message: overwrite ? 'Analysis updated successfully' : 'New analysis version created'
-  };
+    return { 
+      success: true, 
+      checkId, 
+      version, 
+      message: overwrite ? 'Analysis updated successfully' : 'New analysis version created'
+    };
+  } catch (error: any) {
+    console.error('Error in saveAnalysis:', error);
+    return {
+      success: false,
+      message: `Save failed: ${error.message || 'Unknown error'}`
+    };
+  }
 }
 
 /**
