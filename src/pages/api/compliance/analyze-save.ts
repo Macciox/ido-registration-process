@@ -173,7 +173,7 @@ Respond ONLY in JSON format:
           status: analysis.status,
           coverage_score: analysis.coverage_score || 0,
           reasoning: analysis.reasoning || '',
-          evidence: analysis.evidence_snippets?.map(snippet => ({ snippet })) || []
+          evidence: analysis.evidence_snippets?.map((snippet: string) => ({ snippet })) || []
         });
 
       } catch (error) {
