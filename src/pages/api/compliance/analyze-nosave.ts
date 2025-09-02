@@ -79,26 +79,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
-        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these requirements are met in the provided document.
+        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these specific requirements are met in the provided document.
 
-Requirements to analyze:
+REQUIREMENTS TO ANALYZE:
 ${requirementsList}
 
-Document Content:
+DOCUMENT CONTENT:
 ${documentText}
 
-For each requirement, evaluate:
-- FOUND (80-100): Clearly present and comprehensive
-- NEEDS_CLARIFICATION (40-79): Partially present but incomplete  
-- MISSING (0-39): Not present or inadequate
+For EACH requirement above, you must:
+1. Search the document for relevant information
+2. Determine if the requirement is satisfied
+3. Provide exact quotes as evidence if found
 
-Respond ONLY with a JSON array (one object per requirement in order):
+Scoring:
+- FOUND (80-100): Information clearly present with good detail
+- NEEDS_CLARIFICATION (40-79): Some information present but incomplete
+- MISSING (0-39): No relevant information found
+
+Respond with a JSON array (one object per requirement in exact order):
 [
   {
     "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
     "coverage_score": 0-100,
-    "reasoning": "Brief analysis of what was found or missing",
-    "evidence_snippets": ["exact quotes from document if found"]
+    "reasoning": "Explain what you found or why it's missing",
+    "evidence_snippets": ["exact text from document that supports this requirement"]
   }
 ]`;
 

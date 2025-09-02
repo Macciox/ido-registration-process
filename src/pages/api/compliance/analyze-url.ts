@@ -86,44 +86,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const batch = template.checker_items.slice(i, i + batchSize);
       
       try {
-        // Get content for the batch (use more chunks and search for relevant content)
-        const addressKeywords = ['address', 'headquartered', 'registered', 'location', 'beachmont', 'kingstown'];
-        const relevantChunks = chunks.filter(chunk => 
-          addressKeywords.some(keyword => chunk.content.toLowerCase().includes(keyword))
-        );
-        
-        // Use relevant chunks + first 30 chunks for comprehensive coverage
-        const chunksToUse = [...chunks.slice(0, 30), ...relevantChunks]
-          .filter((chunk, index, arr) => arr.findIndex(c => c.id === chunk.id) === index)
-          .slice(0, 40);
-          
-        const batchContent = chunksToUse.map(chunk => chunk.content).join('\n\n');
+        // Use comprehensive document content (first 30 chunks for token limits)
+        const batchContent = chunks.slice(0, 30).map(chunk => chunk.content).join('\n\n');
         
         // Create batch prompt
         const requirementsList = batch.map((item: any, idx: number) => 
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
-        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these requirements are met in the provided web document.
+        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these specific requirements are met in the provided document.
 
-Requirements to analyze:
+REQUIREMENTS TO ANALYZE:
 ${requirementsList}
 
-Web Document Content:
+DOCUMENT CONTENT:
 ${batchContent}
 
-For each requirement, evaluate:
-- FOUND (80-100): Clearly present and comprehensive
-- NEEDS_CLARIFICATION (40-79): Partially present but incomplete  
-- MISSING (0-39): Not present or inadequate
+For EACH requirement above, you must:
+1. Search the document for relevant information
+2. Determine if the requirement is satisfied
+3. Provide exact quotes as evidence if found
 
-Respond ONLY with a JSON array (one object per requirement in order):
+Scoring:
+- FOUND (80-100): Information clearly present with good detail
+- NEEDS_CLARIFICATION (40-79): Some information present but incomplete
+- MISSING (0-39): No relevant information found
+
+Respond with a JSON array (one object per requirement in exact order):
 [
   {
     "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
     "coverage_score": 0-100,
-    "reasoning": "Brief analysis of what was found or missing",
-    "evidence_snippets": ["exact quotes from document if found"]
+    "reasoning": "Explain what you found or why it's missing",
+    "evidence_snippets": ["exact text from document that supports this requirement"]
   }
 ]`;
 
