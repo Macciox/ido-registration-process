@@ -911,7 +911,7 @@ export default function CompliancePage() {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-medium text-white">📄 Analyzed Website Content</h3>
                       <div className="text-sm text-text-secondary">
-                        {results.processing.chunksCount} sections • {results.processing.totalWords} words
+                        {results.processing.pagesCount || 1} pages • {results.processing.chunksCount} sections • {results.processing.totalWords} words
                       </div>
                     </div>
                     
@@ -938,6 +938,7 @@ export default function CompliancePage() {
                                   <body style="font-family: Arial; padding: 20px; line-height: 1.6;">
                                     <h1>Analyzed Website Content</h1>
                                     <p><strong>Source:</strong> ${results.processing.title}</p>
+                                    <p><strong>Pages:</strong> ${results.processing.pagesCount || 1} pages crawled</p>
                                     <p><strong>Chunks:</strong> ${data.totalChunks} sections</p>
                                     <hr>
                                     <pre style="white-space: pre-wrap; font-family: inherit;">${fullText}</pre>

@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { processWebpage } from '@/lib/web-scraper';
+import { processCrawledWebsite } from '@/lib/web-crawler';
 import { getDocumentChunks } from '@/lib/pdf-processor';
 
 const serviceClient = createClient(
@@ -65,9 +66,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to create document record' });
     }
 
-    // Process webpage: scrape and chunk content
-    console.log('Processing webpage:', url);
-    const processingResult = await processWebpage(document.id, url);
+    // Process website: crawl all pages and chunk content
+    console.log('Crawling website:', url);
+    const processingResult = await processCrawledWebsite(document.id, url, 25); // Max 25 pages
     
     if (!processingResult.success) {
       return res.status(400).json({ 
