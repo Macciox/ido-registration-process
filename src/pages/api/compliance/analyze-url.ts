@@ -66,16 +66,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to create document record' });
     }
 
-    // Process website: crawl all pages and chunk content
+    // Process website: try crawler first, fallback to single page
     console.log('Crawling website:', url);
-    const processingResult = await processCrawledWebsite(document.id, url, 25); // Max 25 pages
+    let processingResult = await processCrawledWebsite(document.id, url, 25); // Max 25 pages
+    
+    // Fallback to single page if crawler fails
+    if (!processingResult.success) {
+      console.log('Crawler failed, falling back to single page scraping');
+      processingResult = await processWebpage(document.id, url);
+    }
     
     if (!processingResult.success) {
       return res.status(400).json({ 
         error: 'Failed to process webpage',
-        details: processingResult.message 
+        details: processingResult.message,
+        debug: { crawlerAttempted: true, fallbackAttempted: true }
       });
     }
+    
+    console.log('Processing result:', {
+      success: processingResult.success,
+      chunksCount: processingResult.chunksCount,
+      pagesCount: processingResult.pagesCount || 1,
+      totalWords: processingResult.totalWords
+    });
 
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);

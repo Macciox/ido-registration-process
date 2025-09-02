@@ -905,7 +905,7 @@ export default function CompliancePage() {
               </div>
 
               {/* Analyzed Text Section (for URL analysis) */}
-              {results.processing && results.processing.title && (
+              {results.documentId && (
                 <div className="mt-8">
                   <div className="border-t border-border pt-6">
                     <div className="flex items-center justify-between mb-4">
@@ -917,8 +917,8 @@ export default function CompliancePage() {
                     
                     <div className="bg-card-secondary rounded-lg p-4 max-h-96 overflow-y-auto">
                       <div className="text-sm text-text-secondary mb-2">
-                        Source: <a href={results.processing.url || '#'} target="_blank" className="text-primary hover:underline">
-                          {results.processing.title}
+                        Source: <a href={results.processing?.url || '#'} target="_blank" className="text-primary hover:underline">
+                          {results.processing?.title || 'Website Analysis'}
                         </a>
                       </div>
                       
@@ -937,8 +937,8 @@ export default function CompliancePage() {
                                   <head><title>Analyzed Content - ${results.processing.title}</title></head>
                                   <body style="font-family: Arial; padding: 20px; line-height: 1.6;">
                                     <h1>Analyzed Website Content</h1>
-                                    <p><strong>Source:</strong> ${results.processing.title}</p>
-                                    <p><strong>Pages:</strong> ${results.processing.pagesCount || 1} pages crawled</p>
+                                    <p><strong>Source:</strong> ${results.processing?.title || 'Website'}</p>
+                                    <p><strong>Pages:</strong> ${results.processing?.pagesCount || 1} pages crawled</p>
                                     <p><strong>Chunks:</strong> ${data.totalChunks} sections</p>
                                     <hr>
                                     <pre style="white-space: pre-wrap; font-family: inherit;">${fullText}</pre>
