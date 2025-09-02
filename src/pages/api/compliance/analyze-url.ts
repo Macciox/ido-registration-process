@@ -141,6 +141,12 @@ Respond with a JSON array (one object per requirement in exact order):
   }
 ]`;
 
+        console.log(`\n=== GPT REQUEST DEBUG ===`);
+        console.log(`Batch ${i + 1}: ${batch.length} items`);
+        console.log(`Content length: ${batchContent.length} chars`);
+        console.log(`First 200 chars: ${batchContent.substring(0, 200)}...`);
+        console.log(`Requirements: ${batch.map(item => item.item_name).join(', ')}`);
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -158,15 +164,23 @@ Respond with a JSON array (one object per requirement in exact order):
         if (response.ok) {
           const data = await response.json();
           const content = data.choices[0]?.message?.content;
+          
+          console.log(`\n=== GPT RESPONSE DEBUG ===`);
+          console.log(`Response length: ${content?.length || 0} chars`);
+          console.log(`Raw response: ${content?.substring(0, 500)}...`);
+          
           const jsonMatch = content?.match(/\[[\s\S]*\]/);
           
           if (jsonMatch) {
+            console.log(`JSON found: ${jsonMatch[0].substring(0, 200)}...`);
             const parsed = JSON.parse(jsonMatch[0]);
+            console.log(`Parsed ${parsed.length} results`);
             
             // Map batch results back to individual items
             parsed.forEach((result: any, idx: number) => {
               const item = batch[idx];
               if (item) {
+                console.log(`Item ${idx + 1}: ${item.item_name} -> ${result.status} (${result.coverage_score}%)`);
                 results.push({
                   item_id: item.id,
                   item_name: item.item_name,
@@ -179,9 +193,13 @@ Respond with a JSON array (one object per requirement in exact order):
               }
             });
           } else {
+            console.log('❌ No JSON array found in response!');
+            console.log('Full response:', content);
             throw new Error('No JSON array in response');
           }
         } else {
+          const errorText = await response.text();
+          console.log(`❌ GPT API error ${response.status}: ${errorText}`);
           throw new Error(`GPT API error: ${response.status}`);
         }
       } catch (error) {
