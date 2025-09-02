@@ -250,30 +250,33 @@ export async function getLatestAnalyses(): Promise<any[]> {
     
     if (!data) return [];
 
-  // Get only the latest version for each document
-  const latestAnalyses = data.map(doc => {
-    const latestCheck = doc.compliance_checks
-      .sort((a: any, b: any) => b.version - a.version)[0];
-    
-    return {
-      document_id: doc.id,
-      filename: doc.filename,
-      doc_hash: doc.doc_hash,
-      document_url: doc.document_url,
-      document_created_at: doc.created_at,
-      check_id: latestCheck.id,
-      version: latestCheck.version,
-      overall_score: latestCheck.overall_score,
-      found_items: latestCheck.found_items,
-      clarification_items: latestCheck.clarification_items,
-      missing_items: latestCheck.missing_items,
-      status: latestCheck.status,
-      analysis_created_at: latestCheck.created_at,
-      template_name: latestCheck.template_name
-    };
+  // Get ALL versions for each document (not just latest)
+  const allAnalyses: any[] = [];
+  
+  data.forEach(doc => {
+    doc.compliance_checks
+      .sort((a: any, b: any) => b.version - a.version) // Sort by version desc
+      .forEach((check: any) => {
+        allAnalyses.push({
+          document_id: doc.id,
+          filename: doc.filename,
+          doc_hash: doc.doc_hash,
+          document_url: doc.document_url,
+          document_created_at: doc.created_at,
+          check_id: check.id,
+          version: check.version,
+          overall_score: check.overall_score,
+          found_items: check.found_items,
+          clarification_items: check.clarification_items,
+          missing_items: check.missing_items,
+          status: check.status,
+          analysis_created_at: check.created_at,
+          template_name: check.template_name
+        });
+      });
   });
 
-    return latestAnalyses;
+    return allAnalyses;
   } catch (error) {
     console.error('Error in getLatestAnalyses:', error);
     return [];
