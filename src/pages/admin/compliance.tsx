@@ -46,9 +46,10 @@ export default function CompliancePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [selectedDocument, setSelectedDocument] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
+  const [url, setUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'upload' | 'existing' | 'saved'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'existing' | 'url' | 'saved'>('upload');
   const [savedAnalyses, setSavedAnalyses] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -293,6 +294,50 @@ export default function CompliancePage() {
     }
   };
 
+  const handleAnalyzeURL = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url || !selectedTemplate) return;
+
+    setIsUploading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/compliance/analyze-url', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          url: url,
+          templateId: selectedTemplate
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'URL analysis failed');
+      }
+      
+      const data = await response.json();
+      
+      setResults({
+        ...data,
+        actualTemplateUsed: selectedTemplate
+      });
+      setShowResults(true);
+      setUrl('');
+      // setSelectedTemplate(''); // Keep for saving
+      
+      showToast(`Website analyzed successfully! ${data.processing?.chunksCount || 0} sections processed.`, 'success');
+    } catch (error: any) {
+      console.error('Error:', error);
+      showToast('Error analyzing website: ' + error.message, 'error');
+      setShowResults(false);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleAnalyzeExisting = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDocument || !selectedTemplate) return;
@@ -401,6 +446,16 @@ export default function CompliancePage() {
                 Analyze Existing Document
               </button>
               <button
+                onClick={() => setActiveTab('url')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  activeTab === 'url'
+                    ? 'bg-primary text-white'
+                    : 'bg-card-secondary text-text-secondary hover:bg-primary/20 hover:text-white'
+                }`}
+              >
+                🌐 Analyze URL
+              </button>
+              <button
                 onClick={() => setActiveTab('saved')}
                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                   activeTab === 'saved'
@@ -502,6 +557,52 @@ export default function CompliancePage() {
                   className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUploading ? 'Analyzing...' : 'Analyze Document'}
+                </button>
+              </form>
+            ) : activeTab === 'url' ? (
+              <form onSubmit={handleAnalyzeURL} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">
+                    Website URL
+                  </label>
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://docs.example.com/whitepaper"
+                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400"
+                    required
+                  />
+                  <p className="text-xs text-text-secondary mt-1">
+                    📝 Examples: Documentation sites, Medium articles, GitBook pages
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">
+                    Select Compliance Template
+                  </label>
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
+                    required
+                  >
+                    <option value="" className="bg-card text-white">Choose template...</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id} className="bg-card text-white">
+                        {template.name} ({template.checker_items?.length || 0} items)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUploading || !url || !selectedTemplate}
+                  className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? 'Analyzing Website...' : '🌐 Analyze Website'}
                 </button>
               </form>
             ) : (
