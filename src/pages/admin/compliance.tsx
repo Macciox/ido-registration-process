@@ -49,6 +49,8 @@ export default function CompliancePage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'existing' | 'saved'>('upload');
   const [savedAnalyses, setSavedAnalyses] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -78,11 +80,48 @@ export default function CompliancePage() {
 
   const fetchSavedAnalyses = async () => {
     try {
-      const response = await fetch('/api/compliance/saved-analyses');
+      const response = await fetch('/api/analyses');
       const data = await response.json();
       setSavedAnalyses(data.analyses || []);
     } catch (error) {
       console.error('Error fetching saved analyses:', error);
+    }
+  };
+
+  const handleSaveAnalysis = async (overwrite: boolean) => {
+    if (!results) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch('/api/save-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docId: results.documentId || selectedDocument,
+          docName: documents.find(d => d.id === (results.documentId || selectedDocument))?.filename || 'Unknown Document',
+          templateId: results.templateId || selectedTemplate,
+          analysisResults: {
+            results: results.results,
+            summary: results.summary
+          },
+          overwrite: overwrite
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(data.message);
+        fetchSavedAnalyses(); // Refresh saved analyses
+      } else {
+        throw new Error(data.error);
+      }
+
+    } catch (error: any) {
+      alert('Save failed: ' + error.message);
+    } finally {
+      setSaving(false);
+      setShowSaveModal(false);
     }
   };
 
@@ -243,7 +282,11 @@ export default function CompliancePage() {
       
       const data = await response.json();
       
-      setResults(data);
+      setResults({
+        ...data,
+        documentId: selectedDocument,
+        templateId: selectedTemplate
+      });
       setShowResults(true);
       setSelectedDocument('');
       setSelectedTemplate('');
@@ -428,43 +471,83 @@ export default function CompliancePage() {
                 {savedAnalyses.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-text-secondary">No saved analyses found</div>
-                    <p className="text-sm text-text-secondary mt-2">Complete an analysis to see it here</p>
+                    <p className="text-sm text-text-secondary mt-2">Complete and save an analysis to see it here</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {savedAnalyses.map((analysis) => (
-                      <div key={analysis.id} className="bg-card-secondary p-4 rounded-lg border border-border">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium text-white">{analysis.document_name}</h4>
-                            <p className="text-sm text-text-secondary">
-                              {analysis.checker_templates.name} • {new Date(analysis.updated_at).toLocaleDateString()}
-                            </p>
-                            <div className="flex gap-4 mt-2 text-xs">
-                              <span className="text-green-400">Found: {analysis.found_items || 0}</span>
-                              <span className="text-yellow-400">Clarification: {analysis.clarification_items || 0}</span>
-                              <span className="text-red-400">Missing: {analysis.missing_items || 0}</span>
-                              <span className="text-blue-400">Score: {analysis.overall_score || 0}%</span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/compliance/get-analysis?checkId=${analysis.id}`);
-                                const data = await response.json();
-                                setResults(data);
-                                setShowResults(true);
-                              } catch (error) {
-                                alert('Error loading analysis');
-                              }
-                            }}
-                            className="px-3 py-2 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            View Results
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 px-4 text-white font-medium">Document</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Hash</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Score</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Version</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Date</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {savedAnalyses.map((analysis) => (
+                          <tr key={`${analysis.document_id}-${analysis.version}`} className="border-b border-border/50">
+                            <td className="py-3 px-4">
+                              <div>
+                                <div className="text-white font-medium">{analysis.filename}</div>
+                                <div className="text-sm text-text-secondary">
+                                  Found: {analysis.found_items} | 
+                                  Clarification: {analysis.clarification_items} | 
+                                  Missing: {analysis.missing_items}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <code className="text-xs text-text-secondary bg-card-secondary px-2 py-1 rounded">
+                                {analysis.doc_hash?.substring(0, 12)}...
+                              </code>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <div className={`w-3 h-3 rounded-full mr-2 ${
+                                  analysis.overall_score >= 80 ? 'bg-green-500' :
+                                  analysis.overall_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}></div>
+                                <span className="text-white">{analysis.overall_score}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-white">v{analysis.version}</td>
+                            <td className="py-3 px-4 text-text-secondary">
+                              {new Date(analysis.analysis_created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const response = await fetch(`/api/compliance/get-analysis?checkId=${analysis.check_id}`);
+                                      const data = await response.json();
+                                      setResults(data);
+                                      setShowResults(true);
+                                    } catch (error) {
+                                      alert('Error loading analysis');
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                                >
+                                  View
+                                </button>
+                                {analysis.document_url && (
+                                  <button
+                                    onClick={() => window.open(analysis.document_url, '_blank')}
+                                    className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm transition-colors"
+                                  >
+                                    Download
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -559,19 +642,19 @@ export default function CompliancePage() {
                 </table>
               </div>
 
-              {/* Export Buttons */}
+              {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 mt-6">
+                <button 
+                  onClick={() => setShowSaveModal(true)}
+                  className="px-4 py-3 bg-primary hover:bg-primary/80 text-white rounded-lg font-medium transition-colors"
+                >
+                  💾 Save Analysis
+                </button>
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=json`)}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
                   Export JSON
-                </button>
-                <button 
-                  onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=md`)}
-                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Export Markdown
                 </button>
                 <button 
                   onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=pdf`)}
@@ -590,6 +673,44 @@ export default function CompliancePage() {
                   className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
                 >
                   Test Analysis
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save Analysis Modal */}
+        {showSaveModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-bold text-white mb-4">Save Analysis</h3>
+              <p className="text-text-secondary mb-6">
+                How would you like to save this analysis?
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => handleSaveAnalysis(false)}
+                  disabled={saving}
+                  className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : '✨ Save as New Version'}
+                </button>
+                
+                <button
+                  onClick={() => handleSaveAnalysis(true)}
+                  disabled={saving}
+                  className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : '🔄 Overwrite Existing'}
+                </button>
+                
+                <button
+                  onClick={() => setShowSaveModal(false)}
+                  disabled={saving}
+                  className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancel
                 </button>
               </div>
             </div>
