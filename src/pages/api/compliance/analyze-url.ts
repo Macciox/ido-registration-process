@@ -73,7 +73,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Fallback to single page if crawler fails
     if (!processingResult.success) {
       console.log('Crawler failed, falling back to single page scraping');
-      processingResult = await processWebpage(document.id, url);
+      const singlePageResult = await processWebpage(document.id, url);
+      processingResult = {
+        ...singlePageResult,
+        pagesCount: 1 // Add missing property for single page
+      };
     }
     
     if (!processingResult.success) {
