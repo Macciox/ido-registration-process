@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .join('\n\n');
 
     // Batch GPT-4 analysis with ACTUAL document content
-    const results = [];
+    const results: any[] = [];
     const batchSize = 5;
     
     for (let i = 0; i < template.checker_items.length; i += batchSize) {
