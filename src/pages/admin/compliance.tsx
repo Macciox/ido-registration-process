@@ -120,13 +120,20 @@ export default function CompliancePage() {
     
     setSaving(true);
     try {
+      const templateIdToUse = results.templateId || selectedTemplate;
+      console.log('Saving analysis with:', {
+        docId: results.documentId || selectedDocument,
+        templateId: templateIdToUse,
+        resultsCount: results.results?.length || 0
+      });
+      
       const response = await fetch('/api/save-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           docId: results.documentId || selectedDocument,
           docName: documents.find(d => d.id === (results.documentId || selectedDocument))?.filename || 'Unknown Document',
-          templateId: results.templateId || selectedTemplate,
+          templateId: templateIdToUse,
           analysisResults: {
             results: results.results,
             summary: results.summary

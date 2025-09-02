@@ -57,6 +57,15 @@ export async function saveAnalysis(
 ): Promise<{ success: boolean; checkId?: string; version?: number; message: string }> {
   
   try {
+    // Get template info first
+    const { data: template } = await serviceClient
+      .from('checker_templates')
+      .select('name')
+      .eq('id', templateId)
+      .single();
+    
+    const templateName = template?.name || 'Unknown Template';
+    
     // Check existing analyses for this document
   const { data: existingChecks } = await serviceClient
     .from('compliance_checks')
@@ -104,7 +113,7 @@ export async function saveAnalysis(
           document_id: docId,
           template_id: templateId,
           document_name: docName,
-          template_name: 'MiCA Compliance Template',
+          template_name: templateName,
           status: 'ready',
           input_type: 'pdf',
           version: version,
@@ -132,7 +141,7 @@ export async function saveAnalysis(
         document_id: docId,
         template_id: templateId,
         document_name: docName,
-        template_name: 'MiCA Compliance Template',
+        template_name: templateName,
         status: 'ready',
         input_type: 'pdf',
         version: version,
