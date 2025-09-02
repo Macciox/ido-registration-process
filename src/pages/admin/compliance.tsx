@@ -217,14 +217,14 @@ export default function CompliancePage() {
     }
   };
 
-  const handleAnalyzeExisting = async (e: React.FormEvent, overwrite = false) => {
+  const handleAnalyzeExisting = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDocument || !selectedTemplate) return;
 
     setIsUploading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/compliance/analyze-save', {
+      const response = await fetch('/api/compliance/analyze-nosave', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -232,44 +232,23 @@ export default function CompliancePage() {
         },
         body: JSON.stringify({
           documentId: selectedDocument,
-          templateId: selectedTemplate,
-          overwrite
+          templateId: selectedTemplate
         })
       });
       
-      const data = await response.json();
-      
-      if (response.status === 409 && data.existing) {
-        // Analysis already exists, ask user
-        const confirmOverwrite = confirm(
-          `Analysis already exists for this document and template.\n\nDo you want to overwrite the existing analysis?`
-        );
-        
-        if (confirmOverwrite) {
-          // Retry with overwrite flag
-          return handleAnalyzeExisting(e, true);
-        } else {
-          // Load existing analysis
-          const existingResponse = await fetch(`/api/compliance/get-analysis?checkId=${data.checkId}`);
-          const existingData = await existingResponse.json();
-          setResults(existingData);
-          setShowResults(true);
-        }
-        return;
-      }
-      
       if (!response.ok) {
-        throw new Error(data.error || 'Analysis failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Analysis failed');
       }
+      
+      const data = await response.json();
       
       setResults(data);
       setShowResults(true);
       setSelectedDocument('');
       setSelectedTemplate('');
       
-      if (data.saved) {
-        alert(data.overwritten ? 'Analysis updated and saved!' : 'Analysis completed and saved!');
-      }
+      // Analysis completed (not saved)
     } catch (error: any) {
       console.error('Error:', error);
       alert('Error analyzing document: ' + error.message);
