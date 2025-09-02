@@ -46,7 +46,8 @@ export default function CompliancePage() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'upload' | 'existing'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'existing' | 'saved'>('upload');
+  const [savedAnalyses, setSavedAnalyses] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function CompliancePage() {
       setLoading(false);
       fetchTemplates();
       fetchDocuments();
+      fetchSavedAnalyses();
     };
     init();
   }, [router]);
@@ -71,6 +73,16 @@ export default function CompliancePage() {
       setTemplates(data.templates || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
+    }
+  };
+
+  const fetchSavedAnalyses = async () => {
+    try {
+      const response = await fetch('/api/compliance/saved-analyses');
+      const data = await response.json();
+      setSavedAnalyses(data.analyses || []);
+    } catch (error) {
+      console.error('Error fetching saved analyses:', error);
     }
   };
 
@@ -205,14 +217,14 @@ export default function CompliancePage() {
     }
   };
 
-  const handleAnalyzeExisting = async (e: React.FormEvent) => {
+  const handleAnalyzeExisting = async (e: React.FormEvent, overwrite = false) => {
     e.preventDefault();
     if (!selectedDocument || !selectedTemplate) return;
 
     setIsUploading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/compliance/analyze-nosave', {
+      const response = await fetch('/api/compliance/analyze-save', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -220,23 +232,47 @@ export default function CompliancePage() {
         },
         body: JSON.stringify({
           documentId: selectedDocument,
-          templateId: selectedTemplate
+          templateId: selectedTemplate,
+          overwrite
         })
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Analysis failed');
+      const data = await response.json();
+      
+      if (response.status === 409 && data.existing) {
+        // Analysis already exists, ask user
+        const confirmOverwrite = confirm(
+          `Analysis already exists for this document and template.\n\nDo you want to overwrite the existing analysis?`
+        );
+        
+        if (confirmOverwrite) {
+          // Retry with overwrite flag
+          return handleAnalyzeExisting(e, true);
+        } else {
+          // Load existing analysis
+          const existingResponse = await fetch(`/api/compliance/get-analysis?checkId=${data.checkId}`);
+          const existingData = await existingResponse.json();
+          setResults(existingData);
+          setShowResults(true);
+        }
+        return;
       }
       
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed');
+      }
+      
       setResults(data);
       setShowResults(true);
       setSelectedDocument('');
       setSelectedTemplate('');
-    } catch (error) {
+      
+      if (data.saved) {
+        alert(data.overwritten ? 'Analysis updated and saved!' : 'Analysis completed and saved!');
+      }
+    } catch (error: any) {
       console.error('Error:', error);
-      alert('Error analyzing document');
+      alert('Error analyzing document: ' + error.message);
       setShowResults(false);
     } finally {
       setIsUploading(false);
@@ -302,6 +338,16 @@ export default function CompliancePage() {
                 }`}
               >
                 Analyze Existing Document
+              </button>
+              <button
+                onClick={() => setActiveTab('saved')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  activeTab === 'saved'
+                    ? 'bg-primary text-white'
+                    : 'bg-card-secondary text-text-secondary hover:bg-primary/20 hover:text-white'
+                }`}
+              >
+                Saved Analyses ({savedAnalyses.length})
               </button>
             </nav>
           </div>
@@ -397,6 +443,52 @@ export default function CompliancePage() {
                   {isUploading ? 'Analyzing...' : 'Analyze Document'}
                 </button>
               </form>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-white mb-4">Saved Analyses</h3>
+                {savedAnalyses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-text-secondary">No saved analyses found</div>
+                    <p className="text-sm text-text-secondary mt-2">Complete an analysis to see it here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {savedAnalyses.map((analysis) => (
+                      <div key={analysis.id} className="bg-card-secondary p-4 rounded-lg border border-border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-white">{analysis.document_name}</h4>
+                            <p className="text-sm text-text-secondary">
+                              {analysis.checker_templates.name} • {new Date(analysis.updated_at).toLocaleDateString()}
+                            </p>
+                            <div className="flex gap-4 mt-2 text-xs">
+                              <span className="text-green-400">Found: {analysis.found_items || 0}</span>
+                              <span className="text-yellow-400">Clarification: {analysis.clarification_items || 0}</span>
+                              <span className="text-red-400">Missing: {analysis.missing_items || 0}</span>
+                              <span className="text-blue-400">Score: {analysis.overall_score || 0}%</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/compliance/get-analysis?checkId=${analysis.id}`);
+                                const data = await response.json();
+                                setResults(data);
+                                setShowResults(true);
+                              } catch (error) {
+                                alert('Error loading analysis');
+                              }
+                            }}
+                            className="px-3 py-2 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            View Results
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
