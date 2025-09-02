@@ -555,6 +555,7 @@ export default function CompliancePage() {
                       <thead>
                         <tr className="border-b border-border">
                           <th className="text-left py-3 px-4 text-white font-medium">Document</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Template</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Hash</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Score</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Version</th>
@@ -572,6 +573,15 @@ export default function CompliancePage() {
                                   Found: {analysis.found_items} | 
                                   Clarification: {analysis.clarification_items} | 
                                   Missing: {analysis.missing_items}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-white text-sm">
+                                <div className="font-medium">{analysis.template_name}</div>
+                                <div className="text-xs text-text-secondary">
+                                  {analysis.template_name?.includes('Legal') ? '⚖️ Legal' : 
+                                   analysis.template_name?.includes('Whitepaper') ? '📄 Whitepaper' : '📋 Other'}
                                 </div>
                               </div>
                             </td>
@@ -682,7 +692,15 @@ export default function CompliancePage() {
           <div className="sleek-card">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-white">Analysis Results</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Analysis Results</h2>
+                  {results.templateName && (
+                    <p className="text-sm text-text-secondary mt-1">
+                      📋 Template: <span className="text-primary font-medium">{results.templateName}</span>
+                      {results.version && <span className="ml-2">• Version {results.version}</span>}
+                    </p>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowResults(false)}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
