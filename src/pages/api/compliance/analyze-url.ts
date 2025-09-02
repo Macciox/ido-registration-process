@@ -79,17 +79,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);
     
-    // Combine chunks into document text (limit for token constraints)
-    const documentText = chunks
-      .slice(0, 15) // Use more chunks for web content
-      .map(chunk => chunk.content)
-      .join('\n\n');
+    // Smart chunk selection: use more chunks and prioritize relevant content
+    const allChunksText = chunks.map(chunk => chunk.content).join('\n\n');
+    
+    // For each analysis, search for relevant chunks based on keywords
+    const getRelevantContent = (requirement: string, description: string) => {
+      const keywords = [...requirement.toLowerCase().split(' '), ...description.toLowerCase().split(' ')]
+        .filter(word => word.length > 3);
+      
+      // Find chunks containing relevant keywords
+      const relevantChunks = chunks.filter(chunk => 
+        keywords.some(keyword => chunk.content.toLowerCase().includes(keyword))
+      );
+      
+      // If we found relevant chunks, use them + first few chunks for context
+      if (relevantChunks.length > 0) {
+        const contextChunks = chunks.slice(0, 5);
+        const combinedChunks = [...contextChunks, ...relevantChunks]
+          .filter((chunk, index, arr) => arr.findIndex(c => c.id === chunk.id) === index) // Remove duplicates
+          .slice(0, 25); // Limit to 25 chunks max
+        return combinedChunks.map(chunk => chunk.content).join('\n\n');
+      }
+      
+      // Fallback: use first 20 chunks
+      return chunks.slice(0, 20).map(chunk => chunk.content).join('\n\n');
+    };
 
     // Analyze with GPT-4
     const results = [];
     
     for (const item of template.checker_items) {
       try {
+        // Get relevant content for this specific requirement
+        const relevantContent = getRelevantContent(item.item_name, item.description);
+        
         const prompt = `You are a MiCA regulation compliance expert. Analyze if this requirement is met in the provided web document.
 
 Requirement: ${item.item_name}
@@ -97,7 +120,7 @@ Category: ${item.category}
 Description: ${item.description}
 
 Web Document Content:
-${documentText}
+${relevantContent}
 
 For this crypto project documentation, evaluate:
 - FOUND (80-100): Clearly present and comprehensive
