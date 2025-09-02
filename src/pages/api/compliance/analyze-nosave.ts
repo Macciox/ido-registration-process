@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { getDocumentChunks } from '@/lib/pdf-processor';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,28 +52,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    // Real GPT-4 analysis (NO DATABASE SAVING)
+    // Get document chunks
+    const chunks = await getDocumentChunks(documentId);
+    
+    if (chunks.length === 0) {
+      return res.status(400).json({ 
+        error: 'Document not processed yet. Please upload and process the document first.' 
+      });
+    }
+
+    // Combine chunks into full document text (limit to avoid token limits)
+    const documentText = chunks
+      .slice(0, 10) // Use first 10 chunks to stay within token limits
+      .map(chunk => chunk.content)
+      .join('\n\n');
+
+    // Real GPT-4 analysis with ACTUAL document content
     const results = [];
     
     for (const item of template.checker_items) {
       try {
-        const prompt = `You are a MiCA regulation compliance expert. Analyze if this requirement is met:
+        const prompt = `You are a MiCA regulation compliance expert. Analyze if this requirement is met in the provided document.
 
 Requirement: ${item.item_name}
 Category: ${item.category}
 Description: ${item.description}
 
-For a crypto token document, evaluate:
+Document Content:
+${documentText}
+
+For this crypto token document, evaluate:
 - FOUND (80-100): Clearly present and comprehensive
-- NEEDS_CLARIFICATION (40-79): Partially present but incomplete
+- NEEDS_CLARIFICATION (40-79): Partially present but incomplete  
 - MISSING (0-39): Not present or inadequate
 
 Respond ONLY in JSON format:
 {
   "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
   "coverage_score": 0-100,
-  "reasoning": "Brief analysis",
-  "evidence_snippets": ["relevant text if found"]
+  "reasoning": "Brief analysis of what was found or missing",
+  "evidence_snippets": ["exact quotes from document if found"]
 }`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {

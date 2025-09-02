@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
+import { processPDFDocument } from '@/lib/pdf-processor';
 import formidable from 'formidable';
 import fs from 'fs';
 
@@ -100,13 +101,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     console.log('Document record created:', docData.id);
 
-    // Return simple success response
+    // Process PDF: extract text and create chunks
+    console.log('Starting PDF processing...');
+    const processingResult = await processPDFDocument(docData.id, fileBuffer);
+    
+    if (!processingResult.success) {
+      console.error('PDF processing failed:', processingResult.message);
+      // Don't fail the upload, just log the error
+    } else {
+      console.log('PDF processed successfully:', processingResult.message);
+    }
+
+    // Return success response with processing info
     res.status(200).json({
       success: true,
       documentId: docData.id,
       filename: file.originalFilename,
       path: uploadData.path,
-      message: 'File uploaded successfully'
+      processing: processingResult,
+      message: `File uploaded successfully. ${processingResult.message}`
     });
 
   } catch (error: any) {
