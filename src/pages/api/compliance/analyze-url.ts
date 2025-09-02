@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { url, templateId } = req.body;
+  const { url, templateId, batchSize = 5 } = req.body;
 
   if (!url || !templateId) {
     return res.status(400).json({ error: 'URL and template ID required' });
@@ -79,61 +79,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);
     
-    // Smart chunk selection: use more chunks and prioritize relevant content
-    const allChunksText = chunks.map(chunk => chunk.content).join('\n\n');
-    
-    // For each analysis, search for relevant chunks based on keywords
-    const getRelevantContent = (requirement: string, description: string) => {
-      const keywords = [...requirement.toLowerCase().split(' '), ...description.toLowerCase().split(' ')]
-        .filter(word => word.length > 3);
-      
-      // Find chunks containing relevant keywords
-      const relevantChunks = chunks.filter(chunk => 
-        keywords.some(keyword => chunk.content.toLowerCase().includes(keyword))
-      );
-      
-      // If we found relevant chunks, use them + first few chunks for context
-      if (relevantChunks.length > 0) {
-        const contextChunks = chunks.slice(0, 5);
-        const combinedChunks = [...contextChunks, ...relevantChunks]
-          .filter((chunk, index, arr) => arr.findIndex(c => c.id === chunk.id) === index) // Remove duplicates
-          .slice(0, 25); // Limit to 25 chunks max
-        return combinedChunks.map(chunk => chunk.content).join('\n\n');
-      }
-      
-      // Fallback: use first 20 chunks
-      return chunks.slice(0, 20).map(chunk => chunk.content).join('\n\n');
-    };
-
-    // Analyze with GPT-4
+    // Batch analyze with GPT-4 (configurable batch size)
     const results = [];
     
-    for (const item of template.checker_items) {
+    for (let i = 0; i < template.checker_items.length; i += batchSize) {
+      const batch = template.checker_items.slice(i, i + batchSize);
+      
       try {
-        // Get relevant content for this specific requirement
-        const relevantContent = getRelevantContent(item.item_name, item.description);
+        // Get content for the batch (use general content for efficiency)
+        const batchContent = chunks.slice(0, 20).map(chunk => chunk.content).join('\n\n');
         
-        const prompt = `You are a MiCA regulation compliance expert. Analyze if this requirement is met in the provided web document.
+        // Create batch prompt
+        const requirementsList = batch.map((item, idx) => 
+          `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
+        ).join('\n\n');
+        
+        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these requirements are met in the provided web document.
 
-Requirement: ${item.item_name}
-Category: ${item.category}
-Description: ${item.description}
+Requirements to analyze:
+${requirementsList}
 
 Web Document Content:
-${relevantContent}
+${batchContent}
 
-For this crypto project documentation, evaluate:
+For each requirement, evaluate:
 - FOUND (80-100): Clearly present and comprehensive
 - NEEDS_CLARIFICATION (40-79): Partially present but incomplete  
 - MISSING (0-39): Not present or inadequate
 
-Respond ONLY in JSON format:
-{
-  "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-  "coverage_score": 0-100,
-  "reasoning": "Brief analysis of what was found or missing",
-  "evidence_snippets": ["exact quotes from document if found"]
-}`;
+Respond ONLY with a JSON array (one object per requirement in order):
+[
+  {
+    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
+    "coverage_score": 0-100,
+    "reasoning": "Brief analysis of what was found or missing",
+    "evidence_snippets": ["exact quotes from document if found"]
+  }
+]`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -143,44 +125,54 @@ Respond ONLY in JSON format:
           },
           body: JSON.stringify({
             model: 'gpt-4',
-            messages: [{ role: 'user', content: prompt }],
+            messages: [{ role: 'user', content: batchPrompt }],
             temperature: 0.1,
-            max_tokens: 500,
+            max_tokens: 2000,
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
           const content = data.choices[0]?.message?.content;
-          const jsonMatch = content?.match(/\{[\s\S]*\}/);
+          const jsonMatch = content?.match(/\[[\s\S]*\]/);
           
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
-            results.push({
-              item_id: item.id,
-              item_name: item.item_name,
-              category: item.category,
-              status: parsed.status,
-              coverage_score: parsed.coverage_score,
-              reasoning: parsed.reasoning,
-              evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+            
+            // Map batch results back to individual items
+            parsed.forEach((result: any, idx: number) => {
+              const item = batch[idx];
+              if (item) {
+                results.push({
+                  item_id: item.id,
+                  item_name: item.item_name,
+                  category: item.category,
+                  status: result.status,
+                  coverage_score: result.coverage_score,
+                  reasoning: result.reasoning,
+                  evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+                });
+              }
             });
           } else {
-            throw new Error('No JSON in response');
+            throw new Error('No JSON array in response');
           }
         } else {
           throw new Error(`GPT API error: ${response.status}`);
         }
       } catch (error) {
-        console.error(`Error analyzing ${item.item_name}:`, error);
-        results.push({
-          item_id: item.id,
-          item_name: item.item_name,
-          category: item.category,
-          status: 'NEEDS_CLARIFICATION',
-          coverage_score: 0,
-          reasoning: `Analysis failed: ${error}`,
-          evidence: []
+        console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
+        // Add failed results for this batch
+        batch.forEach(item => {
+          results.push({
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Batch analysis failed: ${error}`,
+            evidence: []
+          });
         });
       }
     }
@@ -200,7 +192,7 @@ Respond ONLY in JSON format:
       results,
       summary,
       processing: processingResult,
-      note: 'Real web content analysis'
+      note: 'Batch web content analysis'
     });
 
   } catch (error: any) {

@@ -67,32 +67,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(chunk => chunk.content)
       .join('\n\n');
 
-    // Real GPT-4 analysis with ACTUAL document content
+    // Batch GPT-4 analysis with ACTUAL document content
     const results = [];
+    const batchSize = 5;
     
-    for (const item of template.checker_items) {
+    for (let i = 0; i < template.checker_items.length; i += batchSize) {
+      const batch = template.checker_items.slice(i, i + batchSize);
+      
       try {
-        const prompt = `You are a MiCA regulation compliance expert. Analyze if this requirement is met in the provided document.
+        const requirementsList = batch.map((item, idx) => 
+          `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
+        ).join('\n\n');
+        
+        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these requirements are met in the provided document.
 
-Requirement: ${item.item_name}
-Category: ${item.category}
-Description: ${item.description}
+Requirements to analyze:
+${requirementsList}
 
 Document Content:
 ${documentText}
 
-For this crypto token document, evaluate:
+For each requirement, evaluate:
 - FOUND (80-100): Clearly present and comprehensive
 - NEEDS_CLARIFICATION (40-79): Partially present but incomplete  
 - MISSING (0-39): Not present or inadequate
 
-Respond ONLY in JSON format:
-{
-  "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-  "coverage_score": 0-100,
-  "reasoning": "Brief analysis of what was found or missing",
-  "evidence_snippets": ["exact quotes from document if found"]
-}`;
+Respond ONLY with a JSON array (one object per requirement in order):
+[
+  {
+    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
+    "coverage_score": 0-100,
+    "reasoning": "Brief analysis of what was found or missing",
+    "evidence_snippets": ["exact quotes from document if found"]
+  }
+]`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -102,44 +110,52 @@ Respond ONLY in JSON format:
           },
           body: JSON.stringify({
             model: 'gpt-4',
-            messages: [{ role: 'user', content: prompt }],
+            messages: [{ role: 'user', content: batchPrompt }],
             temperature: 0.1,
-            max_tokens: 500,
+            max_tokens: 2000,
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
           const content = data.choices[0]?.message?.content;
-          const jsonMatch = content?.match(/\{[\s\S]*\}/);
+          const jsonMatch = content?.match(/\[[\s\S]*\]/);
           
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
-            results.push({
-              item_id: item.id,
-              item_name: item.item_name,
-              category: item.category,
-              status: parsed.status,
-              coverage_score: parsed.coverage_score,
-              reasoning: parsed.reasoning,
-              evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+            
+            parsed.forEach((result: any, idx: number) => {
+              const item = batch[idx];
+              if (item) {
+                results.push({
+                  item_id: item.id,
+                  item_name: item.item_name,
+                  category: item.category,
+                  status: result.status,
+                  coverage_score: result.coverage_score,
+                  reasoning: result.reasoning,
+                  evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+                });
+              }
             });
           } else {
-            throw new Error('No JSON in response');
+            throw new Error('No JSON array in response');
           }
         } else {
           throw new Error(`GPT API error: ${response.status}`);
         }
       } catch (error) {
-        console.error(`Error analyzing ${item.item_name}:`, error);
-        results.push({
-          item_id: item.id,
-          item_name: item.item_name,
-          category: item.category,
-          status: 'NEEDS_CLARIFICATION',
-          coverage_score: 0,
-          reasoning: `Analysis failed: ${error}`,
-          evidence: []
+        console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
+        batch.forEach(item => {
+          results.push({
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Batch analysis failed: ${error}`,
+            evidence: []
+          });
         });
       }
     }

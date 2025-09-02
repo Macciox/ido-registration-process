@@ -47,6 +47,7 @@ export default function CompliancePage() {
   const [selectedDocument, setSelectedDocument] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string>('');
+  const [batchSize, setBatchSize] = useState<number>(5);
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'existing' | 'url' | 'saved'>('upload');
@@ -309,7 +310,8 @@ export default function CompliancePage() {
         },
         body: JSON.stringify({
           url: url,
-          templateId: selectedTemplate
+          templateId: selectedTemplate,
+          batchSize: batchSize
         })
       });
       
@@ -595,6 +597,24 @@ export default function CompliancePage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">
+                    Analysis Speed
+                  </label>
+                  <select
+                    value={batchSize}
+                    onChange={(e) => setBatchSize(Number(e.target.value))}
+                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
+                  >
+                    <option value={1}>🐌 Thorough (1 item per call) - Most accurate</option>
+                    <option value={3}>⚡ Balanced (3 items per call) - Good balance</option>
+                    <option value={5}>🚀 Fast (5 items per call) - Faster & cheaper</option>
+                  </select>
+                  <p className="text-xs text-text-secondary mt-1">
+                    💡 Fewer items per call = more accurate but slower/costlier
+                  </p>
                 </div>
 
                 <button
