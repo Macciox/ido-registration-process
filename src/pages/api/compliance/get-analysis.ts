@@ -14,18 +14,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { checkId } = req.query;
 
   if (!checkId) {
-    return res.status(400).json({ error: 'Check ID is required' });
+    return res.status(400).json({ error: 'checkId is required' });
   }
 
   try {
     // Get compliance check info
     const { data: check, error: checkError } = await serviceClient
       .from('compliance_checks')
-      .select(`
-        *,
-        documents(filename),
-        checker_templates(name, type)
-      `)
+      .select('*')
       .eq('id', checkId)
       .single();
 
@@ -33,47 +29,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Analysis not found' });
     }
 
-    // Get all results for this check
+    // Get detailed results
     const { data: results, error: resultsError } = await serviceClient
       .from('compliance_results')
-      .select(`
-        *,
-        checker_items(item_name, category, description)
-      `)
-      .eq('check_id', checkId)
-      .order('id');
+      .select('*')
+      .eq('check_id', checkId);
 
-    if (resultsError) throw resultsError;
+    if (resultsError) {
+      console.error('Error fetching results:', resultsError);
+    }
 
-    // Format results
-    const formattedResults = results?.map(result => ({
-      item_name: result.checker_items.item_name,
-      category: result.checker_items.category,
+    // Format response like analyze-nosave API
+    const formattedResults = (results || []).map(result => ({
+      item_id: result.item_id,
+      item_name: result.item_name || 'Unknown Item',
+      category: result.category || 'General',
       status: result.status,
       coverage_score: result.coverage_score,
       reasoning: result.reasoning,
-      evidence: result.evidence_snippets?.map((snippet: string) => ({ snippet })) || []
-    })) || [];
+      evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+    }));
+
+    const summary = {
+      found_items: check.found_items || 0,
+      clarification_items: check.clarification_items || 0,
+      missing_items: check.missing_items || 0,
+      overall_score: check.overall_score || 0
+    };
 
     res.status(200).json({
-      success: true,
       checkId: check.id,
-      document_name: check.documents.filename,
-      template_name: check.checker_templates.name,
-      template_type: check.checker_templates.type,
-      created_at: check.created_at,
-      updated_at: check.updated_at,
-      summary: {
-        found_items: check.found_items || 0,
-        clarification_items: check.clarification_items || 0,
-        missing_items: check.missing_items || 0,
-        overall_score: check.overall_score || 0
-      },
-      results: formattedResults
+      results: formattedResults,
+      summary,
+      documentId: check.document_id,
+      templateId: check.template_id,
+      templateName: check.template_name,
+      status: check.status,
+      version: check.version,
+      created_at: check.created_at
     });
 
   } catch (error: any) {
-    console.error('Error fetching analysis:', error);
-    res.status(500).json({ error: error.message || 'Failed to fetch analysis' });
+    console.error('Get analysis error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch analysis',
+      details: error.message 
+    });
   }
 }
