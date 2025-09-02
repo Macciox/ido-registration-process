@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { url, templateId, batchSize = 5 } = req.body;
+  const { url, templateId, batchSize = 1 } = req.body; // Force 1 for debugging
 
   if (!url || !templateId) {
     return res.status(400).json({ error: 'URL and template ID required' });
@@ -108,6 +108,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Use comprehensive document content (first 30 chunks for token limits)
         const batchContent = chunks.slice(0, 30).map(chunk => chunk.content).join('\n\n');
         
+        if (batchContent.length < 100) {
+          console.log('❌ Content too short:', batchContent.length, 'chars');
+          throw new Error('Document content too short for analysis');
+        }
+        
         // Create batch prompt
         const requirementsList = batch.map((item: any, idx: number) => 
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
@@ -144,8 +149,11 @@ Respond with a JSON array (one object per requirement in exact order):
         console.log(`\n=== GPT REQUEST DEBUG ===`);
         console.log(`Batch ${i + 1}: ${batch.length} items`);
         console.log(`Content length: ${batchContent.length} chars`);
+        console.log(`Chunks available: ${chunks.length}`);
         console.log(`First 200 chars: ${batchContent.substring(0, 200)}...`);
         console.log(`Requirements: ${batch.map((item: any) => item.item_name).join(', ')}`);
+        console.log(`OpenAI API Key exists: ${!!process.env.OPENAI_API_KEY}`);
+        console.log(`API Key length: ${process.env.OPENAI_API_KEY?.length || 0}`);
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -200,7 +208,8 @@ Respond with a JSON array (one object per requirement in exact order):
         } else {
           const errorText = await response.text();
           console.log(`❌ GPT API error ${response.status}: ${errorText}`);
-          throw new Error(`GPT API error: ${response.status}`);
+          console.log('Request headers:', response.headers);
+          throw new Error(`GPT API error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
         console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
