@@ -86,8 +86,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const batch = template.checker_items.slice(i, i + batchSize);
       
       try {
-        // Get content for the batch (use general content for efficiency)
-        const batchContent = chunks.slice(0, 20).map(chunk => chunk.content).join('\n\n');
+        // Get content for the batch (use more chunks and search for relevant content)
+        const addressKeywords = ['address', 'headquartered', 'registered', 'location', 'beachmont', 'kingstown'];
+        const relevantChunks = chunks.filter(chunk => 
+          addressKeywords.some(keyword => chunk.content.toLowerCase().includes(keyword))
+        );
+        
+        // Use relevant chunks + first 30 chunks for comprehensive coverage
+        const chunksToUse = [...chunks.slice(0, 30), ...relevantChunks]
+          .filter((chunk, index, arr) => arr.findIndex(c => c.id === chunk.id) === index)
+          .slice(0, 40);
+          
+        const batchContent = chunksToUse.map(chunk => chunk.content).join('\n\n');
         
         // Create batch prompt
         const requirementsList = batch.map((item: any, idx: number) => 
@@ -185,6 +195,15 @@ Respond ONLY with a JSON array (one object per requirement in order):
       overall_score: Math.round(results.reduce((sum: number, r: any) => sum + r.coverage_score, 0) / results.length)
     };
 
+    // Debug info: show what content was analyzed
+    const debugInfo = {
+      totalChunks: chunks.length,
+      chunksUsed: Math.min(20, chunks.length),
+      firstChunkPreview: chunks[0]?.content.substring(0, 200) + '...',
+      lastChunkPreview: chunks[Math.min(19, chunks.length - 1)]?.content.substring(0, 200) + '...',
+      searchTerms: ['address', 'headquartered', 'registered', 'location', 'beachmont', 'kingstown']
+    };
+
     res.status(200).json({
       checkId: `web-${Date.now()}`,
       documentId: document.id,
@@ -192,7 +211,8 @@ Respond ONLY with a JSON array (one object per requirement in order):
       results,
       summary,
       processing: processingResult,
-      note: 'Batch web content analysis'
+      debug: debugInfo,
+      note: 'Batch web content analysis with debug info'
     });
 
   } catch (error: any) {
