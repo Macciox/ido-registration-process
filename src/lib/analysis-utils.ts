@@ -98,13 +98,13 @@ export async function saveAnalysis(
       // Create new version
       version = latestCheck.version + 1;
       
-      const { data: newCheck } = await serviceClient
+      const { data: newCheck, error: insertError } = await serviceClient
         .from('compliance_checks')
         .insert({
           document_id: docId,
           template_id: templateId,
           document_name: docName,
-          template_name: 'MiCA Compliance Template', // You might want to fetch this
+          template_name: 'MiCA Compliance Template',
           status: 'completed',
           version: version,
           overall_score: analysisData.summary.overall_score,
@@ -115,13 +115,17 @@ export async function saveAnalysis(
         .select('id')
         .single();
         
-      checkId = newCheck!.id;
+      if (insertError || !newCheck) {
+        throw new Error(`Failed to create new analysis: ${insertError?.message || 'Unknown error'}`);
+      }
+        
+      checkId = newCheck.id;
     }
   } else {
     // First analysis for this document
     version = 1;
     
-    const { data: newCheck } = await serviceClient
+    const { data: newCheck, error: insertError } = await serviceClient
       .from('compliance_checks')
       .insert({
         document_id: docId,
@@ -138,29 +142,45 @@ export async function saveAnalysis(
       .select('id')
       .single();
       
-    checkId = newCheck!.id;
+    if (insertError || !newCheck) {
+      throw new Error(`Failed to create first analysis: ${insertError?.message || 'Unknown error'}`);
+    }
+      
+    checkId = newCheck.id;
   }
 
   // Insert detailed results
-  const resultsToInsert = analysisData.results.map(result => ({
-    check_id: checkId,
-    item_id: result.item_id,
-    status: result.status,
-    coverage_score: result.coverage_score,
-    reasoning: result.reasoning,
-    evidence_snippets: result.evidence.map(e => e.snippet)
-  }));
+  if (analysisData.results && analysisData.results.length > 0) {
+    const resultsToInsert = analysisData.results.map(result => ({
+      check_id: checkId,
+      item_id: result.item_id,
+      status: result.status,
+      coverage_score: result.coverage_score,
+      reasoning: result.reasoning,
+      evidence_snippets: result.evidence?.map(e => e.snippet) || []
+    }));
 
-  await serviceClient
-    .from('compliance_results')
-    .insert(resultsToInsert);
+    const { error: resultsError } = await serviceClient
+      .from('compliance_results')
+      .insert(resultsToInsert);
+      
+    if (resultsError) {
+      console.error('Error inserting results:', resultsError);
+      // Don't fail the whole operation for results insertion
+    }
+  }
 
   // Update document hash if provided
   if (docHash) {
-    await serviceClient
+    const { error: hashError } = await serviceClient
       .from('compliance_documents')
       .update({ doc_hash: docHash })
       .eq('id', docId);
+      
+    if (hashError) {
+      console.error('Error updating document hash:', hashError);
+      // Don't fail the whole operation for hash update
+    }
   }
 
     return { 
