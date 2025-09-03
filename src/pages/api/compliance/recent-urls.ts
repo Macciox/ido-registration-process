@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('user_id', user.id)
       .eq('mime_type', 'text/html')
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(5);
 
     if (error) {
       console.error('Database error:', error);
