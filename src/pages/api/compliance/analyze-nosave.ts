@@ -4,6 +4,7 @@ import { getDocumentChunks } from '@/lib/pdf-processor';
 import { renderPrompt } from '@/lib/prompts';
 import { getPromptIdForTemplate } from '@/lib/prompt-selector';
 import { calculateScore } from '@/lib/scoring-system';
+import { filterWhitepaperItems } from '@/lib/whitepaper-filter';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { documentId, templateId } = req.body;
+  const { documentId, templateId, whitepaperSection } = req.body;
 
   if (!documentId || !templateId) {
     return res.status(400).json({ error: 'Document ID and template ID required' });
@@ -70,12 +71,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(chunk => chunk.content)
       .join('\n\n');
 
+    // Filter items for whitepaper if section is specified
+    let itemsToAnalyze = template.checker_items;
+    if (whitepaperSection && template.name?.includes('Whitepaper')) {
+      itemsToAnalyze = filterWhitepaperItems(template.checker_items, whitepaperSection);
+      console.log(`Filtered whitepaper items: ${itemsToAnalyze.length} items for section ${whitepaperSection}`);
+    }
+
     // Batch GPT-4 analysis with ACTUAL document content
     const results: any[] = [];
     const batchSize = 5;
     
-    for (let i = 0; i < template.checker_items.length; i += batchSize) {
-      const batch = template.checker_items.slice(i, i + batchSize);
+    for (let i = 0; i < itemsToAnalyze.length; i += batchSize) {
+      const batch = itemsToAnalyze.slice(i, i + batchSize);
       
       try {
         const requirementsList = batch.map((item: any, idx: number) => 

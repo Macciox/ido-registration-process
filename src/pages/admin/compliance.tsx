@@ -67,6 +67,7 @@ export default function CompliancePage() {
   const [deletingAnalysis, setDeletingAnalysis] = useState<string>('');
   const [regenerating, setRegenerating] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string>('');
+  const [whitepaperSection, setWhitepaperSection] = useState<'A' | 'B' | 'C'>('A');
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -382,7 +383,8 @@ export default function CompliancePage() {
         body: JSON.stringify({
           url: url,
           templateId: selectedTemplate,
-          batchSize: batchSize
+          batchSize: batchSize,
+          whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSection : undefined
         })
       });
       
@@ -434,7 +436,8 @@ export default function CompliancePage() {
         },
         body: JSON.stringify({
           documentId: selectedDocument,
-          templateId: selectedTemplate
+          templateId: selectedTemplate,
+          whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSection : undefined
         })
       });
       
@@ -571,6 +574,27 @@ export default function CompliancePage() {
                   </select>
                 </div>
 
+                {/* Whitepaper Section Selector */}
+                {templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-white">
+                      Whitepaper Type (Choose One)
+                    </label>
+                    <select
+                      value={whitepaperSection}
+                      onChange={(e) => setWhitepaperSection(e.target.value as 'A' | 'B' | 'C')}
+                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
+                    >
+                      <option value="A" className="bg-gray-800 text-white">📋 Part A: Offeror Information (Standard)</option>
+                      <option value="B" className="bg-gray-800 text-white">🏢 Part B: Issuer Information (Different from Offeror)</option>
+                      <option value="C" className="bg-gray-800 text-white">🏛️ Part C: Trading Platform Operator</option>
+                    </select>
+                    <p className="text-xs text-text-secondary mt-1">
+                      💡 Choose the section that matches your whitepaper type. Only one section will be analyzed.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
                     Upload Document (PDF)
@@ -632,6 +656,27 @@ export default function CompliancePage() {
                   </select>
                 </div>
 
+                {/* Whitepaper Section Selector */}
+                {templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-white">
+                      Whitepaper Type (Choose One)
+                    </label>
+                    <select
+                      value={whitepaperSection}
+                      onChange={(e) => setWhitepaperSection(e.target.value as 'A' | 'B' | 'C')}
+                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
+                    >
+                      <option value="A" className="bg-gray-800 text-white">📋 Part A: Offeror Information (Standard)</option>
+                      <option value="B" className="bg-gray-800 text-white">🏢 Part B: Issuer Information (Different from Offeror)</option>
+                      <option value="C" className="bg-gray-800 text-white">🏛️ Part C: Trading Platform Operator</option>
+                    </select>
+                    <p className="text-xs text-text-secondary mt-1">
+                      💡 Choose the section that matches your whitepaper type. Only one section will be analyzed.
+                    </p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={isUploading || !selectedDocument || !selectedTemplate}
@@ -678,6 +723,27 @@ export default function CompliancePage() {
                     ))}
                   </select>
                 </div>
+
+                {/* Whitepaper Section Selector */}
+                {templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-white">
+                      Whitepaper Type (Choose One)
+                    </label>
+                    <select
+                      value={whitepaperSection}
+                      onChange={(e) => setWhitepaperSection(e.target.value as 'A' | 'B' | 'C')}
+                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
+                    >
+                      <option value="A" className="bg-gray-800 text-white">📋 Part A: Offeror Information (Standard)</option>
+                      <option value="B" className="bg-gray-800 text-white">🏢 Part B: Issuer Information (Different from Offeror)</option>
+                      <option value="C" className="bg-gray-800 text-white">🏛️ Part C: Trading Platform Operator</option>
+                    </select>
+                    <p className="text-xs text-text-secondary mt-1">
+                      💡 Choose the section that matches your whitepaper type. Only one section will be analyzed.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">

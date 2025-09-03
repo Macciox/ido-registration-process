@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { processWebpage } from '@/lib/web-scraper';
 import { processCrawledWebsite } from '@/lib/web-crawler';
 import { getDocumentChunks } from '@/lib/pdf-processor';
+import { filterWhitepaperItems } from '@/lib/whitepaper-filter';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { url, templateId, batchSize = 1 } = req.body; // Force 1 for debugging
+  const { url, templateId, batchSize = 1, whitepaperSection } = req.body;
 
   if (!url || !templateId) {
     return res.status(400).json({ error: 'URL and template ID required' });
@@ -119,13 +120,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);
     
+    // Filter items for whitepaper if section is specified
+    let itemsToAnalyze = template.checker_items;
+    if (whitepaperSection && template.name?.includes('Whitepaper')) {
+      itemsToAnalyze = filterWhitepaperItems(template.checker_items, whitepaperSection);
+      console.log(`Filtered whitepaper items: ${itemsToAnalyze.length} items for section ${whitepaperSection}`);
+    }
+
     // Single call analysis for fast mode (batchSize >= 5) or batch analysis
     const results: any[] = [];
     
     console.log(`\n=== ANALYSIS MODE SELECTION ===`);
     console.log(`BatchSize: ${batchSize}`);
     console.log(`Mode: ${batchSize >= 5 ? 'SINGLE CALL (Fast)' : 'BATCH PROCESSING'}`);
-    console.log(`Template items: ${template.checker_items.length}`);
+    console.log(`Template items: ${itemsToAnalyze.length}`);
     
     if (batchSize >= 5) {
       // Single call with all requirements
@@ -136,7 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           throw new Error('Document content too short for analysis');
         }
         
-        const requirementsList = template.checker_items.map((item: any, idx: number) => 
+        const requirementsList = itemsToAnalyze.map((item: any, idx: number) => 
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
@@ -148,14 +156,14 @@ ${requirementsList}
 DOCUMENT CONTENT:
 ${fullContent}
 
-For EACH requirement (${template.checker_items.length} total), provide analysis in exact order:
+For EACH requirement (${itemsToAnalyze.length} total), provide analysis in exact order:
 
 Scoring:
 - FOUND (80-100): Information clearly present with good detail
 - NEEDS_CLARIFICATION (40-79): Some information present but incomplete  
 - MISSING (0-39): No relevant information found
 
-Respond with a JSON array containing exactly ${template.checker_items.length} objects in the same order as requirements:
+Respond with a JSON array containing exactly ${itemsToAnalyze.length} objects in the same order as requirements:
 [
   {
     "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
@@ -166,7 +174,7 @@ Respond with a JSON array containing exactly ${template.checker_items.length} ob
 ]`;
 
         console.log(`\n=== SINGLE CALL GPT REQUEST ===`);
-        console.log(`Total requirements: ${template.checker_items.length}`);
+        console.log(`Total requirements: ${itemsToAnalyze.length}`);
         console.log(`Content length: ${fullContent.length} chars`);
         
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -193,7 +201,7 @@ Respond with a JSON array containing exactly ${template.checker_items.length} ob
             const parsed = JSON.parse(jsonMatch[0]);
             
             parsed.forEach((result: any, idx: number) => {
-              const item = template.checker_items[idx];
+              const item = itemsToAnalyze[idx];
               if (item) {
                 results.push({
                   result_id: `temp-${item.id}-${Date.now()}`,
@@ -218,7 +226,7 @@ Respond with a JSON array containing exactly ${template.checker_items.length} ob
       } catch (error) {
         console.error('Single call analysis failed:', error);
         // Fallback to batch processing
-        template.checker_items.forEach((item: any) => {
+        itemsToAnalyze.forEach((item: any) => {
           results.push({
             result_id: `temp-${item.id}-${Date.now()}`,
             item_id: item.id,
@@ -234,8 +242,8 @@ Respond with a JSON array containing exactly ${template.checker_items.length} ob
       }
     } else {
       // Original batch processing for smaller batch sizes
-      for (let i = 0; i < template.checker_items.length; i += batchSize) {
-        const batch = template.checker_items.slice(i, i + batchSize);
+      for (let i = 0; i < itemsToAnalyze.length; i += batchSize) {
+        const batch = itemsToAnalyze.slice(i, i + batchSize);
         
         try {
           const batchContent = chunks.slice(0, 5).map(chunk => chunk.content).join('\n\n').substring(0, 15000);
@@ -339,7 +347,7 @@ Respond with a JSON array (one object per requirement in exact order):
           });
         }
         
-        if (i + batchSize < template.checker_items.length) {
+        if (i + batchSize < itemsToAnalyze.length) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
