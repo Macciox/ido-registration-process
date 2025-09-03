@@ -68,6 +68,8 @@ export default function CompliancePage() {
   const [regenerating, setRegenerating] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string>('');
   const [whitepaperSection, setWhitepaperSection] = useState<'A' | 'B' | 'C'>('A');
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [evidenceData, setEvidenceData] = useState<{title: string, evidence: any[]}>({title: '', evidence: []});
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -1148,10 +1150,11 @@ export default function CompliancePage() {
                           {item.evidence?.length > 0 ? (
                             <button 
                               onClick={() => {
-                                const evidenceText = item.evidence.map((e: any, i: number) => 
-                                  `Evidence ${i + 1}:\n${e.snippet}`
-                                ).join('\n\n');
-                                showToast(evidenceText, 'info');
+                                setEvidenceData({
+                                  title: item.item_name,
+                                  evidence: item.evidence
+                                });
+                                setShowEvidenceModal(true);
                               }}
                               className="text-blue-400 hover:text-blue-300 text-sm underline cursor-pointer"
                             >
@@ -1384,6 +1387,55 @@ export default function CompliancePage() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Evidence Modal */}
+        {showEvidenceModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b border-border">
+                <h3 className="text-lg font-bold text-white">📋 Evidence for: {evidenceData.title}</h3>
+                <button
+                  onClick={() => setShowEvidenceModal(false)}
+                  className="text-white/60 hover:text-white text-xl p-1"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[60vh]">
+                {evidenceData.evidence.length > 0 ? (
+                  <div className="space-y-4">
+                    {evidenceData.evidence.map((evidence: any, index: number) => (
+                      <div key={index} className="bg-card-secondary rounded-lg p-4 border border-border">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="bg-primary text-white px-2 py-1 rounded text-sm font-medium">
+                            Evidence {index + 1}
+                          </span>
+                        </div>
+                        <div className="text-white leading-relaxed whitespace-pre-wrap">
+                          {evidence.snippet}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-text-secondary">
+                    No evidence found for this item.
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-6 border-t border-border">
+                <button
+                  onClick={() => setShowEvidenceModal(false)}
+                  className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
