@@ -1019,7 +1019,7 @@ export default function CompliancePage() {
               </div>
 
               {/* Analyzed Text Section (for URL analysis) */}
-              {results.documentId && (
+              {results.documentId && results.processing && (
                 <div className="mt-8">
                   <div className="border-t border-border pt-6">
                     <div className="flex items-center justify-between mb-4">
