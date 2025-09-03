@@ -57,12 +57,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get document chunks
-    const chunks = await getDocumentChunks(documentId);
+    let chunks = await getDocumentChunks(documentId);
     
+    // If no chunks exist, try to process the document
     if (chunks.length === 0) {
-      return res.status(400).json({ 
-        error: 'Document not processed yet. Please upload and process the document first.' 
-      });
+      console.log('No chunks found, attempting to process document...');
+      
+      // Check if document has a file_path (URL for storage)
+      if (document.file_path && !document.file_path.startsWith('http')) {
+        try {
+          // Try to fetch and process the PDF from storage
+          const { data: fileData } = await serviceClient.storage
+            .from('compliance-documents')
+            .download(document.file_path);
+            
+          if (fileData) {
+            const buffer = Buffer.from(await fileData.arrayBuffer());
+            const { processPDFDocument } = await import('@/lib/pdf-processor');
+            const result = await processPDFDocument(documentId, buffer);
+            
+            if (result.success) {
+              chunks = await getDocumentChunks(documentId);
+              console.log(`Successfully processed document: ${result.chunksCount} chunks`);
+            }
+          }
+        } catch (processError) {
+          console.error('Auto-processing failed:', processError);
+        }
+      }
+      
+      // If still no chunks, return error
+      if (chunks.length === 0) {
+        return res.status(400).json({ 
+          error: 'Document not processed yet. Please upload and process the document first.' 
+        });
+      }
     }
 
     // Combine chunks into full document text (limit to avoid token limits)
