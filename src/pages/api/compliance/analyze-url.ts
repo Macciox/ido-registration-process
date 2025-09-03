@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Process website: try crawler first, fallback to single page
     console.log('Crawling website:', url);
-    let processingResult = await processCrawledWebsite(document.id, url, 25); // Max 25 pages
+    let processingResult = await processCrawledWebsite(document.id, url, 50); // Max 50 pages
     
     // Fallback to single page if crawler fails
     if (!processingResult.success) {
