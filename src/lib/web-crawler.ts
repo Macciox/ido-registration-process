@@ -90,7 +90,7 @@ async function crawlPage(url: string): Promise<CrawlResult | null> {
 export async function crawlWebsite(
   baseUrl: string, 
   maxPages: number = 20,
-  maxDepth: number = 10
+  maxDepth: number = 20
 ): Promise<{
   success: boolean;
   pages: CrawlResult[];
