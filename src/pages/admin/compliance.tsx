@@ -834,12 +834,21 @@ export default function CompliancePage() {
                                 <button
                                   onClick={async () => {
                                     try {
+                                      console.log('Loading analysis for checkId:', analysis.check_id);
                                       const response = await fetch(`/api/compliance/get-analysis?checkId=${analysis.check_id}`);
+                                      
+                                      if (!response.ok) {
+                                        const errorData = await response.json();
+                                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                                      }
+                                      
                                       const data = await response.json();
+                                      console.log('Loaded analysis data:', data);
                                       setResults(data);
                                       setShowResults(true);
-                                    } catch (error) {
-                                      showToast('Error loading analysis', 'error');
+                                    } catch (error: any) {
+                                      console.error('Error loading analysis:', error);
+                                      showToast('Error loading analysis: ' + error.message, 'error');
                                     }
                                   }}
                                   className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"

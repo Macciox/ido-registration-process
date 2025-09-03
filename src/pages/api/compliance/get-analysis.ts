@@ -18,6 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('Getting analysis for checkId:', checkId);
+    
     // Get compliance check info
     const { data: check, error: checkError } = await serviceClient
       .from('compliance_checks')
@@ -26,24 +28,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (checkError || !check) {
+      console.error('Check not found:', checkError);
       return res.status(404).json({ error: 'Analysis not found' });
     }
+    
+    console.log('Found check:', check.id, 'for document:', check.document_id);
 
-    // Get detailed results
+    // Get detailed results with template item info
     const { data: results, error: resultsError } = await serviceClient
       .from('compliance_results')
-      .select('*')
+      .select(`
+        *,
+        checker_items (
+          item_name,
+          category,
+          description
+        )
+      `)
       .eq('check_id', checkId);
 
     if (resultsError) {
       console.error('Error fetching results:', resultsError);
     }
+    
+    console.log('Found results:', results?.length || 0, 'items');
 
     // Format response like analyze-nosave API
     const formattedResults = (results || []).map(result => ({
       item_id: result.item_id,
-      item_name: result.item_name || 'Unknown Item',
-      category: result.category || 'General',
+      item_name: result.checker_items?.item_name || result.item_name || 'Unknown Item',
+      category: result.checker_items?.category || result.category || 'General',
       status: result.status,
       coverage_score: result.coverage_score,
       reasoning: result.reasoning,
