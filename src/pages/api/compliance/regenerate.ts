@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getDocumentChunks } from '@/lib/pdf-processor';
+import { renderPrompt } from '@/lib/prompts';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,36 +44,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description || 'No description'}\n   Previous Status: ${item.status} (${item.coverage_score}%)`
     ).join('\n\n');
     
-    const regeneratePrompt = `You are a MiCA regulation compliance expert analyzing crypto project documentation. Evaluate each requirement against the provided document content.
-
-REQUIREMENTS TO ANALYZE:
-${itemsList}
-
-DOCUMENT CONTENT:
-${fullContent}
-
-For each requirement, search the document thoroughly for:
-1. Direct statements addressing the requirement
-2. Related information using synonyms or alternative terminology
-3. Implicit information that satisfies the requirement
-4. Contextual details that demonstrate compliance
-
-EVALUATION CRITERIA:
-- FOUND (80-100): Requirement is clearly addressed with sufficient detail
-- NEEDS_CLARIFICATION (40-79): Partial information present but lacks completeness or clarity
-- MISSING (0-39): No relevant information found
-
-Provide objective analysis based solely on document content. Include exact quotes as evidence when available.
-
-Respond with JSON array (one object per requirement in exact order):
-[
-  {
-    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-    "coverage_score": 0-100,
-    "reasoning": "Clear explanation of findings",
-    "evidence_snippets": ["exact quotes from document"]
-  }
-]`;
+    const regeneratePrompt = renderPrompt('REGENERATE_ANALYSIS', {
+      itemsList,
+      fullContent
+    });
 
     console.log(`Regeneration prompt length: ${regeneratePrompt.length} chars`);
     console.log(`Content length: ${fullContent.length} chars`);

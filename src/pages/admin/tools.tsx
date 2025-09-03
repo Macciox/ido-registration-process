@@ -47,7 +47,7 @@ const AdminTools: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* MiCA Compliance Checker */}
           <div className="sleek-card p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -141,6 +141,26 @@ const AdminTools: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Prompt Manager */}
+          <div className="sleek-card p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white">Prompt Manager</h3>
+            </div>
+            <p className="text-text-secondary text-sm mb-4">
+              View and edit AI analysis prompts for compliance checking
+            </p>
+            <div className="space-y-3">
+              <a href="/admin/prompts-manager" className="w-full px-4 py-3 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 no-underline">
+                Manage Prompts
+              </a>
             </div>
           </div>
         </div>
