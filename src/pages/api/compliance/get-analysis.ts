@@ -55,12 +55,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Format response like analyze-nosave API
     const formattedResults = (results || []).map(result => ({
+      result_id: result.id,
       item_id: result.item_id,
       item_name: result.checker_items?.item_name || result.item_name || 'Unknown Item',
       category: result.checker_items?.category || result.category || 'General',
       status: result.status,
       coverage_score: result.coverage_score,
       reasoning: result.reasoning,
+      manually_overridden: result.manually_overridden || false,
       evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
     }));
 

@@ -32,7 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('id, filename, file_path, created_at')
       .eq('user_id', user.id)
       .neq('mime_type', 'text/html')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(5);
 
     if (error) {
       console.error('Database error:', error);

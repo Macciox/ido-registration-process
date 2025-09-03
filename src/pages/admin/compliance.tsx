@@ -66,6 +66,7 @@ export default function CompliancePage() {
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [deletingAnalysis, setDeletingAnalysis] = useState<string>('');
   const [regenerating, setRegenerating] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<string>('');
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -995,6 +996,7 @@ export default function CompliancePage() {
                       <th className="text-left py-3 px-4 text-white font-medium">Item</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Category</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Status</th>
+                      <th className="text-left py-3 px-4 text-white font-medium">Manual Override</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Score</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Evidence</th>
                     </tr>
@@ -1005,17 +1007,74 @@ export default function CompliancePage() {
                         <td className="py-3 px-4 text-white">{item.item_name}</td>
                         <td className="py-3 px-4 text-text-secondary">{item.category}</td>
                         <td className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            item.status === 'FOUND' ? 'bg-green-500/20 text-green-400' :
-                            item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-500/20 text-yellow-400' :
-                            item.status === 'NOT_APPLICABLE' ? 'bg-gray-500/20 text-gray-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
-                            {item.status === 'FOUND' ? '✅' : 
-                             item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : 
-                             item.status === 'NOT_APPLICABLE' ? '➖' : '❌'}
-                            {item.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              item.status === 'FOUND' ? 'bg-green-500/20 text-green-400' :
+                              item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-500/20 text-yellow-400' :
+                              item.status === 'NOT_APPLICABLE' ? 'bg-gray-500/20 text-gray-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {item.status === 'FOUND' ? '✅' : 
+                               item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : 
+                               item.status === 'NOT_APPLICABLE' ? '➖' : '❌'}
+                              {item.status}
+                            </span>
+                            {item.manually_overridden && (
+                              <span className="text-xs text-orange-400" title="Manually overridden">🔧</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <select
+                            value={item.status}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              try {
+                                const response = await fetch('/api/compliance/update-status', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    resultId: item.result_id,
+                                    newStatus: newStatus
+                                  })
+                                });
+                                
+                                if (response.ok) {
+                                  // Update local state
+                                  const updatedResults = results.results.map((r: any, i: number) => 
+                                    i === index ? { ...r, status: newStatus, manually_overridden: true } : r
+                                  );
+                                  
+                                  // Recalculate summary
+                                  const newSummary = {
+                                    found_items: updatedResults.filter((r: any) => r.status === 'FOUND').length,
+                                    clarification_items: updatedResults.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
+                                    missing_items: updatedResults.filter((r: any) => r.status === 'MISSING').length,
+                                    not_applicable_items: updatedResults.filter((r: any) => r.status === 'NOT_APPLICABLE').length,
+                                    applicable_items: updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length,
+                                    overall_score: Math.round(
+                                      updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length > 0 ?
+                                      (updatedResults.filter((r: any) => r.status === 'FOUND').length / 
+                                       updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length) * 100 : 0
+                                    )
+                                  };
+                                  
+                                  setResults({ ...results, results: updatedResults, summary: newSummary });
+                                  showToast('Status updated successfully', 'success');
+                                } else {
+                                  showToast('Failed to update status', 'error');
+                                }
+                              } catch (error) {
+                                showToast('Error updating status', 'error');
+                              }
+                            }}
+                            className="px-2 py-1 bg-card-secondary border border-border rounded text-xs text-white"
+                          >
+                            <option value="FOUND">✅ Found</option>
+                            <option value="NEEDS_CLARIFICATION">⚠️ Clarification</option>
+                            <option value="MISSING">❌ Missing</option>
+                            <option value="NOT_APPLICABLE">➖ Not Applicable</option>
+                          </select>
                         </td>
                         <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
                         <td className="py-3 px-4">

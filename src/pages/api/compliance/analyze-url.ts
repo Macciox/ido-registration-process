@@ -196,12 +196,14 @@ Respond with a JSON array containing exactly ${template.checker_items.length} ob
               const item = template.checker_items[idx];
               if (item) {
                 results.push({
+                  result_id: `temp-${item.id}-${Date.now()}`,
                   item_id: item.id,
                   item_name: item.item_name,
                   category: item.category,
                   status: result.status,
                   coverage_score: result.coverage_score,
                   reasoning: result.reasoning,
+                  manually_overridden: false,
                   evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
                 });
               }
@@ -218,12 +220,14 @@ Respond with a JSON array containing exactly ${template.checker_items.length} ob
         // Fallback to batch processing
         template.checker_items.forEach((item: any) => {
           results.push({
+            result_id: `temp-${item.id}-${Date.now()}`,
             item_id: item.id,
             item_name: item.item_name,
             category: item.category,
             status: 'NEEDS_CLARIFICATION',
             coverage_score: 0,
             reasoning: `Single call analysis failed: ${error}`,
+            manually_overridden: false,
             evidence: []
           });
         });
@@ -299,12 +303,14 @@ Respond with a JSON array (one object per requirement in exact order):
                 const item = batch[idx];
                 if (item) {
                   results.push({
+                    result_id: `temp-${item.id}-${Date.now()}`,
                     item_id: item.id,
                     item_name: item.item_name,
                     category: item.category,
                     status: result.status,
                     coverage_score: result.coverage_score,
                     reasoning: result.reasoning,
+                    manually_overridden: false,
                     evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
                   });
                 }
@@ -320,12 +326,14 @@ Respond with a JSON array (one object per requirement in exact order):
           console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
           batch.forEach((item: any) => {
             results.push({
+              result_id: `temp-${item.id}-${Date.now()}`,
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
               status: 'NEEDS_CLARIFICATION',
               coverage_score: 0,
               reasoning: `Batch analysis failed: ${error}`,
+              manually_overridden: false,
               evidence: []
             });
           });
