@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import { getCurrentUser } from '@/lib/auth';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,36 +12,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('Documents endpoint called');
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
-      console.log('No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
 
     const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
     if (authError || !user) {
-      console.log('Auth error:', authError);
       return res.status(401).json({ error: 'Invalid token' });
     }
-    console.log('User authenticated:', user.id);
 
-    const { data: documents, error } = await serviceClient
+    const { data: recentUrls, error } = await serviceClient
       .from('compliance_documents')
       .select('id, filename, file_path, created_at')
       .eq('user_id', user.id)
-      .neq('mime_type', 'text/html')
-      .order('created_at', { ascending: false });
+      .eq('mime_type', 'text/html')
+      .order('created_at', { ascending: false })
+      .limit(10);
 
     if (error) {
       console.error('Database error:', error);
       throw error;
     }
     
-    console.log('Found documents:', documents?.length || 0);
-    res.status(200).json({ documents });
+    res.status(200).json({ recentUrls });
   } catch (error) {
-    console.error('Error fetching documents:', error);
-    res.status(500).json({ error: 'Failed to fetch documents' });
+    console.error('Error fetching recent URLs:', error);
+    res.status(500).json({ error: 'Failed to fetch recent URLs' });
   }
 }

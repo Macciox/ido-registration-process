@@ -43,6 +43,7 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [recentUrls, setRecentUrls] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [selectedDocument, setSelectedDocument] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
@@ -77,6 +78,7 @@ export default function CompliancePage() {
       setLoading(false);
       fetchTemplates();
       fetchDocuments();
+      fetchRecentUrls();
       fetchSavedAnalyses();
     };
     init();
@@ -182,6 +184,23 @@ export default function CompliancePage() {
       setDocuments(data.documents || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
+    }
+  };
+
+  const fetchRecentUrls = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/compliance/recent-urls', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      
+      const data = await response.json();
+      setRecentUrls(data.recentUrls || []);
+    } catch (error) {
+      console.error('Error fetching recent URLs:', error);
     }
   };
 
@@ -334,6 +353,9 @@ export default function CompliancePage() {
       setShowResults(true);
       setUrl('');
       // setSelectedTemplate(''); // Keep for saving
+      
+      // Refresh recent URLs list
+      fetchRecentUrls();
       
       showToast(`Website analyzed successfully! ${data.processing?.chunksCount || 0} sections processed.`, 'success');
     } catch (error: any) {
@@ -567,23 +589,24 @@ export default function CompliancePage() {
                 </button>
               </form>
             ) : activeTab === 'url' ? (
-              <form onSubmit={handleAnalyzeURL} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-white">
-                    Website URL
-                  </label>
-                  <input
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://docs.example.com/whitepaper"
-                    className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400"
-                    required
-                  />
-                  <p className="text-xs text-text-secondary mt-1">
-                    📝 Examples: Documentation sites, Medium articles, GitBook pages
-                  </p>
-                </div>
+              <div className="space-y-6">
+                <form onSubmit={handleAnalyzeURL} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-white">
+                      Website URL
+                    </label>
+                    <input
+                      type="url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://docs.example.com/whitepaper"
+                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400"
+                      required
+                    />
+                    <p className="text-xs text-text-secondary mt-1">
+                      📝 Examples: Documentation sites, Medium articles, GitBook pages
+                    </p>
+                  </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
@@ -622,14 +645,40 @@ export default function CompliancePage() {
                   </p>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isUploading || !url || !selectedTemplate}
-                  className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUploading ? 'Analyzing Website...' : '🌐 Analyze Website'}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={isUploading || !url || !selectedTemplate}
+                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUploading ? 'Analyzing Website...' : '🌐 Analyze Website'}
+                  </button>
+                </form>
+
+                {/* Recently Analyzed URLs */}
+                {recentUrls.length > 0 && (
+                  <div className="border-t border-border pt-6">
+                    <h3 className="text-lg font-medium text-white mb-4">Recently Analyzed</h3>
+                    <div className="space-y-2">
+                      {recentUrls.map((urlDoc) => (
+                        <div key={urlDoc.id} className="flex items-center justify-between p-3 bg-card-secondary rounded-lg">
+                          <div className="flex-1">
+                            <div className="text-white font-medium">{urlDoc.filename}</div>
+                            <div className="text-sm text-text-secondary">
+                              {urlDoc.file_path} • {new Date(urlDoc.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setUrl(urlDoc.file_path)}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                          >
+                            Use URL
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex flex-col gap-4 mb-6">
