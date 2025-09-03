@@ -59,37 +59,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks
     let chunks = await getDocumentChunks(documentId);
     
-    // If no chunks exist, try to process the document
+    // If no chunks exist, try to reprocess the document from storage
     if (chunks.length === 0) {
-      console.log('No chunks found, attempting to process document...');
+      console.log('No chunks found, attempting to reprocess document from storage...');
+      console.log('Document file_path:', document.file_path);
       
-      // Check if document has a file_path (URL for storage)
-      if (document.file_path && !document.file_path.startsWith('http')) {
+      if (document.file_path) {
         try {
-          // Try to fetch and process the PDF from storage
-          const { data: fileData } = await serviceClient.storage
+          // Download file from storage
+          const { data: fileData, error: downloadError } = await serviceClient.storage
             .from('compliance-documents')
             .download(document.file_path);
             
+          if (downloadError) {
+            console.error('Storage download error:', downloadError);
+            throw new Error(`Storage download failed: ${downloadError.message}`);
+          }
+          
           if (fileData) {
+            console.log('File downloaded from storage, size:', fileData.size);
             const buffer = Buffer.from(await fileData.arrayBuffer());
+            
+            // Process the PDF to create chunks
             const { processPDFDocument } = await import('@/lib/pdf-processor');
             const result = await processPDFDocument(documentId, buffer);
             
+            console.log('Processing result:', result);
+            
             if (result.success) {
+              // Fetch the newly created chunks
               chunks = await getDocumentChunks(documentId);
-              console.log(`Successfully processed document: ${result.chunksCount} chunks`);
+              console.log(`Successfully reprocessed document: ${chunks.length} chunks created`);
+            } else {
+              throw new Error(`PDF processing failed: ${result.message}`);
             }
+          } else {
+            throw new Error('No file data received from storage');
           }
-        } catch (processError) {
-          console.error('Auto-processing failed:', processError);
+        } catch (reprocessError) {
+          console.error('Document reprocessing failed:', reprocessError);
+          return res.status(400).json({ 
+            error: `Document processing failed: ${reprocessError.message}. Please try re-uploading the document.` 
+          });
         }
+      } else {
+        return res.status(400).json({ 
+          error: 'Document has no file path. Please re-upload the document.' 
+        });
       }
       
-      // If still no chunks, return error
+      // Final check - if still no chunks, return error
       if (chunks.length === 0) {
         return res.status(400).json({ 
-          error: 'Document not processed yet. Please upload and process the document first.' 
+          error: 'Document could not be processed. Please try re-uploading the document.' 
         });
       }
     }
