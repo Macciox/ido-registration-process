@@ -121,12 +121,13 @@ const AdminTools: React.FC = () => {
                       btn.disabled = true;
                       btn.textContent = 'Updating...';
                       
-                      const response = await fetch('/api/compliance/update-whitepaper-items', { method: 'POST' });
+                      const response = await fetch('/api/compliance/update-mica-whitepaper', { method: 'POST' });
                       const data = await response.json();
                       
                       if (data.success) {
                         btn.textContent = '✅ Updated!';
                         btn.className = 'w-full px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium';
+                        alert(`Success! Updated with ${data.itemsCount} official MiCA items`);
                         setTimeout(() => window.location.reload(), 1000);
                       } else {
                         btn.textContent = '❌ Error';
@@ -136,8 +137,8 @@ const AdminTools: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 border border-white/20 hover:border-primary hover:text-primary text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
-                    Update Whitepaper
-                    <span className="text-xs bg-purple-500 px-2 py-1 rounded-full">50 items</span>
+                    Update MiCA Whitepaper
+                    <span className="text-xs bg-blue-500 px-2 py-1 rounded-full">74 items</span>
                   </button>
                 </div>
               </div>
