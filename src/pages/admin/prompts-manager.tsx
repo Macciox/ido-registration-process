@@ -214,25 +214,25 @@ export default function PromptsManagerPage() {
                       <textarea
                         value={editedTemplate}
                         onChange={(e) => setEditedTemplate(e.target.value)}
-                        className="w-full h-96 p-3 bg-card-secondary border border-border rounded-lg text-white font-mono text-sm resize-none"
+                        className="w-full h-96 p-3 bg-gray-900 border border-gray-600 rounded-lg text-gray-100 font-mono text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
                         placeholder="Enter prompt template..."
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-gray-800 p-4 rounded-lg">
                       <div>
-                        <div className="text-white font-medium mb-2">Variables Available:</div>
+                        <div className="text-gray-200 font-medium mb-2">Variables Available:</div>
                         <div className="space-y-1">
                           {selectedPrompt.variables.map((variable) => (
-                            <div key={variable} className="text-blue-400 font-mono">
+                            <div key={variable} className="text-blue-300 font-mono bg-gray-700 px-2 py-1 rounded">
                               {`{{${variable}}}`}
                             </div>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <div className="text-white font-medium mb-2">Prompt Info:</div>
-                        <div className="space-y-1 text-text-secondary">
+                        <div className="text-gray-200 font-medium mb-2">Prompt Info:</div>
+                        <div className="space-y-1 text-gray-300">
                           <div>Version: {selectedPrompt.version}</div>
                           <div>Last Modified: {new Date(selectedPrompt.lastModified).toLocaleString()}</div>
                           <div>Characters: {editedTemplate.length}</div>
