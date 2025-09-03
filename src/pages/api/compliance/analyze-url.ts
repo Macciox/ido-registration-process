@@ -337,12 +337,25 @@ Respond with a JSON array (one object per requirement in exact order):
       }
     }
 
-    // Calculate summary
+    // Calculate summary with NOT_APPLICABLE support
+    const foundItems = results.filter((r: any) => r.status === 'FOUND').length;
+    const clarificationItems = results.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length;
+    const missingItems = results.filter((r: any) => r.status === 'MISSING').length;
+    const notApplicableItems = results.filter((r: any) => r.status === 'NOT_APPLICABLE').length;
+    const applicableItems = results.length - notApplicableItems;
+    
+    // Calculate score based on applicable items only
+    const overallScore = applicableItems > 0 
+      ? Math.round((foundItems * 100) / applicableItems)
+      : 0;
+    
     const summary = {
-      found_items: results.filter((r: any) => r.status === 'FOUND').length,
-      clarification_items: results.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
-      missing_items: results.filter((r: any) => r.status === 'MISSING').length,
-      overall_score: Math.round(results.reduce((sum: number, r: any) => sum + r.coverage_score, 0) / results.length)
+      found_items: foundItems,
+      clarification_items: clarificationItems,
+      missing_items: missingItems,
+      not_applicable_items: notApplicableItems,
+      applicable_items: applicableItems,
+      overall_score: overallScore
     };
 
     // Debug info: show what content was analyzed

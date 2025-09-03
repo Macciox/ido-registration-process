@@ -945,7 +945,7 @@ export default function CompliancePage() {
               </div>
 
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
                   <div className="text-2xl font-bold text-green-400">
                     {results.summary?.found_items || 0}
@@ -964,6 +964,12 @@ export default function CompliancePage() {
                   </div>
                   <div className="text-red-300 text-sm">Missing</div>
                 </div>
+                <div className="bg-gray-500/20 border border-gray-500/30 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-400">
+                    {results.summary?.not_applicable_items || 0}
+                  </div>
+                  <div className="text-gray-300 text-sm">Not Applicable</div>
+                </div>
                 <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
                   <div className="text-2xl font-bold text-blue-400">
                     {results.summary?.overall_score || 0}%
@@ -971,6 +977,15 @@ export default function CompliancePage() {
                   <div className="text-blue-300 text-sm">Overall Score</div>
                 </div>
               </div>
+              
+              {results.summary?.not_applicable_items > 0 && (
+                <div className="mb-4 p-3 bg-gray-800 rounded-lg">
+                  <div className="text-sm text-gray-300">
+                    📊 Score calculated on {results.summary?.applicable_items || (results.summary?.found_items + results.summary?.clarification_items + results.summary?.missing_items)} applicable items 
+                    ({results.summary?.not_applicable_items} items marked as Not Applicable)
+                  </div>
+                </div>
+              )}
 
               {/* Results Table */}
               <div className="overflow-x-auto">
@@ -993,9 +1008,12 @@ export default function CompliancePage() {
                           <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                             item.status === 'FOUND' ? 'bg-green-500/20 text-green-400' :
                             item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-500/20 text-yellow-400' :
+                            item.status === 'NOT_APPLICABLE' ? 'bg-gray-500/20 text-gray-400' :
                             'bg-red-500/20 text-red-400'
                           }`}>
-                            {item.status === 'FOUND' ? '✅' : item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : '❌'}
+                            {item.status === 'FOUND' ? '✅' : 
+                             item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : 
+                             item.status === 'NOT_APPLICABLE' ? '➖' : '❌'}
                             {item.status}
                           </span>
                         </td>
