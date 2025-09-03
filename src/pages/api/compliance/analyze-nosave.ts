@@ -33,17 +33,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // Get document
+    // Get document (only PDFs, not URLs)
     const { data: document } = await serviceClient
       .from('compliance_documents')
       .select('*')
       .eq('id', documentId)
       .eq('user_id', user.id)
+      .eq('mime_type', 'application/pdf')
       .single();
 
     if (!document) {
-      return res.status(404).json({ error: 'Document not found' });
+      return res.status(404).json({ error: 'PDF document not found' });
     }
+    
+    console.log('Processing PDF document:', document.filename, 'mime_type:', document.mime_type);
 
     // Get template
     const { data: template } = await serviceClient
@@ -67,13 +70,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (document.file_path) {
         try {
           // Download file from storage
+          console.log('Attempting to download from storage bucket: compliance-documents');
+          console.log('File path:', document.file_path);
+          
+          // Debug: List files in bucket to see what's available
+          const { data: bucketFiles } = await serviceClient.storage
+            .from('compliance-documents')
+            .list('', { limit: 10 });
+          console.log('Files in bucket root:', bucketFiles?.map(f => f.name));
+          
+          const { data: whitepaperFiles } = await serviceClient.storage
+            .from('compliance-documents')
+            .list('whitepapers', { limit: 10 });
+          console.log('Files in whitepapers folder:', whitepaperFiles?.map(f => f.name));
+          
           const { data: fileData, error: downloadError } = await serviceClient.storage
             .from('compliance-documents')
             .download(document.file_path);
             
           if (downloadError) {
             console.error('Storage download error:', downloadError);
-            throw new Error(`Storage download failed: ${downloadError.message}`);
+            console.error('Full error object:', JSON.stringify(downloadError, null, 2));
+            throw new Error(`Storage download failed: ${JSON.stringify(downloadError)}`);
           }
           
           if (fileData) {
