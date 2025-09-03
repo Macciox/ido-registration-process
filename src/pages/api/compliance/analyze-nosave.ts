@@ -96,10 +96,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           } else {
             throw new Error('No file data received from storage');
           }
-        } catch (reprocessError) {
+        } catch (reprocessError: any) {
           console.error('Document reprocessing failed:', reprocessError);
           return res.status(400).json({ 
-            error: `Document processing failed: ${reprocessError.message}. Please try re-uploading the document.` 
+            error: `Document processing failed: ${reprocessError.message || reprocessError}. Please try re-uploading the document.` 
           });
         }
       } else {
