@@ -1068,20 +1068,26 @@ export default function CompliancePage() {
                                 showToast('Error updating status', 'error');
                               }
                             }}
-                            className="px-2 py-1 bg-card-secondary border border-border rounded text-xs text-white"
+                            className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
+                            style={{ color: 'white' }}
                           >
-                            <option value="FOUND">✅ Found</option>
-                            <option value="NEEDS_CLARIFICATION">⚠️ Clarification</option>
-                            <option value="MISSING">❌ Missing</option>
-                            <option value="NOT_APPLICABLE">➖ Not Applicable</option>
+                            <option value="FOUND" className="bg-gray-800 text-white">✅ Found</option>
+                            <option value="NEEDS_CLARIFICATION" className="bg-gray-800 text-white">⚠️ Clarification</option>
+                            <option value="MISSING" className="bg-gray-800 text-white">❌ Missing</option>
+                            <option value="NOT_APPLICABLE" className="bg-gray-800 text-white">➖ Not Applicable</option>
                           </select>
                         </td>
                         <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
                         <td className="py-3 px-4">
                           {item.evidence?.length > 0 ? (
                             <button 
-                              className="text-blue-400 hover:text-blue-300 text-sm"
-                              title={item.evidence[0].snippet}
+                              onClick={() => {
+                                const evidenceText = item.evidence.map((e: any, i: number) => 
+                                  `Evidence ${i + 1}:\n${e.snippet}`
+                                ).join('\n\n');
+                                showToast(evidenceText, 'info', 10000);
+                              }}
+                              className="text-blue-400 hover:text-blue-300 text-sm underline cursor-pointer"
                             >
                               View Evidence ({item.evidence.length})
                             </button>
