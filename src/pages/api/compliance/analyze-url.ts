@@ -98,27 +98,127 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);
     
-    // Batch analyze with GPT-4 (configurable batch size)
+    // Single call analysis for fast mode (batchSize >= 5) or batch analysis
     const results: any[] = [];
     
-    for (let i = 0; i < template.checker_items.length; i += batchSize) {
-      const batch = template.checker_items.slice(i, i + batchSize);
-      
+    if (batchSize >= 5) {
+      // Single call with all requirements
       try {
-        // Use limited document content to stay within token limits
-        const batchContent = chunks.slice(0, 5).map(chunk => chunk.content).join('\n\n').substring(0, 15000); // Max 15k chars
+        const fullContent = chunks.slice(0, 10).map(chunk => chunk.content).join('\n\n').substring(0, 30000);
         
-        if (batchContent.length < 100) {
-          console.log('❌ Content too short:', batchContent.length, 'chars');
+        if (fullContent.length < 100) {
           throw new Error('Document content too short for analysis');
         }
         
-        // Create batch prompt
-        const requirementsList = batch.map((item: any, idx: number) => 
+        const requirementsList = template.checker_items.map((item: any, idx: number) => 
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
-        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these specific requirements are met in the provided document.
+        const singlePrompt = `You are a MiCA regulation compliance expert. Analyze ALL requirements below against the provided document in a single comprehensive analysis.
+
+ALL REQUIREMENTS TO ANALYZE:
+${requirementsList}
+
+DOCUMENT CONTENT:
+${fullContent}
+
+For EACH requirement (${template.checker_items.length} total), provide analysis in exact order:
+
+Scoring:
+- FOUND (80-100): Information clearly present with good detail
+- NEEDS_CLARIFICATION (40-79): Some information present but incomplete  
+- MISSING (0-39): No relevant information found
+
+Respond with a JSON array containing exactly ${template.checker_items.length} objects in the same order as requirements:
+[
+  {
+    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
+    "coverage_score": 0-100,
+    "reasoning": "Explain what you found or why it's missing",
+    "evidence_snippets": ["exact text from document that supports this requirement"]
+  }
+]`;
+
+        console.log(`\n=== SINGLE CALL GPT REQUEST ===`);
+        console.log(`Total requirements: ${template.checker_items.length}`);
+        console.log(`Content length: ${fullContent.length} chars`);
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: singlePrompt }],
+            temperature: 0.1,
+            max_tokens: 4000,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices[0]?.message?.content;
+          
+          const jsonMatch = content?.match(/\[[\s\S]*\]/);
+          
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            
+            parsed.forEach((result: any, idx: number) => {
+              const item = template.checker_items[idx];
+              if (item) {
+                results.push({
+                  item_id: item.id,
+                  item_name: item.item_name,
+                  category: item.category,
+                  status: result.status,
+                  coverage_score: result.coverage_score,
+                  reasoning: result.reasoning,
+                  evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+                });
+              }
+            });
+          } else {
+            throw new Error('No JSON array in response');
+          }
+        } else {
+          const errorText = await response.text();
+          throw new Error(`GPT API error: ${response.status} - ${errorText}`);
+        }
+      } catch (error) {
+        console.error('Single call analysis failed:', error);
+        // Fallback to batch processing
+        template.checker_items.forEach((item: any) => {
+          results.push({
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Single call analysis failed: ${error}`,
+            evidence: []
+          });
+        });
+      }
+    } else {
+      // Original batch processing for smaller batch sizes
+      for (let i = 0; i < template.checker_items.length; i += batchSize) {
+        const batch = template.checker_items.slice(i, i + batchSize);
+        
+        try {
+          const batchContent = chunks.slice(0, 5).map(chunk => chunk.content).join('\n\n').substring(0, 15000);
+          
+          if (batchContent.length < 100) {
+            throw new Error('Document content too short for analysis');
+          }
+          
+          const requirementsList = batch.map((item: any, idx: number) => 
+            `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
+          ).join('\n\n');
+          
+          const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these specific requirements are met in the provided document.
 
 REQUIREMENTS TO ANALYZE:
 ${requirementsList}
@@ -146,90 +246,68 @@ Respond with a JSON array (one object per requirement in exact order):
   }
 ]`;
 
-        console.log(`\n=== GPT REQUEST DEBUG ===`);
-        console.log(`Batch ${i + 1}: ${batch.length} items`);
-        console.log(`Content length: ${batchContent.length} chars`);
-        console.log(`Chunks available: ${chunks.length}`);
-        console.log(`First 200 chars: ${batchContent.substring(0, 200)}...`);
-        console.log(`Requirements: ${batch.map((item: any) => item.item_name).join(', ')}`);
-        console.log(`OpenAI API Key exists: ${!!process.env.OPENAI_API_KEY}`);
-        console.log(`API Key length: ${process.env.OPENAI_API_KEY?.length || 0}`);
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: batchPrompt }],
-            temperature: 0.1,
-            max_tokens: 1000,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const content = data.choices[0]?.message?.content;
-          
-          console.log(`\n=== GPT RESPONSE DEBUG ===`);
-          console.log(`Response length: ${content?.length || 0} chars`);
-          console.log(`Raw response: ${content?.substring(0, 500)}...`);
-          
-          const jsonMatch = content?.match(/\[[\s\S]*\]/);
-          
-          if (jsonMatch) {
-            console.log(`JSON found: ${jsonMatch[0].substring(0, 200)}...`);
-            const parsed = JSON.parse(jsonMatch[0]);
-            console.log(`Parsed ${parsed.length} results`);
-            
-            // Map batch results back to individual items
-            parsed.forEach((result: any, idx: number) => {
-              const item = batch[idx];
-              if (item) {
-                console.log(`Item ${idx + 1}: ${item.item_name} -> ${result.status} (${result.coverage_score}%)`);
-                results.push({
-                  item_id: item.id,
-                  item_name: item.item_name,
-                  category: item.category,
-                  status: result.status,
-                  coverage_score: result.coverage_score,
-                  reasoning: result.reasoning,
-                  evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
-                });
-              }
-            });
-          } else {
-            console.log('❌ No JSON array found in response!');
-            console.log('Full response:', content);
-            throw new Error('No JSON array in response');
-          }
-        } else {
-          const errorText = await response.text();
-          console.log(`❌ GPT API error ${response.status}: ${errorText}`);
-          console.log('Request headers:', response.headers);
-          throw new Error(`GPT API error: ${response.status} - ${errorText}`);
-        }
-      } catch (error) {
-        console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
-        // Add failed results for this batch
-        batch.forEach((item: any) => {
-          results.push({
-            item_id: item.id,
-            item_name: item.item_name,
-            category: item.category,
-            status: 'NEEDS_CLARIFICATION',
-            coverage_score: 0,
-            reasoning: `Batch analysis failed: ${error}`,
-            evidence: []
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-3.5-turbo',
+              messages: [{ role: 'user', content: batchPrompt }],
+              temperature: 0.1,
+              max_tokens: 1000,
+            }),
           });
-        });
-      }
-      
-      // Add delay between batches to avoid rate limiting
-      if (i + batchSize < template.checker_items.length) {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+
+          if (response.ok) {
+            const data = await response.json();
+            const content = data.choices[0]?.message?.content;
+            
+            const jsonMatch = content?.match(/\[[\s\S]*\]/);
+            
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              
+              parsed.forEach((result: any, idx: number) => {
+                const item = batch[idx];
+                if (item) {
+                  results.push({
+                    item_id: item.id,
+                    item_name: item.item_name,
+                    category: item.category,
+                    status: result.status,
+                    coverage_score: result.coverage_score,
+                    reasoning: result.reasoning,
+                    evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+                  });
+                }
+              });
+            } else {
+              throw new Error('No JSON array in response');
+            }
+          } else {
+            const errorText = await response.text();
+            throw new Error(`GPT API error: ${response.status} - ${errorText}`);
+          }
+        } catch (error) {
+          console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
+          batch.forEach((item: any) => {
+            results.push({
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: 'NEEDS_CLARIFICATION',
+              coverage_score: 0,
+              reasoning: `Batch analysis failed: ${error}`,
+              evidence: []
+            });
+          });
+        }
+        
+        if (i + batchSize < template.checker_items.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
     }
 
