@@ -65,6 +65,7 @@ export default function CompliancePage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [deletingAnalysis, setDeletingAnalysis] = useState<string>('');
+  const [regenerating, setRegenerating] = useState(false);
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -256,21 +257,71 @@ export default function CompliancePage() {
   };
 
   const handleRegenerate = async () => {
-    if (!results?.checkId) return;
+    if (!results?.results) {
+      showToast('No results to regenerate', 'error');
+      return;
+    }
     
+    // Find non-FOUND items
+    const nonFoundItems = results.results.filter((item: any) => item.status !== 'FOUND');
+    
+    if (nonFoundItems.length === 0) {
+      showToast('All items already found! Nothing to regenerate.', 'info');
+      return;
+    }
+    
+    setRegenerating(true);
     try {
       const response = await fetch('/api/compliance/regenerate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkId: results.checkId })
+        body: JSON.stringify({ 
+          documentId: results.documentId,
+          templateId: results.templateId || results.actualTemplateUsed,
+          nonFoundItems: nonFoundItems
+        })
       });
       
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Regeneration failed');
+      }
+      
       const data = await response.json();
-      alert(`Regenerated ${data.updated_items} items`);
-      console.log('Regeneration result:', data);
-    } catch (error) {
+      
+      if (data.success && data.updatedResults) {
+        // Update results with regenerated items
+        const updatedResults = results.results.map((item: any) => {
+          const updatedItem = data.updatedResults.find((updated: any) => updated.item_id === item.item_id);
+          return updatedItem || item;
+        });
+        
+        // Recalculate summary
+        const newSummary = {
+          found_items: updatedResults.filter((r: any) => r.status === 'FOUND').length,
+          clarification_items: updatedResults.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
+          missing_items: updatedResults.filter((r: any) => r.status === 'MISSING').length,
+          overall_score: Math.round(updatedResults.reduce((sum: number, r: any) => sum + r.coverage_score, 0) / updatedResults.length)
+        };
+        
+        // Update results state
+        setResults({
+          ...results,
+          results: updatedResults,
+          summary: newSummary
+        });
+        
+        const improved = data.updatedResults.filter((item: any) => item.status === 'FOUND').length;
+        showToast(`Regeneration completed! ${improved} items improved to FOUND status.`, 'success');
+      } else {
+        showToast(data.message || 'Regeneration completed but no improvements found', 'info');
+      }
+      
+    } catch (error: any) {
       console.error('Regenerate error:', error);
-      alert('Regeneration failed');
+      showToast('Regeneration failed: ' + error.message, 'error');
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -1034,12 +1085,13 @@ export default function CompliancePage() {
                 >
                   Export PDF
                 </button>
-                <button 
+                <LoadingButton
+                  loading={regenerating}
                   onClick={() => handleRegenerate()}
                   className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Regenerate Non-FOUND
-                </button>
+                  {regenerating ? 'Regenerating...' : '🔄 Regenerate Non-FOUND'}
+                </LoadingButton>
                 <button 
                   onClick={() => testAnalysis()}
                   className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
