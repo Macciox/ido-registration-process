@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { LoadingButton } from '@/components/ui/LoadingSpinner';
 
@@ -41,12 +42,27 @@ export default function PromptsManagerPage() {
 
   const fetchPrompts = async () => {
     try {
-      const response = await fetch('/api/prompts');
+      console.log('Fetching prompts...');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/prompts', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      console.log('Prompts response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Prompts data:', data);
       setPrompts(data.prompts || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching prompts:', error);
-      showToast('Failed to fetch prompts', 'error');
+      showToast('Failed to fetch prompts: ' + error.message, 'error');
     }
   };
 
@@ -60,9 +76,14 @@ export default function PromptsManagerPage() {
 
     setSaving(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/prompts', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           id: selectedPrompt.id,
           template: editedTemplate

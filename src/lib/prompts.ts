@@ -1,4 +1,10 @@
-// Centralized prompt management system
+// Hybrid prompt management system (memory + database)
+import { createClient } from '@supabase/supabase-js';
+
+const serviceClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export interface PromptTemplate {
   id: string;
@@ -90,12 +96,37 @@ Respond with JSON array (one object per requirement in exact order):
   }
 };
 
-export function getPrompt(promptId: string): PromptTemplate | null {
+export async function getPrompt(promptId: string): Promise<PromptTemplate | null> {
+  try {
+    // Try database first
+    const { data: dbPrompt } = await serviceClient
+      .from('prompts')
+      .select('*')
+      .eq('id', promptId)
+      .eq('is_active', true)
+      .single();
+    
+    if (dbPrompt) {
+      return {
+        id: dbPrompt.id,
+        name: dbPrompt.name,
+        description: dbPrompt.description || '',
+        template: dbPrompt.template,
+        variables: dbPrompt.variables || [],
+        lastModified: dbPrompt.updated_at,
+        version: dbPrompt.version
+      };
+    }
+  } catch (error) {
+    console.log('Database prompt not found, using fallback:', promptId);
+  }
+  
+  // Fallback to memory
   return PROMPT_TEMPLATES[promptId] || null;
 }
 
-export function renderPrompt(promptId: string, variables: Record<string, string>): string {
-  const prompt = getPrompt(promptId);
+export async function renderPrompt(promptId: string, variables: Record<string, string>): Promise<string> {
+  const prompt = await getPrompt(promptId);
   if (!prompt) {
     throw new Error(`Prompt ${promptId} not found`);
   }
@@ -108,7 +139,26 @@ export function renderPrompt(promptId: string, variables: Record<string, string>
   return rendered;
 }
 
-export function updatePrompt(promptId: string, newTemplate: string): boolean {
+export async function updatePrompt(promptId: string, newTemplate: string): Promise<boolean> {
+  try {
+    // Update in database
+    const { error } = await serviceClient
+      .from('prompts')
+      .upsert({
+        id: promptId,
+        template: newTemplate,
+        updated_at: new Date().toISOString(),
+        version: 1 // Will be incremented by trigger
+      });
+    
+    if (!error) {
+      return true;
+    }
+  } catch (error) {
+    console.error('Failed to update prompt in database:', error);
+  }
+  
+  // Fallback to memory update
   if (!PROMPT_TEMPLATES[promptId]) {
     return false;
   }
@@ -120,6 +170,30 @@ export function updatePrompt(promptId: string, newTemplate: string): boolean {
   return true;
 }
 
-export function getAllPrompts(): PromptTemplate[] {
+export async function getAllPrompts(): Promise<PromptTemplate[]> {
+  try {
+    // Get from database first
+    const { data: dbPrompts } = await serviceClient
+      .from('prompts')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (dbPrompts && dbPrompts.length > 0) {
+      return dbPrompts.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description || '',
+        template: p.template,
+        variables: p.variables || [],
+        lastModified: p.updated_at,
+        version: p.version
+      }));
+    }
+  } catch (error) {
+    console.log('Database prompts not available, using fallback');
+  }
+  
+  // Fallback to memory
   return Object.values(PROMPT_TEMPLATES);
 }
