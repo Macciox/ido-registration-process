@@ -43,34 +43,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description || 'No description'}\n   Previous Status: ${item.status} (${item.coverage_score}%)`
     ).join('\n\n');
     
-    const regeneratePrompt = `You are a MiCA regulation compliance expert. These requirements were previously marked as NOT FOUND or NEEDS CLARIFICATION. Please re-analyze them more carefully with this expanded document content.
+    const regeneratePrompt = `You are a MiCA regulation compliance expert analyzing crypto project documentation. Evaluate each requirement against the provided document content.
 
-REQUIREMENTS TO RE-ANALYZE:
+REQUIREMENTS TO ANALYZE:
 ${itemsList}
 
-EXPANDED DOCUMENT CONTENT:
+DOCUMENT CONTENT:
 ${fullContent}
 
-For EACH requirement above, search more thoroughly and creatively. Look for:
-- Synonyms and related terms
-- Indirect references
-- Implied information
-- Context clues
+For each requirement, search the document thoroughly for:
+1. Direct statements addressing the requirement
+2. Related information using synonyms or alternative terminology
+3. Implicit information that satisfies the requirement
+4. Contextual details that demonstrate compliance
 
-Be more generous in your scoring if you find ANY relevant information.
+EVALUATION CRITERIA:
+- FOUND (80-100): Requirement is clearly addressed with sufficient detail
+- NEEDS_CLARIFICATION (40-79): Partial information present but lacks completeness or clarity
+- MISSING (0-39): No relevant information found
 
-Scoring:
-- FOUND (80-100): Information clearly present or reasonably implied
-- NEEDS_CLARIFICATION (40-79): Some relevant information found
-- MISSING (0-39): Absolutely no relevant information
+Provide objective analysis based solely on document content. Include exact quotes as evidence when available.
 
-Respond with a JSON array (one object per requirement in exact order):
+Respond with JSON array (one object per requirement in exact order):
 [
   {
     "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
     "coverage_score": 0-100,
-    "reasoning": "Detailed explanation of what you found or why it's still missing",
-    "evidence_snippets": ["exact text from document that supports this requirement"]
+    "reasoning": "Clear explanation of findings",
+    "evidence_snippets": ["exact quotes from document"]
   }
 ]`;
 
@@ -106,6 +106,14 @@ Respond with a JSON array (one object per requirement in exact order):
     }
     
     const parsed = JSON.parse(jsonMatch[0]);
+    
+    console.log(`\n=== REGENERATION RESULTS ===`);
+    parsed.forEach((result: any, idx: number) => {
+      console.log(`${idx + 1}. ${nonFoundItems[idx].item_name}:`);
+      console.log(`   Status: ${nonFoundItems[idx].status} -> ${result.status}`);
+      console.log(`   Score: ${nonFoundItems[idx].coverage_score}% -> ${result.coverage_score}%`);
+      console.log(`   Reasoning: ${result.reasoning.substring(0, 100)}...`);
+    });
     
     // Map results back to items with IDs
     const updatedResults = parsed.map((result: any, idx: number) => {
