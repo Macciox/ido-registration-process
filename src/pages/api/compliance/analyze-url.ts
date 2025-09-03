@@ -49,25 +49,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    // Create document record for URL
-    const { data: document, error: docError } = await serviceClient
+    // Check if document already exists for this URL
+    const { data: existingDoc } = await serviceClient
       .from('compliance_documents')
-      .insert({
-        user_id: user.id,
-        filename: `Web Analysis: ${new URL(url).hostname}`,
-        file_path: url,
-        mime_type: 'text/html',
-        file_size: 0
-      })
-      .select()
+      .select('id, filename')
+      .eq('file_path', url)
+      .eq('user_id', user.id)
+      .eq('mime_type', 'text/html')
       .single();
 
-    if (docError) {
-      return res.status(500).json({ error: 'Failed to create document record' });
+    let document;
+    if (existingDoc) {
+      // Reuse existing document
+      document = existingDoc;
+      console.log('Reusing existing document:', existingDoc.id, 'for URL:', url);
+    } else {
+      // Create new document record for URL
+      const { data: newDoc, error: docError } = await serviceClient
+        .from('compliance_documents')
+        .insert({
+          user_id: user.id,
+          filename: `Web Analysis: ${new URL(url).hostname}`,
+          file_path: url,
+          mime_type: 'text/html',
+          file_size: 0
+        })
+        .select()
+        .single();
+
+      if (docError) {
+        return res.status(500).json({ error: 'Failed to create document record' });
+      }
+      
+      document = newDoc;
+      console.log('Created new document:', newDoc.id, 'for URL:', url);
     }
 
     // Process website: try crawler first, fallback to single page
-    console.log('Crawling website:', url);
+    console.log('Processing website:', url, 'for document:', document.id);
+    
+    // Always re-crawl to get latest content (even for existing documents)
     let processingResult = await processCrawledWebsite(document.id, url, 50); // Max 50 pages
     
     // Fallback to single page if crawler fails
