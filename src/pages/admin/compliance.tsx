@@ -638,10 +638,10 @@ export default function CompliancePage() {
                   >
                     <option value={1}>🐌 Thorough (1 item per call) - Most accurate</option>
                     <option value={3}>⚡ Balanced (3 items per call) - Good balance</option>
-                    <option value={5}>🚀 Fast (5 items per call) - Faster & cheaper</option>
+                    <option value={5}>🚀 Fast (Single call for all items) - Fastest & cheapest</option>
                   </select>
                   <p className="text-xs text-text-secondary mt-1">
-                    💡 Fewer items per call = more accurate but slower/costlier
+                    💡 Fast mode uses single call for all items. Thorough/Balanced use multiple calls for higher accuracy.
                   </p>
                 </div>
 

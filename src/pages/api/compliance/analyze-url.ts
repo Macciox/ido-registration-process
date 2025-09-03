@@ -101,6 +101,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Single call analysis for fast mode (batchSize >= 5) or batch analysis
     const results: any[] = [];
     
+    console.log(`\n=== ANALYSIS MODE SELECTION ===`);
+    console.log(`BatchSize: ${batchSize}`);
+    console.log(`Mode: ${batchSize >= 5 ? 'SINGLE CALL (Fast)' : 'BATCH PROCESSING'}`);
+    console.log(`Template items: ${template.checker_items.length}`);
+    
     if (batchSize >= 5) {
       // Single call with all requirements
       try {

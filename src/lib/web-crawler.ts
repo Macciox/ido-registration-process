@@ -53,10 +53,11 @@ async function crawlPage(url: string): Promise<CrawlResult | null> {
     console.log('Crawling:', url);
     
     const response = await axios.get(url, {
-      timeout: 15000,
+      timeout: 10000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      maxRedirects: 5
     });
     
     const html = response.data;
@@ -65,7 +66,8 @@ async function crawlPage(url: string): Promise<CrawlResult | null> {
     const title = $('title').text().trim() || 'Untitled';
     const markdown = htmlToMarkdown(html);
     
-    if (markdown.trim().length < 50) {
+    if (markdown.trim().length < 100) {
+      console.log(`Skipping ${url} - content too short (${markdown.trim().length} chars)`);
       return null; // Skip pages with minimal content
     }
     
@@ -88,7 +90,7 @@ async function crawlPage(url: string): Promise<CrawlResult | null> {
 export async function crawlWebsite(
   baseUrl: string, 
   maxPages: number = 20,
-  maxDepth: number = 3
+  maxDepth: number = 5
 ): Promise<{
   success: boolean;
   pages: CrawlResult[];
@@ -101,10 +103,23 @@ export async function crawlWebsite(
   const results: CrawlResult[] = [];
   
   try {
+    console.log(`\n=== STARTING WEBSITE CRAWL ===`);
+    console.log(`Base URL: ${baseUrl}`);
+    console.log(`Max pages: ${maxPages}, Max depth: ${maxDepth}`);
+    
     while (toVisit.length > 0 && results.length < maxPages) {
       const {url, depth} = toVisit.shift()!;
       
-      if (visited.has(url) || depth > maxDepth) {
+      console.log(`\nQueue: ${toVisit.length} remaining, Found: ${results.length}/${maxPages}`);
+      console.log(`Checking: ${url} (depth ${depth})`);
+      
+      if (visited.has(url)) {
+        console.log(`Skipping ${url} - already visited`);
+        continue;
+      }
+      
+      if (depth > maxDepth) {
+        console.log(`Skipping ${url} - depth ${depth} > max ${maxDepth}`);
         continue;
       }
       
@@ -114,36 +129,51 @@ export async function crawlWebsite(
       const pageResult = await crawlPage(url);
       if (pageResult) {
         results.push(pageResult);
+        console.log(`✅ Successfully crawled: ${url} (${pageResult.wordCount} words)`);
         
         // If not at max depth, extract links for further crawling
         if (depth < maxDepth) {
           try {
             const response = await axios.get(url, {timeout: 10000});
             const links = extractLinks(response.data, url);
+            console.log(`Found ${links.length} links on ${url}`);
             
+            let newLinksAdded = 0;
             // Add new links to visit queue
             for (const link of links) {
-              if (!visited.has(link)) {
+              if (!visited.has(link) && !toVisit.some(item => item.url === link)) {
                 toVisit.push({url: link, depth: depth + 1});
+                newLinksAdded++;
               }
             }
+            console.log(`Added ${newLinksAdded} new links to queue`);
           } catch (error) {
             console.error(`Error extracting links from ${url}:`, error);
           }
+        } else {
+          console.log(`Max depth reached for ${url}, not extracting links`);
         }
+      } else {
+        console.log(`❌ Failed to crawl or content too short: ${url}`);
       }
       
       // Small delay to be respectful
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     
     const totalWords = results.reduce((sum, page) => sum + page.wordCount, 0);
+    
+    console.log(`\n=== CRAWL COMPLETED ===`);
+    console.log(`Pages found: ${results.length}/${maxPages}`);
+    console.log(`Total words: ${totalWords}`);
+    console.log(`Pages visited: ${visited.size}`);
+    console.log(`Queue remaining: ${toVisit.length}`);
     
     return {
       success: true,
       pages: results,
       totalWords,
-      message: `Successfully crawled ${results.length} pages with ${totalWords} total words`
+      message: `Successfully crawled ${results.length} pages with ${totalWords} total words (visited ${visited.size} URLs total)`
     };
     
   } catch (error: any) {
