@@ -40,8 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           error: storageError?.message,
           size: fileData ? fileData.size : 0
         };
-      } catch (e) {
-        storageInfo = { exists: false, error: e.message };
+      } catch (e: any) {
+        storageInfo = { exists: false, error: e.message || e };
       }
     }
 
