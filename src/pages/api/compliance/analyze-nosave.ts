@@ -1,6 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getDocumentChunks } from '@/lib/pdf-processor';
+import { renderPrompt } from '@/lib/prompts';
+import { getPromptIdForTemplate } from '@/lib/prompt-selector';
+import { calculateScore } from '@/lib/scoring-system';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,33 +82,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
-        const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these specific requirements are met in the provided document.
-
-REQUIREMENTS TO ANALYZE:
-${requirementsList}
-
-DOCUMENT CONTENT:
-${documentText}
-
-For EACH requirement above, you must:
-1. Search the document for relevant information
-2. Determine if the requirement is satisfied
-3. Provide exact quotes as evidence if found
-
-Scoring:
-- FOUND (80-100): Information clearly present with good detail
-- NEEDS_CLARIFICATION (40-79): Some information present but incomplete
-- MISSING (0-39): No relevant information found
-
-Respond with a JSON array (one object per requirement in exact order):
-[
-  {
-    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-    "coverage_score": 0-100,
-    "reasoning": "Explain what you found or why it's missing",
-    "evidence_snippets": ["exact text from document that supports this requirement"]
-  }
-]`;
+        // Get template-specific prompt
+        const promptId = getPromptIdForTemplate(template.name);
+        const batchPrompt = await renderPrompt(promptId, {
+          requirementsList,
+          documentContent: documentText
+        });
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -165,26 +147,8 @@ Respond with a JSON array (one object per requirement in exact order):
       }
     }
 
-    // Calculate summary with NOT_APPLICABLE support
-    const foundItems = results.filter((r: any) => r.status === 'FOUND').length;
-    const clarificationItems = results.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length;
-    const missingItems = results.filter((r: any) => r.status === 'MISSING').length;
-    const notApplicableItems = results.filter((r: any) => r.status === 'NOT_APPLICABLE').length;
-    const applicableItems = results.length - notApplicableItems;
-    
-    // Calculate score based on applicable items only
-    const overallScore = applicableItems > 0 
-      ? Math.round((foundItems * 100) / applicableItems)
-      : 0;
-    
-    const summary = {
-      found_items: foundItems,
-      clarification_items: clarificationItems,
-      missing_items: missingItems,
-      not_applicable_items: notApplicableItems,
-      applicable_items: applicableItems,
-      overall_score: overallScore
-    };
+    // Calculate summary using template-specific scoring
+    const summary = calculateScore(results, template.name);
 
     res.status(200).json({
       checkId: `temp-${Date.now()}`,
