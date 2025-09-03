@@ -1085,7 +1085,7 @@ export default function CompliancePage() {
                                 const evidenceText = item.evidence.map((e: any, i: number) => 
                                   `Evidence ${i + 1}:\n${e.snippet}`
                                 ).join('\n\n');
-                                showToast(evidenceText, 'info', 10000);
+                                showToast(evidenceText, 'info');
                               }}
                               className="text-blue-400 hover:text-blue-300 text-sm underline cursor-pointer"
                             >
