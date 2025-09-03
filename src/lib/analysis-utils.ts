@@ -27,6 +27,8 @@ export interface AnalysisData {
     found_items: number;
     clarification_items: number;
     missing_items: number;
+    not_applicable_items?: number;
+    applicable_items?: number;
     overall_score: number;
   };
 }
