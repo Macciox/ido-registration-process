@@ -121,7 +121,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Found template:', template.id);
 
-    // Delete existing items
+    // First, delete any compliance results that reference these items
+    const { data: existingItems } = await serviceClient
+      .from('checker_items')
+      .select('id')
+      .eq('template_id', template.id);
+
+    if (existingItems && existingItems.length > 0) {
+      const itemIds = existingItems.map(item => item.id);
+      
+      // Delete compliance results first
+      const { error: resultsDeleteError } = await serviceClient
+        .from('compliance_results')
+        .delete()
+        .in('item_id', itemIds);
+
+      if (resultsDeleteError) {
+        console.error('Error deleting compliance results:', resultsDeleteError);
+        // Continue anyway - results might not exist
+      }
+    }
+
+    // Now delete existing items
     const { error: deleteError } = await serviceClient
       .from('checker_items')
       .delete()
@@ -129,10 +150,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (deleteError) {
       console.error('Error deleting old items:', deleteError);
-      return res.status(500).json({ error: 'Failed to delete old items' });
+      return res.status(500).json({ error: 'Failed to delete old items: ' + deleteError.message });
     }
 
-    console.log('Deleted old items');
+    console.log('Deleted old items and related results');
 
     // Insert new MiCA items
     const itemsToInsert = MICA_WHITEPAPER_ITEMS.map(item => ({
