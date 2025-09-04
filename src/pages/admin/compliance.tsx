@@ -48,7 +48,7 @@ export default function CompliancePage() {
   const [selectedDocument, setSelectedDocument] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string>('');
-  const [batchSize, setBatchSize] = useState<number>(5);
+  const [analysisMode, setAnalysisMode] = useState<'fast' | 'normal'>('fast');
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'existing' | 'url' | 'saved'>('upload');
@@ -385,7 +385,7 @@ export default function CompliancePage() {
         body: JSON.stringify({
           url: url,
           templateId: selectedTemplate,
-          batchSize: batchSize,
+          mode: analysisMode,
           whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSection : undefined
         })
       });
@@ -749,19 +749,18 @@ export default function CompliancePage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
-                    Analysis Speed
+                    Analysis Mode
                   </label>
                   <select
-                    value={batchSize}
-                    onChange={(e) => setBatchSize(Number(e.target.value))}
+                    value={analysisMode}
+                    onChange={(e) => setAnalysisMode(e.target.value as 'fast' | 'normal')}
                     className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
                   >
-                    <option value={1}>🐌 Thorough (1 item per call) - Most accurate</option>
-                    <option value={3}>⚡ Balanced (3 items per call) - Good balance</option>
-                    <option value={5}>🚀 Fast (Single call for all items) - Fastest & cheapest</option>
+                    <option value="fast">🚀 Fast Mode - Single call for all items (GPT-4o-mini)</option>
+                    <option value="normal">🎯 Normal Mode - 1 call per item (GPT-4, more accurate)</option>
                   </select>
                   <p className="text-xs text-text-secondary mt-1">
-                    💡 Fast mode uses single call for all items. Thorough/Balanced use multiple calls for higher accuracy.
+                    💡 Fast mode is cheaper and faster. Normal mode is more accurate but takes longer.
                   </p>
                 </div>
 
