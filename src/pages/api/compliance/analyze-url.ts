@@ -167,6 +167,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log(`\n=== SINGLE CALL GPT REQUEST ===`);
         console.log(`Total requirements: ${itemsToAnalyze.length}`);
         console.log(`Content length: ${documentContent.length} chars`);
+        console.log('\n=== FAST MODE PROMPT SENT TO OPENAI ===');
+        console.log(singlePrompt.substring(0, 3000) + '...');
+        console.log('=== END FAST MODE PROMPT ===\n');
         
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -189,10 +192,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const data = await response.json();
           const content = data.choices[0]?.message?.content;
           
+          console.log('\n=== OPENAI RESPONSE DEBUG ===');
+          console.log('Full response content:', content);
+          console.log('Content length:', content?.length);
+          
           const jsonMatch = content?.match(/\[[\s\S]*\]/);
           
           if (jsonMatch) {
+            console.log('JSON match found:', jsonMatch[0].substring(0, 500) + '...');
             const parsed = JSON.parse(jsonMatch[0]);
+            console.log('Parsed results count:', parsed.length);
             
             parsed.forEach((result: any, idx: number) => {
               const item = itemsToAnalyze[idx];
@@ -306,6 +315,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           console.log(`Sending request to OpenAI for item: ${item.item_name}`);
           console.log(`Prompt length: ${itemPrompt.length} chars`);
+          console.log('\n=== PROMPT SENT TO OPENAI ===');
+          console.log(itemPrompt.substring(0, 2000) + '...');
+          console.log('=== END PROMPT ===\n');
           
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',

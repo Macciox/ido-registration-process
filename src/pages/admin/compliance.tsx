@@ -1185,7 +1185,6 @@ export default function CompliancePage() {
                             <option value="FOUND" className="bg-gray-800 text-white">✅ Found</option>
                             <option value="NEEDS_CLARIFICATION" className="bg-gray-800 text-white">⚠️ Clarification</option>
                             <option value="MISSING" className="bg-gray-800 text-white">❌ Missing</option>
-                            <option value="NOT_APPLICABLE" className="bg-gray-800 text-white">➖ Not Applicable</option>
                           </select>
                         </td>
                         <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
