@@ -5,6 +5,7 @@ import { processCrawledWebsite } from '@/lib/web-crawler';
 import { getDocumentChunks } from '@/lib/pdf-processor';
 import { filterWhitepaperItems } from '@/lib/whitepaper-filter';
 import { renderPrompt } from '@/lib/prompts';
+import { COMPLIANCE_PROMPTS } from '@/lib/compliance/prompts';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -170,7 +171,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: singlePrompt }],
+            messages: [
+              { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
+              { role: 'user', content: singlePrompt }
+            ],
             temperature: 0.1,
             max_tokens: 4000,
           }),
@@ -258,7 +262,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
             body: JSON.stringify({
               model: 'gpt-3.5-turbo',
-              messages: [{ role: 'user', content: batchPrompt }],
+              messages: [
+                { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
+                { role: 'user', content: batchPrompt }
+              ],
               temperature: 0.1,
               max_tokens: 1000,
             }),
