@@ -349,18 +349,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             try {
               const parsed = JSON.parse(content);
               console.log(`JSON parsed successfully for ${item.item_name}`);
-              console.log(`Parsed status: ${parsed.status}`);
+              
+              // Handle both array and object responses
+              const result = Array.isArray(parsed) ? parsed[0] : parsed;
+              console.log(`Parsed status: ${result.status}`);
               
               results.push({
                 result_id: `temp-${item.id}-${Date.now()}`,
                 item_id: item.id,
                 item_name: item.item_name,
                 category: item.category,
-                status: parsed.status,
-                coverage_score: parsed.coverage_score,
-                reasoning: parsed.reasoning,
+                status: result.status,
+                coverage_score: result.coverage_score,
+                reasoning: result.reasoning,
                 manually_overridden: false,
-                evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+                evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
               });
               
               console.log(`Successfully added result for ${item.item_name}`);

@@ -402,6 +402,14 @@ export default function CompliancePage() {
       console.log('📊 Results count:', data.results?.length || 0);
       console.log('🎯 First result example:', data.results?.[0]);
       
+      // Check if results are missing required fields
+      const firstResult = data.results?.[0];
+      if (firstResult && !firstResult.status) {
+        console.error('❌ PROBLEM: Results missing status, coverage_score, reasoning!');
+        console.error('This means OpenAI parsing failed or timeout occurred');
+        console.error('Try using FAST MODE instead of NORMAL MODE');
+      }
+      
       console.log('Setting results and showResults to true');
       setResults({
         ...data,
