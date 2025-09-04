@@ -241,11 +241,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`Document content length: ${documentContent.length} chars`);
       console.log(`Template type: ${template.type}`);
       
-      console.log('Starting for loop...');
+      try {
+        console.log('Starting for loop...');
+        const startTime = Date.now();
+      const maxProcessingTime = 280000; // 280 seconds (20s buffer before Vercel timeout)
+      
       for (const [index, item] of itemsToAnalyze.entries()) {
+        // Check timeout before processing each item
+        const elapsed = Date.now() - startTime;
+        if (elapsed > maxProcessingTime) {
+          console.log(`\n=== TIMEOUT PROTECTION TRIGGERED ===`);
+          console.log(`Processed ${index}/${itemsToAnalyze.length} items in ${elapsed}ms`);
+          console.log('Stopping to avoid Vercel timeout');
+          
+          // Add remaining items as NEEDS_CLARIFICATION
+          for (let i = index; i < itemsToAnalyze.length; i++) {
+            const remainingItem = itemsToAnalyze[i];
+            results.push({
+              result_id: `temp-${remainingItem.id}-${Date.now()}`,
+              item_id: remainingItem.id,
+              item_name: remainingItem.item_name,
+              category: remainingItem.category,
+              status: 'NEEDS_CLARIFICATION',
+              coverage_score: 0,
+              reasoning: 'Analysis stopped due to timeout protection',
+              manually_overridden: false,
+              evidence: []
+            });
+          }
+          break;
+        }
+        
         try {
           console.log(`\n=== PROCESSING ITEM ${index + 1}/${itemsToAnalyze.length} ===`);
           console.log(`Item: ${item.item_name}`);
+          console.log(`Elapsed time: ${elapsed}ms`);
           
           if (documentContent.length < 100) {
             throw new Error('Document content too short for analysis');
@@ -302,26 +332,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             console.log(`OpenAI response received for ${item.item_name}`);
             console.log(`Response length: ${content?.length} chars`);
+            console.log(`Raw response content:`, content?.substring(0, 500) + '...');
             
-            const parsed = JSON.parse(content);
-            
-            results.push({
-              result_id: `temp-${item.id}-${Date.now()}`,
-              item_id: item.id,
-              item_name: item.item_name,
-              category: item.category,
-              status: parsed.status,
-              coverage_score: parsed.coverage_score,
-              reasoning: parsed.reasoning,
-              manually_overridden: false,
-              evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
-            });
+            try {
+              const parsed = JSON.parse(content);
+              console.log(`JSON parsed successfully for ${item.item_name}`);
+              console.log(`Parsed status: ${parsed.status}`);
+              
+              results.push({
+                result_id: `temp-${item.id}-${Date.now()}`,
+                item_id: item.id,
+                item_name: item.item_name,
+                category: item.category,
+                status: parsed.status,
+                coverage_score: parsed.coverage_score,
+                reasoning: parsed.reasoning,
+                manually_overridden: false,
+                evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+              });
+              
+              console.log(`Successfully added result for ${item.item_name}`);
+            } catch (parseError) {
+              console.error(`JSON parse error for ${item.item_name}:`, parseError);
+              console.error(`Content that failed to parse:`, content);
+              throw parseError;
+            }
           } else {
             const errorText = await response.text();
             throw new Error(`GPT API error: ${response.status} - ${errorText}`);
           }
         } catch (error) {
-          console.error(`Error analyzing item ${item.item_name}:`, error);
+          console.error(`\n=== ERROR PROCESSING ITEM ${index + 1} ===`);
+          console.error(`Item: ${item.item_name}`);
+          console.error(`Error:`, error);
+          console.error(`Stack:`, error instanceof Error ? error.stack : 'No stack trace');
+          
           results.push({
             result_id: `temp-${item.id}-${Date.now()}`,
             item_id: item.id,
@@ -336,7 +381,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Rate limiting between items
+        console.log(`Waiting 500ms before next item...`);
         await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`Ready to process next item (${index + 2}/${itemsToAnalyze.length})`);
+      }
+      
+        console.log(`\n=== NORMAL MODE COMPLETED ===`);
+        console.log(`Processed ${results.length} items total`);
+        console.log(`Total processing time: ${Date.now() - startTime}ms`);
+      } catch (fatalError) {
+        console.error(`\n=== FATAL ERROR IN NORMAL MODE ===`);
+        console.error('Fatal error:', fatalError);
+        console.error('Stack:', fatalError instanceof Error ? fatalError.stack : 'No stack trace');
+        
+        // Add remaining items as failed if we haven't processed them yet
+        const processedItems = results.length;
+        for (let i = processedItems; i < itemsToAnalyze.length; i++) {
+          const item = itemsToAnalyze[i];
+          results.push({
+            result_id: `temp-${item.id}-${Date.now()}`,
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Fatal error during processing: ${fatalError}`,
+            manually_overridden: false,
+            evidence: []
+          });
+        }
       }
     }
 
@@ -364,7 +437,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Debug info: show what content was analyzed
     const debugInfo = {
       totalChunks: chunks.length,
-      chunksUsed: Math.min(20, chunks.length),
+      chunksUsed: Math.min(maxChunks, chunks.length),
       firstChunkPreview: chunks[0]?.content.substring(0, 200) + '...',
       lastChunkPreview: chunks[Math.min(19, chunks.length - 1)]?.content.substring(0, 200) + '...',
       searchTerms: ['address', 'headquartered', 'registered', 'location', 'beachmont', 'kingstown']
