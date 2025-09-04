@@ -67,7 +67,7 @@ export default function CompliancePage() {
   const [deletingAnalysis, setDeletingAnalysis] = useState<string>('');
   const [regenerating, setRegenerating] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string>('');
-  const [whitepaperSection, setWhitepaperSection] = useState<'A' | 'B' | 'C'>('A');
+  const [whitepaperSections, setWhitepaperSections] = useState<string[]>(['A']);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [evidenceData, setEvidenceData] = useState<{title: string, evidence: any[]}>({title: '', evidence: []});
   const { showToast, ToastContainer } = useToast();
@@ -386,7 +386,7 @@ export default function CompliancePage() {
           url: url,
           templateId: selectedTemplate,
           mode: analysisMode,
-          whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSection : undefined
+          whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSections.join('+') : undefined
         })
       });
       
@@ -439,7 +439,7 @@ export default function CompliancePage() {
         body: JSON.stringify({
           documentId: selectedDocument,
           templateId: selectedTemplate,
-          whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSection : undefined
+          whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSections.join('+') : undefined
         })
       });
       
@@ -580,19 +580,33 @@ export default function CompliancePage() {
                 {templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') && (
                   <div>
                     <label className="block text-sm font-medium mb-2 text-white">
-                      Whitepaper Type (Choose One)
+                      Whitepaper Sections (Select Multiple)
                     </label>
-                    <select
-                      value={whitepaperSection}
-                      onChange={(e) => setWhitepaperSection(e.target.value as 'A' | 'B' | 'C')}
-                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
-                    >
-                      <option value="A" className="bg-gray-800 text-white">📋 Part A: Offeror Information (Standard)</option>
-                      <option value="B" className="bg-gray-800 text-white">🏢 Part B: Issuer Information (Different from Offeror)</option>
-                      <option value="C" className="bg-gray-800 text-white">🏛️ Part C: Trading Platform Operator</option>
-                    </select>
-                    <p className="text-xs text-text-secondary mt-1">
-                      💡 Choose the section that matches your whitepaper type. Only one section will be analyzed.
+                    <div className="space-y-2">
+                      {['A', 'B', 'C'].map(section => (
+                        <label key={section} className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={whitepaperSections.includes(section)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setWhitepaperSections([...whitepaperSections, section]);
+                              } else {
+                                setWhitepaperSections(whitepaperSections.filter(s => s !== section));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-800 text-primary focus:ring-primary"
+                          />
+                          <span className="text-white">
+                            {section === 'A' ? '📋 Part A: Offeror Information' :
+                             section === 'B' ? '🏢 Part B: Issuer Information' :
+                             '🏛️ Part C: Trading Platform Operator'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-text-secondary mt-2">
+                      💡 Select A, A+B, A+C, or A+B+C. Other sections (D-I) are always included.
                     </p>
                   </div>
                 )}
@@ -662,19 +676,33 @@ export default function CompliancePage() {
                 {templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') && (
                   <div>
                     <label className="block text-sm font-medium mb-2 text-white">
-                      Whitepaper Type (Choose One)
+                      Whitepaper Sections (Select Multiple)
                     </label>
-                    <select
-                      value={whitepaperSection}
-                      onChange={(e) => setWhitepaperSection(e.target.value as 'A' | 'B' | 'C')}
-                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
-                    >
-                      <option value="A" className="bg-gray-800 text-white">📋 Part A: Offeror Information (Standard)</option>
-                      <option value="B" className="bg-gray-800 text-white">🏢 Part B: Issuer Information (Different from Offeror)</option>
-                      <option value="C" className="bg-gray-800 text-white">🏛️ Part C: Trading Platform Operator</option>
-                    </select>
-                    <p className="text-xs text-text-secondary mt-1">
-                      💡 Choose the section that matches your whitepaper type. Only one section will be analyzed.
+                    <div className="space-y-2">
+                      {['A', 'B', 'C'].map(section => (
+                        <label key={section} className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={whitepaperSections.includes(section)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setWhitepaperSections([...whitepaperSections, section]);
+                              } else {
+                                setWhitepaperSections(whitepaperSections.filter(s => s !== section));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-800 text-primary focus:ring-primary"
+                          />
+                          <span className="text-white">
+                            {section === 'A' ? '📋 Part A: Offeror Information' :
+                             section === 'B' ? '🏢 Part B: Issuer Information' :
+                             '🏛️ Part C: Trading Platform Operator'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-text-secondary mt-2">
+                      💡 Select A, A+B, A+C, or A+B+C. Other sections (D-I) are always included.
                     </p>
                   </div>
                 )}
@@ -730,19 +758,33 @@ export default function CompliancePage() {
                 {templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') && (
                   <div>
                     <label className="block text-sm font-medium mb-2 text-white">
-                      Whitepaper Type (Choose One)
+                      Whitepaper Sections (Select Multiple)
                     </label>
-                    <select
-                      value={whitepaperSection}
-                      onChange={(e) => setWhitepaperSection(e.target.value as 'A' | 'B' | 'C')}
-                      className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
-                    >
-                      <option value="A" className="bg-gray-800 text-white">📋 Part A: Offeror Information (Standard)</option>
-                      <option value="B" className="bg-gray-800 text-white">🏢 Part B: Issuer Information (Different from Offeror)</option>
-                      <option value="C" className="bg-gray-800 text-white">🏛️ Part C: Trading Platform Operator</option>
-                    </select>
-                    <p className="text-xs text-text-secondary mt-1">
-                      💡 Choose the section that matches your whitepaper type. Only one section will be analyzed.
+                    <div className="space-y-2">
+                      {['A', 'B', 'C'].map(section => (
+                        <label key={section} className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={whitepaperSections.includes(section)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setWhitepaperSections([...whitepaperSections, section]);
+                              } else {
+                                setWhitepaperSections(whitepaperSections.filter(s => s !== section));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-800 text-primary focus:ring-primary"
+                          />
+                          <span className="text-white">
+                            {section === 'A' ? '📋 Part A: Offeror Information' :
+                             section === 'B' ? '🏢 Part B: Issuer Information' :
+                             '🏛️ Part C: Trading Platform Operator'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-text-secondary mt-2">
+                      💡 Select A, A+B, A+C, or A+B+C. Other sections (D-I) are always included.
                     </p>
                   </div>
                 )}
