@@ -236,7 +236,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       // Normal mode: 1 call per item
       console.log(`\n=== NORMAL MODE: 1 CALL PER ITEM ===`);
+      console.log(`About to start processing ${itemsToAnalyze.length} items`);
+      console.log(`Document content length: ${documentContent.length} chars`);
+      console.log(`Template type: ${template.type}`);
       
+      console.log('Starting for loop...');
       for (const [index, item] of itemsToAnalyze.entries()) {
         try {
           console.log(`\n=== PROCESSING ITEM ${index + 1}/${itemsToAnalyze.length} ===`);
@@ -251,18 +255,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                           template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
           
           console.log(`Using prompt: ${promptId}`);
+          console.log('About to render prompt...');
           
           let itemPrompt;
           if (template.type === 'legal') {
+            console.log('Rendering legal prompt...');
             itemPrompt = await renderPrompt(promptId, {
               documentContent: documentContent
             });
           } else {
+            console.log('Rendering whitepaper prompt...');
             itemPrompt = await renderPrompt(promptId, {
               requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
               documentContent: documentContent
             });
           }
+          
+          console.log('Prompt rendered successfully');
 
           console.log(`Sending request to OpenAI for item: ${item.item_name}`);
           console.log(`Prompt length: ${itemPrompt.length} chars`);
