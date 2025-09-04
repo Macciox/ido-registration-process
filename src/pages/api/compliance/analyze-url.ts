@@ -122,6 +122,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);
     
+    // Create documentContent ONCE for all items (like PDF analysis)
+    const documentContent = chunks.map((chunk, i) => 
+      `[Excerpt ${i + 1}]\n${chunk.content}`
+    ).join('\n\n');
+    
+    console.log(`Using ${chunks.length} chunks for analysis (${documentContent.length} chars)`);
+    
     // Filter items for whitepaper if section is specified
     let itemsToAnalyze = template.checker_items;
     if (whitepaperSection && template.name?.includes('Whitepaper')) {
@@ -140,9 +147,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (batchSize >= 5) {
       // Single call with all requirements
       try {
-        const fullContent = chunks.slice(0, 10).map(chunk => chunk.content).join('\n\n').substring(0, 30000);
-        
-        if (fullContent.length < 100) {
+        if (documentContent.length < 100) {
           throw new Error('Document content too short for analysis');
         }
         
@@ -150,13 +155,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
-        // Use centralized prompt system
+        // Use centralized prompt system with SAME documentContent
         const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                         template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
         
         const singlePrompt = await renderPrompt(promptId, {
           requirementsList: requirementsList,
-          documentContent: fullContent
+          documentContent: documentContent
         });
 
         console.log(`\n=== SINGLE CALL GPT REQUEST ===`);
@@ -235,9 +240,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const batch = itemsToAnalyze.slice(i, i + batchSize);
         
         try {
-          const batchContent = chunks.slice(0, 5).map(chunk => chunk.content).join('\n\n').substring(0, 15000);
-          
-          if (batchContent.length < 100) {
+          if (documentContent.length < 100) {
             throw new Error('Document content too short for analysis');
           }
           
@@ -245,13 +248,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
           ).join('\n\n');
           
-          // Use centralized prompt system for batch too
+          // Use centralized prompt system with SAME documentContent
           const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                           template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
           
           const batchPrompt = await renderPrompt(promptId, {
             requirementsList: requirementsList,
-            documentContent: batchContent
+            documentContent: documentContent
           });
 
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
