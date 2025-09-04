@@ -9,20 +9,16 @@ const serviceClient = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check admin access using same method as other APIs
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
-      console.log('Prompts API: No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
 
     const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
     if (authError || !user) {
-      console.log('Prompts API: Auth error:', authError);
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // Get user profile to check role
     const { data: profile } = await serviceClient
       .from('profiles')
       .select('role')
@@ -30,11 +26,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (!profile || profile.role !== 'admin') {
-      console.log('Prompts API: Access denied for user:', user.email, 'role:', profile?.role);
       return res.status(403).json({ error: 'Admin access required' });
     }
-    
-    console.log('Prompts API: Admin access granted for:', user.email);
 
     if (req.method === 'GET') {
       const { id } = req.query;
@@ -47,7 +40,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json({ prompt });
       } else {
         const prompts = await getAllPrompts();
-        console.log('Prompts API: Returning', prompts.length, 'prompts');
         return res.status(200).json({ prompts });
       }
     }
