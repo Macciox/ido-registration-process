@@ -123,12 +123,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const chunks = await getDocumentChunks(document.id);
     
     // Create documentContent ONCE for all items (limit for stability)
-    const maxChunks = 25; // Limit to ~50k chars for stability
+    const maxChunks = 15; // Limit to ~30k chars for faster processing
     const documentContent = chunks.slice(0, maxChunks).map((chunk, i) => 
       `[Excerpt ${i + 1}]\n${chunk.content}`
     ).join('\n\n');
     
-    console.log(`Using ${chunks.length} chunks for analysis (${documentContent.length} chars)`);
+    console.log(`Using ${Math.min(maxChunks, chunks.length)} chunks for analysis (${documentContent.length} chars)`);
     
     // Filter items for whitepaper if section is specified
     let itemsToAnalyze = template.checker_items;
