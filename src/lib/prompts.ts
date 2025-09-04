@@ -17,44 +17,6 @@ export interface PromptTemplate {
 }
 
 export const PROMPT_TEMPLATES: Record<string, PromptTemplate> = {
-  COMPLIANCE_ANALYSIS: {
-    id: 'COMPLIANCE_ANALYSIS',
-    name: 'MiCA Compliance Analysis',
-    description: 'Main prompt for analyzing compliance requirements against documents',
-    template: `You are a MiCA regulation compliance expert analyzing crypto project documentation. Evaluate each requirement against the provided document content.
-
-REQUIREMENTS TO ANALYZE:
-{{requirementsList}}
-
-DOCUMENT CONTENT:
-{{documentContent}}
-
-For each requirement, search the document thoroughly for:
-1. Direct statements addressing the requirement
-2. Related information using synonyms or alternative terminology
-3. Implicit information that satisfies the requirement
-4. Contextual details that demonstrate compliance
-
-EVALUATION CRITERIA:
-- FOUND (80-100): Requirement is clearly addressed with sufficient detail
-- NEEDS_CLARIFICATION (40-79): Partial information present but lacks completeness or clarity
-- MISSING (0-39): No relevant information found
-
-Provide objective analysis based solely on document content. Include exact quotes as evidence when available.
-
-Respond with JSON array (one object per requirement in exact order):
-[
-  {
-    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-    "coverage_score": 0-100,
-    "reasoning": "Clear explanation of findings",
-    "evidence_snippets": ["exact quotes from document"]
-  }
-]`,
-    variables: ['requirementsList', 'documentContent'],
-    lastModified: new Date().toISOString(),
-    version: 1
-  },
 
   REGENERATE_ANALYSIS: {
     id: 'REGENERATE_ANALYSIS',
