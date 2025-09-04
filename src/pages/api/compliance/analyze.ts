@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { retrieveWithExpansion } from '@/lib/compliance/retrieval';
 import { Result, ResultType } from '@/lib/compliance/schema';
 import { getPromptForTemplate, formatPrompt, COMPLIANCE_PROMPTS } from '@/lib/compliance/prompts';
+import { renderPrompt } from '@/lib/prompts';
 
 interface AnalyzeRequest {
   check_id: string;
@@ -11,9 +12,9 @@ interface AnalyzeRequest {
 
 
 
-async function analyzeItem(
+async function analyzeItemWithContent(
   item: any,
-  excerpts: any[],
+  documentContent: string,
   templateType: string,
   retries: number = 2
 ): Promise<ResultType> {
@@ -22,17 +23,26 @@ async function analyzeItem(
     throw new Error('OPENAI_API_KEY not configured');
   }
 
-  const relevantContent = excerpts.map((excerpt, i) => 
-    `[Excerpt ${i + 1}${excerpt.page ? ` - Page ${excerpt.page}` : ''}]\n${excerpt.content}`
-  ).join('\n\n');
-
-  const promptTemplate = getPromptForTemplate(templateType);
-  const userPrompt = formatPrompt(promptTemplate, {
-    category: item.category,
-    item_name: item.item_name,
-    description: item.description,
-    relevant_content: relevantContent
-  });
+  // Use centralized prompt system for all template types
+  let userPrompt: string;
+  try {
+    const promptId = templateType === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
+                    templateType === 'legal' ? 'LEGAL_ANALYSIS' : 'COMPLIANCE_ANALYSIS';
+    
+    userPrompt = await renderPrompt(promptId, {
+      requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
+      documentContent: documentContent
+    });
+  } catch (error) {
+    // Fallback to old system if centralized prompt fails
+    const promptTemplate = getPromptForTemplate(templateType);
+    userPrompt = formatPrompt(promptTemplate, {
+      category: item.category,
+      item_name: item.item_name,
+      description: item.description,
+      relevant_content: documentContent
+    });
+  }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -136,22 +146,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error('Failed to load checklist items');
     }
 
+    // Get ALL chunks once for the entire analysis
+    const { data: allChunks } = await supabase
+      .from('compliance_chunks')
+      .select('content, page')
+      .eq('check_id', check_id)
+      .order('page');
+
+    if (!allChunks || allChunks.length === 0) {
+      return res.status(400).json({ error: 'No document chunks found for analysis' });
+    }
+
+    // Create documentContent ONCE for all items
+    const documentContent = allChunks.map((chunk, i) => 
+      `[Excerpt ${i + 1}${chunk.page ? ` - Page ${chunk.page}` : ''}]\n${chunk.content}`
+    ).join('\n\n');
+
+    console.log(`Using ${allChunks.length} chunks for analysis (${documentContent.length} chars)`);
+
     const results = [];
     let processedCount = 0;
 
-    // Process each item
+    // Process each item with the same documentContent
     for (const item of items) {
       try {
-        // Retrieve relevant chunks
-        const excerpts = await retrieveWithExpansion(
-          check_id,
-          item.item_name,
-          item.description || '',
-          6
-        );
-
-        // Analyze with GPT-4
-        const analysis = await analyzeItem(item, excerpts, checkData.checker_templates.type);
+        // Analyze with GPT-4 using all chunks
+        const analysis = await analyzeItemWithContent(item, documentContent, checkData.checker_templates.type);
 
         // Save result to database
         const { data: resultData, error: resultError } = await supabase

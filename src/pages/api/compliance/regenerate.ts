@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getDocumentChunks } from '@/lib/pdf-processor';
+import { renderPrompt } from '@/lib/prompts';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,8 +44,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description || 'No description'}\n   Previous Status: ${item.status} (${item.coverage_score}%)`
     ).join('\n\n');
     
-    // Use hardcoded prompt for now (safe)
-    const regeneratePrompt = `You are a MiCA regulation compliance expert analyzing crypto project documentation. Evaluate each requirement against the provided document content.
+    // Use centralized prompt system
+    let regeneratePrompt: string;
+    try {
+      regeneratePrompt = await renderPrompt('REGENERATE_ANALYSIS', {
+        itemsList: itemsList,
+        fullContent: fullContent
+      });
+    } catch (error) {
+      // Fallback to hardcoded prompt if centralized fails
+      regeneratePrompt = `You are a MiCA regulation compliance expert analyzing crypto project documentation. Evaluate each requirement against the provided document content.
 
 REQUIREMENTS TO ANALYZE:
 ${itemsList}
@@ -74,6 +83,7 @@ Respond with JSON array (one object per requirement in exact order):
     "evidence_snippets": ["exact quotes from document"]
   }
 ]`;
+    }
 
     console.log(`Regeneration prompt length: ${regeneratePrompt.length} chars`);
     console.log(`Content length: ${fullContent.length} chars`);
