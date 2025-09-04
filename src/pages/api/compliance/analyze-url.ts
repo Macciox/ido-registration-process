@@ -4,6 +4,7 @@ import { processWebpage } from '@/lib/web-scraper';
 import { processCrawledWebsite } from '@/lib/web-crawler';
 import { getDocumentChunks } from '@/lib/pdf-processor';
 import { filterWhitepaperItems } from '@/lib/whitepaper-filter';
+import { renderPrompt } from '@/lib/prompts';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -148,30 +149,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
         ).join('\n\n');
         
-        const singlePrompt = `You are a MiCA regulation compliance expert. Analyze ALL requirements below against the provided document in a single comprehensive analysis.
-
-ALL REQUIREMENTS TO ANALYZE:
-${requirementsList}
-
-DOCUMENT CONTENT:
-${fullContent}
-
-For EACH requirement (${itemsToAnalyze.length} total), provide analysis in exact order:
-
-Scoring:
-- FOUND (80-100): Information clearly present with good detail
-- NEEDS_CLARIFICATION (40-79): Some information present but incomplete  
-- MISSING (0-39): No relevant information found
-
-Respond with a JSON array containing exactly ${itemsToAnalyze.length} objects in the same order as requirements:
-[
-  {
-    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-    "coverage_score": 0-100,
-    "reasoning": "Explain what you found or why it's missing",
-    "evidence_snippets": ["exact text from document that supports this requirement"]
-  }
-]`;
+        // Use centralized prompt system
+        const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
+                        template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
+        
+        const singlePrompt = await renderPrompt(promptId, {
+          requirementsList: requirementsList,
+          documentContent: fullContent
+        });
 
         console.log(`\n=== SINGLE CALL GPT REQUEST ===`);
         console.log(`Total requirements: ${itemsToAnalyze.length}`);
@@ -256,33 +241,14 @@ Respond with a JSON array containing exactly ${itemsToAnalyze.length} objects in
             `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
           ).join('\n\n');
           
-          const batchPrompt = `You are a MiCA regulation compliance expert. Analyze if these specific requirements are met in the provided document.
-
-REQUIREMENTS TO ANALYZE:
-${requirementsList}
-
-DOCUMENT CONTENT:
-${batchContent}
-
-For EACH requirement above, you must:
-1. Search the document for relevant information
-2. Determine if the requirement is satisfied
-3. Provide exact quotes as evidence if found
-
-Scoring:
-- FOUND (80-100): Information clearly present with good detail
-- NEEDS_CLARIFICATION (40-79): Some information present but incomplete
-- MISSING (0-39): No relevant information found
-
-Respond with a JSON array (one object per requirement in exact order):
-[
-  {
-    "status": "FOUND|NEEDS_CLARIFICATION|MISSING",
-    "coverage_score": 0-100,
-    "reasoning": "Explain what you found or why it's missing",
-    "evidence_snippets": ["exact text from document that supports this requirement"]
-  }
-]`;
+          // Use centralized prompt system for batch too
+          const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
+                          template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
+          
+          const batchPrompt = await renderPrompt(promptId, {
+            requirementsList: requirementsList,
+            documentContent: batchContent
+          });
 
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
