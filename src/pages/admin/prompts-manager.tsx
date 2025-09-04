@@ -42,24 +42,32 @@ export default function PromptsManagerPage() {
 
   const fetchPrompts = async () => {
     try {
-      console.log('Fetching prompts...');
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Fetching prompts from Supabase...');
       
-      const response = await fetch('/api/prompts', {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      });
-      console.log('Prompts response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      // Fetch prompts directly from Supabase
+      const { data: dbPrompts, error } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        throw error;
       }
+
+      // Transform to match expected format
+      const transformedPrompts = (dbPrompts || []).map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description || '',
+        template: p.template,
+        variables: p.variables || [],
+        lastModified: p.updated_at,
+        version: p.version
+      }));
       
-      const data = await response.json();
-      console.log('Prompts data:', data);
-      setPrompts(data.prompts || []);
+      console.log('Prompts data:', transformedPrompts);
+      setPrompts(transformedPrompts);
     } catch (error: any) {
       console.error('Error fetching prompts:', error);
       showToast('Failed to fetch prompts: ' + error.message, 'error');
@@ -76,29 +84,27 @@ export default function PromptsManagerPage() {
 
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch('/api/prompts', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({
-          id: selectedPrompt.id,
-          template: editedTemplate
+      // Update prompt directly in Supabase
+      const { error } = await supabase
+        .from('prompts')
+        .update({
+          template: editedTemplate,
+          updated_at: new Date().toISOString()
         })
-      });
+        .eq('id', selectedPrompt.id);
 
-      const data = await response.json();
-      
-      if (data.success) {
-        showToast('Prompt updated successfully', 'success');
-        fetchPrompts();
-        setSelectedPrompt(data.prompt);
-      } else {
-        throw new Error(data.error);
+      if (error) {
+        throw error;
       }
+
+      showToast('Prompt updated successfully', 'success');
+      fetchPrompts();
+      
+      // Update selected prompt with new template
+      setSelectedPrompt({
+        ...selectedPrompt,
+        template: editedTemplate
+      });
     } catch (error: any) {
       showToast('Failed to save prompt: ' + error.message, 'error');
     } finally {
