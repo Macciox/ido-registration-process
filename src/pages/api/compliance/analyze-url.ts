@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { url, templateId, batchSize = 1, whitepaperSection } = req.body;
+  const { url, templateId, mode = 'normal', whitepaperSection } = req.body;
 
   if (!url || !templateId) {
     return res.status(400).json({ error: 'URL and template ID required' });
@@ -136,15 +136,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`Filtered whitepaper items: ${itemsToAnalyze.length} items for section ${whitepaperSection}`);
     }
 
-    // Single call analysis for fast mode (batchSize >= 5) or batch analysis
+    // Analysis modes: fast (1 call) or normal (1 call per item)
     const results: any[] = [];
     
     console.log(`\n=== ANALYSIS MODE SELECTION ===`);
-    console.log(`BatchSize: ${batchSize}`);
-    console.log(`Mode: ${batchSize >= 5 ? 'SINGLE CALL (Fast)' : 'BATCH PROCESSING'}`);
+    console.log(`Mode: ${mode.toUpperCase()}`);
     console.log(`Template items: ${itemsToAnalyze.length}`);
     
-    if (batchSize >= 5) {
+    if (mode === 'fast') {
       // Single call with all requirements
       try {
         if (documentContent.length < 100) {
@@ -235,27 +234,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
     } else {
-      // Original batch processing for smaller batch sizes
-      for (let i = 0; i < itemsToAnalyze.length; i += batchSize) {
-        const batch = itemsToAnalyze.slice(i, i + batchSize);
-        
+      // Normal mode: 1 call per item
+      console.log(`\n=== NORMAL MODE: 1 CALL PER ITEM ===`);
+      
+      for (const item of itemsToAnalyze) {
         try {
           if (documentContent.length < 100) {
             throw new Error('Document content too short for analysis');
           }
           
-          const requirementsList = batch.map((item: any, idx: number) => 
-            `${idx + 1}. Requirement: ${item.item_name}\n   Category: ${item.category}\n   Description: ${item.description}`
-          ).join('\n\n');
-          
           // Use centralized prompt system with SAME documentContent
           const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                           template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
           
-          const batchPrompt = await renderPrompt(promptId, {
-            requirementsList: requirementsList,
-            documentContent: documentContent
-          });
+          let itemPrompt;
+          if (template.type === 'legal') {
+            itemPrompt = await renderPrompt(promptId, {
+              documentContent: documentContent
+            });
+          } else {
+            itemPrompt = await renderPrompt(promptId, {
+              requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
+              documentContent: documentContent
+            });
+          }
 
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -264,10 +266,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-3.5-turbo',
+              model: 'gpt-4',
               messages: [
                 { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
-                { role: 'user', content: batchPrompt }
+                { role: 'user', content: itemPrompt }
               ],
               temperature: 0.1,
               max_tokens: 1000,
@@ -278,54 +280,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const data = await response.json();
             const content = data.choices[0]?.message?.content;
             
-            const jsonMatch = content?.match(/\[[\s\S]*\]/);
+            const parsed = JSON.parse(content);
             
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              
-              parsed.forEach((result: any, idx: number) => {
-                const item = batch[idx];
-                if (item) {
-                  results.push({
-                    result_id: `temp-${item.id}-${Date.now()}`,
-                    item_id: item.id,
-                    item_name: item.item_name,
-                    category: item.category,
-                    status: result.status,
-                    coverage_score: result.coverage_score,
-                    reasoning: result.reasoning,
-                    manually_overridden: false,
-                    evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
-                  });
-                }
-              });
-            } else {
-              throw new Error('No JSON array in response');
-            }
-          } else {
-            const errorText = await response.text();
-            throw new Error(`GPT API error: ${response.status} - ${errorText}`);
-          }
-        } catch (error) {
-          console.error(`Error analyzing batch ${i}-${i + batchSize}:`, error);
-          batch.forEach((item: any) => {
             results.push({
               result_id: `temp-${item.id}-${Date.now()}`,
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: 'NEEDS_CLARIFICATION',
-              coverage_score: 0,
-              reasoning: `Batch analysis failed: ${error}`,
+              status: parsed.status,
+              coverage_score: parsed.coverage_score,
+              reasoning: parsed.reasoning,
               manually_overridden: false,
-              evidence: []
+              evidence: (parsed.evidence_snippets || []).map((snippet: string) => ({ snippet }))
             });
+          } else {
+            const errorText = await response.text();
+            throw new Error(`GPT API error: ${response.status} - ${errorText}`);
+          }
+        } catch (error) {
+          console.error(`Error analyzing item ${item.item_name}:`, error);
+          results.push({
+            result_id: `temp-${item.id}-${Date.now()}`,
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Analysis failed: ${error}`,
+            manually_overridden: false,
+            evidence: []
           });
         }
         
-        if (i + batchSize < itemsToAnalyze.length) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+        // Rate limiting between items
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
