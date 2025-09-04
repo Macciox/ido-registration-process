@@ -122,8 +122,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get document chunks for analysis
     const chunks = await getDocumentChunks(document.id);
     
-    // Create documentContent ONCE for all items (like PDF analysis)
-    const documentContent = chunks.map((chunk, i) => 
+    // Create documentContent ONCE for all items (limit for stability)
+    const maxChunks = 25; // Limit to ~50k chars for stability
+    const documentContent = chunks.slice(0, maxChunks).map((chunk, i) => 
       `[Excerpt ${i + 1}]\n${chunk.content}`
     ).join('\n\n');
     
@@ -174,7 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4-turbo',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
               { role: 'user', content: singlePrompt }
@@ -283,7 +284,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4-turbo',
+              model: 'gpt-4o-mini',
               messages: [
                 { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
                 { role: 'user', content: itemPrompt }
