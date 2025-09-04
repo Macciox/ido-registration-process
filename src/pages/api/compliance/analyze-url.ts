@@ -237,8 +237,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Normal mode: 1 call per item
       console.log(`\n=== NORMAL MODE: 1 CALL PER ITEM ===`);
       
-      for (const item of itemsToAnalyze) {
+      for (const [index, item] of itemsToAnalyze.entries()) {
         try {
+          console.log(`\n=== PROCESSING ITEM ${index + 1}/${itemsToAnalyze.length} ===`);
+          console.log(`Item: ${item.item_name}`);
+          
           if (documentContent.length < 100) {
             throw new Error('Document content too short for analysis');
           }
@@ -246,6 +249,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Use centralized prompt system with SAME documentContent
           const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                           template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
+          
+          console.log(`Using prompt: ${promptId}`);
           
           let itemPrompt;
           if (template.type === 'legal') {
@@ -259,6 +264,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
           }
 
+          console.log(`Sending request to OpenAI for item: ${item.item_name}`);
+          console.log(`Prompt length: ${itemPrompt.length} chars`);
+          
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -276,9 +284,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }),
           });
 
+          console.log(`OpenAI response status: ${response.status}`);
+          
           if (response.ok) {
             const data = await response.json();
             const content = data.choices[0]?.message?.content;
+            
+            console.log(`OpenAI response received for ${item.item_name}`);
+            console.log(`Response length: ${content?.length} chars`);
             
             const parsed = JSON.parse(content);
             
