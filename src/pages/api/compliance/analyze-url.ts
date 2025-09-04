@@ -123,7 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const chunks = await getDocumentChunks(document.id);
     
     // Create documentContent ONCE for all items (limit for stability)
-    const maxChunks = 15; // Limit to ~30k chars for faster processing
+    const maxChunks = 43; // Use all available chunks for complete analysis
     const documentContent = chunks.slice(0, maxChunks).map((chunk, i) => 
       `[Excerpt ${i + 1}]\n${chunk.content}`
     ).join('\n\n');
