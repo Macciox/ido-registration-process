@@ -166,7 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log(`\n=== SINGLE CALL GPT REQUEST ===`);
         console.log(`Total requirements: ${itemsToAnalyze.length}`);
-        console.log(`Content length: ${fullContent.length} chars`);
+        console.log(`Content length: ${documentContent.length} chars`);
         
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
