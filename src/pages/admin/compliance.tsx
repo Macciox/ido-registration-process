@@ -402,11 +402,13 @@ export default function CompliancePage() {
       console.log('📊 Results count:', data.results?.length || 0);
       console.log('🎯 First result example:', data.results?.[0]);
       
+      console.log('Setting results and showResults to true');
       setResults({
         ...data,
         actualTemplateUsed: selectedTemplate
       });
       setShowResults(true);
+      console.log('Results set, showResults:', true, 'results count:', data.results?.length);
       setUrl('');
       // setSelectedTemplate(''); // Keep for saving
       
