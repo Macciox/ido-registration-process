@@ -29,10 +29,17 @@ async function analyzeItemWithContent(
     const promptId = templateType === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                     templateType === 'legal' ? 'LEGAL_ANALYSIS' : 'COMPLIANCE_ANALYSIS';
     
-    userPrompt = await renderPrompt(promptId, {
-      requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
-      documentContent: documentContent
-    });
+    // Legal prompts have requirements hardcoded, only need documentContent
+    if (templateType === 'legal') {
+      userPrompt = await renderPrompt(promptId, {
+        documentContent: documentContent
+      });
+    } else {
+      userPrompt = await renderPrompt(promptId, {
+        requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
+        documentContent: documentContent
+      });
+    }
   } catch (error) {
     // Fallback to old system if centralized prompt fails
     const promptTemplate = getPromptForTemplate(templateType);
