@@ -235,14 +235,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const item = template.checker_items[i];
             const legalResult = legalResults[i] || {};
             
-            // Extract selected answer from field_type
+            // Parse new format fields
             const fieldType = legalResult.field_type || '';
+            const scoringLogic = legalResult.scoring_logic || '';
+            
+            // Extract selected answer from field_type
             const selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
             const selectedAnswer = selectedMatch ? selectedMatch[1] : '';
             
-            // Determine status based on risk score
-            const riskScore = typeof legalResult.risk_score === 'string' && legalResult.risk_score !== 'Not scored' 
-              ? parseInt(legalResult.risk_score) : 0;
+            // Parse risk_score (can be string "Not scored" or numeric string)
+            let riskScore = 0;
+            if (legalResult.risk_score === 'Not scored') {
+              riskScore = 0;
+            } else {
+              riskScore = parseInt(legalResult.risk_score) || 0;
+            }
             
             results.push({
               item_id: item.id,
@@ -253,9 +260,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
                 legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-              // Store additional legal fields
-              field_type: legalResult.field_type || '',
-              scoring_logic: legalResult.scoring_logic || '',
+              // Store legal fields from new format
+              field_type: fieldType,
+              scoring_logic: scoringLogic,
               selected_answer: selectedAnswer
             });
             processedCount++;
