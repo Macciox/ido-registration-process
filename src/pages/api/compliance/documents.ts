@@ -41,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     
     console.log('Found documents:', documents?.length || 0);
+    console.log('Document file paths:', documents?.map(d => ({ filename: d.filename, file_path: d.file_path })));
     res.status(200).json({ documents });
   } catch (error) {
     console.error('Error fetching documents:', error);

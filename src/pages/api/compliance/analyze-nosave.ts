@@ -72,26 +72,78 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Download file from storage
           console.log('Attempting to download from storage bucket: compliance-documents');
           console.log('File path:', document.file_path);
+          console.log('Document details:', { id: document.id, filename: document.filename, mime_type: document.mime_type });
           
           // Debug: List files in bucket to see what's available
-          const { data: bucketFiles } = await serviceClient.storage
+          const { data: bucketFiles, error: listError } = await serviceClient.storage
             .from('compliance-documents')
-            .list('', { limit: 10 });
-          console.log('Files in bucket root:', bucketFiles?.map(f => f.name));
+            .list('', { limit: 20 });
           
-          const { data: whitepaperFiles } = await serviceClient.storage
-            .from('compliance-documents')
-            .list('whitepapers', { limit: 10 });
-          console.log('Files in whitepapers folder:', whitepaperFiles?.map(f => f.name));
+          if (listError) {
+            console.error('Error listing bucket files:', listError);
+          } else {
+            console.log('Files in bucket root:', bucketFiles?.map(f => ({ name: f.name, size: f.metadata?.size })));
+          }
           
-          const { data: fileData, error: downloadError } = await serviceClient.storage
+          // Try to list the specific folder if file_path contains a folder
+          const pathParts = document.file_path.split('/');
+          if (pathParts.length > 1) {
+            const folder = pathParts[0];
+            const { data: folderFiles, error: folderError } = await serviceClient.storage
+              .from('compliance-documents')
+              .list(folder, { limit: 20 });
+            
+            if (folderError) {
+              console.error(`Error listing folder '${folder}':`, folderError);
+            } else {
+              console.log(`Files in folder '${folder}':`, folderFiles?.map(f => ({ name: f.name, size: f.metadata?.size })));
+            }
+          }
+          
+          // Attempt download
+          let { data: fileData, error: downloadError } = await serviceClient.storage
             .from('compliance-documents')
             .download(document.file_path);
             
           if (downloadError) {
             console.error('Storage download error:', downloadError);
+            console.error('Error type:', downloadError.name);
+            console.error('Error message:', downloadError.message);
             console.error('Full error object:', JSON.stringify(downloadError, null, 2));
-            throw new Error(`Storage download failed: ${JSON.stringify(downloadError)}`);
+            
+            // Try alternative approaches
+            console.log('Trying alternative download methods...');
+            
+            // Method 1: Try with different path formats
+            const alternativePaths = [
+              document.file_path,
+              document.file_path.replace(/^\//, ''), // Remove leading slash
+              `/${document.file_path}`, // Add leading slash
+              document.filename // Just the filename
+            ];
+            
+            let downloadSuccess = false;
+            for (const altPath of alternativePaths) {
+              if (altPath !== document.file_path) {
+                console.log(`Trying alternative path: ${altPath}`);
+                const { data: altData, error: altError } = await serviceClient.storage
+                  .from('compliance-documents')
+                  .download(altPath);
+                
+                if (!altError && altData) {
+                  console.log(`Success with alternative path: ${altPath}`);
+                  fileData = altData;
+                  downloadSuccess = true;
+                  break;
+                } else if (altError) {
+                  console.log(`Alternative path failed: ${altPath} - ${altError.message}`);
+                }
+              }
+            }
+            
+            if (!downloadSuccess) {
+              throw new Error(`Storage download failed: File not found at path '${document.file_path}'. Error: ${downloadError.message || JSON.stringify(downloadError)}`);
+            }
           }
           
           if (fileData) {

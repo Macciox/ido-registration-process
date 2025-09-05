@@ -7,7 +7,10 @@ import { getPromptForTemplate, formatPrompt, COMPLIANCE_PROMPTS } from '@/lib/co
 import { renderPrompt } from '@/lib/prompts';
 
 interface AnalyzeRequest {
-  check_id: string;
+  check_id?: string;
+  documentId?: string;
+  templateId?: string;
+  whitepaperSection?: string;
 }
 
 
@@ -120,17 +123,148 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { check_id }: AnalyzeRequest = req.body;
+    const { check_id, documentId, templateId, whitepaperSection }: AnalyzeRequest = req.body;
 
-    if (!check_id) {
-      return res.status(400).json({ error: 'check_id is required' });
+    // Handle both existing check analysis and new document analysis
+    if (!check_id && (!documentId || !templateId)) {
+      return res.status(400).json({ error: 'Either check_id or (documentId + templateId) is required' });
     }
 
-    // Verify check belongs to user and is ready
+    // If documentId provided, create a temporary check
+    if (documentId && templateId) {
+      // Create temporary check for analysis
+      const { data: tempCheck, error: tempError } = await supabase
+        .from('compliance_checks')
+        .insert({
+          user_id: user.id,
+          document_id: documentId,
+          template_id: templateId,
+          status: 'processing'
+        })
+        .select('*, checker_templates(*)')
+        .single();
+
+      if (tempError || !tempCheck) {
+        return res.status(400).json({ error: 'Failed to create temporary check' });
+      }
+
+      // Use the temporary check
+      const checkData = tempCheck;
+      const actualCheckId = tempCheck.id;
+
+      // Continue with existing logic...
+      const { data: items, error: itemsError } = await supabase
+        .from('checker_items')
+        .select('*')
+        .eq('template_id', checkData.template_id)
+        .order('sort_order');
+
+      if (itemsError || !items) {
+        throw new Error('Failed to load checklist items');
+      }
+
+      // Get document chunks - if none exist, try to process the document
+      let { data: allChunks } = await supabase
+        .from('compliance_chunks')
+        .select('content, page')
+        .eq('check_id', actualCheckId)
+        .order('page');
+
+      if (!allChunks || allChunks.length === 0) {
+        // Try to get chunks from document directly
+        const { data: docChunks } = await supabase
+          .from('compliance_chunks')
+          .select('content, page')
+          .eq('document_id', documentId)
+          .order('page')
+          .limit(43);
+
+        if (docChunks && docChunks.length > 0) {
+          // Copy chunks to this check
+          const chunksToInsert = docChunks.map(chunk => ({
+            check_id: actualCheckId,
+            document_id: documentId,
+            content: chunk.content,
+            page: chunk.page
+          }));
+
+          await supabase.from('compliance_chunks').insert(chunksToInsert);
+          allChunks = docChunks;
+        } else {
+          return res.status(400).json({ 
+            error: 'No document chunks found. Please re-upload the document.' 
+          });
+        }
+      }
+
+      // Continue with analysis using existing logic
+      const documentContent = allChunks.map((chunk, i) => 
+        `[Excerpt ${i + 1}${chunk.page ? ` - Page ${chunk.page}` : ''}]\n${chunk.content}`
+      ).join('\n\n');
+
+      console.log(`Using ${allChunks.length} chunks for analysis (${documentContent.length} chars)`);
+
+      const results = [];
+      let processedCount = 0;
+
+      // Process each item with the same documentContent
+      for (const item of items) {
+        try {
+          const analysis = await analyzeItemWithContent(item, documentContent, checkData.checker_templates.type);
+
+          results.push({
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: analysis.status,
+            coverage_score: analysis.coverage_score,
+            reasoning: analysis.reasoning,
+            evidence: analysis.evidence || []
+          });
+
+          processedCount++;
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+        } catch (error: any) {
+          console.error(`Failed to analyze item ${item.id}:`, error);
+          
+          results.push({
+            item_id: item.id,
+            item_name: item.item_name,
+            category: item.category,
+            status: 'NEEDS_CLARIFICATION',
+            coverage_score: 0,
+            reasoning: `Analysis failed: ${error.message}`,
+            evidence: []
+          });
+        }
+      }
+
+      // Calculate summary
+      const summary = {
+        found_items: results.filter(r => r.status === 'FOUND').length,
+        clarification_items: results.filter(r => r.status === 'NEEDS_CLARIFICATION').length,
+        missing_items: results.filter(r => r.status === 'MISSING').length,
+        overall_score: Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
+      };
+
+      // Clean up temporary check
+      await supabase.from('compliance_checks').delete().eq('id', actualCheckId);
+
+      return res.status(200).json({
+        success: true,
+        checkId: `temp-${Date.now()}`,
+        results,
+        summary,
+        message: `Analysis completed for ${processedCount}/${items.length} items (temporary)`
+      });
+    }
+
+    // Handle existing check analysis
     const { data: checkData, error: checkError } = await supabase
       .from('compliance_checks')
       .select('*, checker_templates(*)')
-      .eq('id', check_id)
+      .eq('id', check_id!)
       .eq('user_id', user.id)
       .single();
 
@@ -141,6 +275,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (checkData.status !== 'ready') {
       return res.status(400).json({ error: 'Check is not ready for analysis' });
     }
+
+    const actualCheckId = check_id!;
 
     // Get checklist items for this template
     const { data: items, error: itemsError } = await supabase
@@ -157,7 +293,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: allChunks } = await supabase
       .from('compliance_chunks')
       .select('content, page')
-      .eq('check_id', check_id)
+      .eq('check_id', actualCheckId)
       .order('page');
 
     if (!allChunks || allChunks.length === 0) {
@@ -184,7 +320,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { data: resultData, error: resultError } = await supabase
           .from('check_results')
           .insert({
-            check_id: check_id,
+            check_id: actualCheckId,
             item_id: item.id,
             status: analysis.status,
             coverage_score: analysis.coverage_score,
@@ -234,7 +370,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await supabase
           .from('check_results')
           .insert({
-            check_id: check_id,
+            check_id: actualCheckId,
             item_id: item.id,
             status: 'NEEDS_CLARIFICATION',
             coverage_score: 0,

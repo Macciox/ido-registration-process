@@ -176,13 +176,26 @@ export default function CompliancePage() {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('Fetching documents with session:', session ? 'Present' : 'Missing');
       
+      if (!session?.access_token) {
+        console.error('No valid session token, redirecting to login');
+        router.push('/login');
+        return;
+      }
+      
       const response = await fetch('/api/compliance/documents', {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       
       console.log('Documents response status:', response.status);
+      
+      if (response.status === 401) {
+        console.error('Token expired, redirecting to login');
+        router.push('/login');
+        return;
+      }
+      
       const data = await response.json();
       console.log('Documents data:', data);
       
@@ -209,9 +222,10 @@ export default function CompliancePage() {
     }
   };
 
-  const handleFileUpload = async (e: React.FormEvent) => {
+  const handleFileUpload = async (e: React.FormEvent, analyzeAfterUpload: boolean = true) => {
     e.preventDefault();
-    if (!file || !selectedTemplate) return;
+    if (!file) return;
+    if (analyzeAfterUpload && !selectedTemplate) return;
 
     setIsUploading(true);
     const formData = new FormData();
@@ -248,7 +262,44 @@ export default function CompliancePage() {
       
       const uploadData = await uploadResponse.json();
       console.log('Upload successful:', uploadData);
-      alert(`Upload successful! File: ${uploadData.filename}`);
+      
+      if (analyzeAfterUpload && selectedTemplate) {
+        // Automatically start analysis after upload
+        console.log('Starting automatic analysis...');
+        const analysisResponse = await fetch('/api/compliance/analyze', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({
+            documentId: uploadData.documentId,
+            templateId: selectedTemplate,
+            whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSections.join('+') : undefined
+          })
+        });
+        
+        if (analysisResponse.ok) {
+          const analysisData = await analysisResponse.json();
+          console.log('Analysis completed:', analysisData);
+          
+          setResults({
+            ...analysisData,
+            documentId: uploadData.documentId,
+            templateId: selectedTemplate,
+            actualTemplateUsed: selectedTemplate
+          });
+          setShowResults(true);
+          showToast(`Upload & Analysis completed! File: ${uploadData.filename}`, 'success');
+        } else {
+          const analysisError = await analysisResponse.json();
+          console.error('Analysis failed:', analysisError);
+          showToast(`Upload successful but analysis failed: ${analysisError.error}`, 'warning');
+        }
+      } else {
+        showToast(`Upload completed! File: ${uploadData.filename}`, 'success');
+      }
+      
       setFile(null);
       setSelectedTemplate('');
       fetchDocuments();
@@ -440,7 +491,7 @@ export default function CompliancePage() {
     setIsUploading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/compliance/analyze-nosave', {
+      const response = await fetch('/api/compliance/analyze', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -634,13 +685,26 @@ export default function CompliancePage() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isUploading || !file || !selectedTemplate}
-                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUploading ? 'Uploading...' : 'Upload & Analyze'}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleFileUpload(e, false); // Upload only
+                    }}
+                    disabled={isUploading || !file}
+                    className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUploading ? 'Uploading...' : '📁 Upload Only'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploading || !file || !selectedTemplate}
+                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUploading ? 'Processing...' : '🚀 Upload & Analyze'}
+                  </button>
+                </div>
               </form>
             ) : activeTab === 'existing' ? (
               <form onSubmit={handleAnalyzeExisting} className="space-y-6">
@@ -1220,23 +1284,29 @@ export default function CompliancePage() {
                 </table>
               </div>
 
-              {/* Analyzed Text Section (for URL analysis) */}
-              {results.documentId && results.processing && (
+              {/* Analyzed Text Section (for both URL and document analysis) */}
+              {results.documentId && (
                 <div className="mt-8">
                   <div className="border-t border-border pt-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-white">📄 Analyzed Website Content</h3>
-                      <div className="text-sm text-text-secondary">
-                        {results.processing.pagesCount || 1} pages • {results.processing.chunksCount} sections • {results.processing.totalWords} words
-                      </div>
+                      <h3 className="text-lg font-medium text-white">
+                        {results.processing ? '📄 Analyzed Website Content' : '📄 Analyzed Document Content'}
+                      </h3>
+                      {results.processing && (
+                        <div className="text-sm text-text-secondary">
+                          {results.processing.pagesCount || 1} pages • {results.processing.chunksCount} sections • {results.processing.totalWords} words
+                        </div>
+                      )}
                     </div>
                     
                     <div className="bg-card-secondary rounded-lg p-4 max-h-96 overflow-y-auto">
-                      <div className="text-sm text-text-secondary mb-2">
-                        Source: <a href={results.processing?.url || '#'} target="_blank" className="text-primary hover:underline">
-                          {results.processing?.title || 'Website Analysis'}
-                        </a>
-                      </div>
+                      {results.processing && (
+                        <div className="text-sm text-text-secondary mb-2">
+                          Source: <a href={results.processing?.url || '#'} target="_blank" className="text-primary hover:underline">
+                            {results.processing?.title || 'Website Analysis'}
+                          </a>
+                        </div>
+                      )}
                       
                       <button
                         onClick={async () => {
@@ -1244,18 +1314,19 @@ export default function CompliancePage() {
                             const response = await fetch(`/api/debug/chunks?documentId=${results.documentId}`);
                             const data = await response.json();
                             
-                            const fullText = data.chunks.map((chunk: any) => chunk.fullContent).join('\n\n');
+                            const fullText = data.chunks.map((chunk: any) => chunk.content || chunk.fullContent).join('\n\n');
                             
                             const newWindow = window.open('', '_blank');
                             if (newWindow) {
+                              const title = results.processing?.title || documents.find(d => d.id === results.documentId)?.filename || 'Document Analysis';
                               newWindow.document.write(`
                                 <html>
-                                  <head><title>Analyzed Content - ${results.processing.title}</title></head>
+                                  <head><title>Analyzed Content - ${title}</title></head>
                                   <body style="font-family: Arial; padding: 20px; line-height: 1.6;">
-                                    <h1>Analyzed Website Content</h1>
-                                    <p><strong>Source:</strong> ${results.processing?.title || 'Website'}</p>
-                                    <p><strong>Pages:</strong> ${results.processing?.pagesCount || 1} pages crawled</p>
-                                    <p><strong>Chunks:</strong> ${data.totalChunks} sections</p>
+                                    <h1>${results.processing ? 'Analyzed Website Content' : 'Analyzed Document Content'}</h1>
+                                    <p><strong>Source:</strong> ${title}</p>
+                                    ${results.processing ? `<p><strong>Pages:</strong> ${results.processing?.pagesCount || 1} pages crawled</p>` : ''}
+                                    <p><strong>Chunks:</strong> ${data.totalChunks || data.chunks?.length || 0} sections</p>
                                     <hr>
                                     <pre style="white-space: pre-wrap; font-family: inherit;">${fullText}</pre>
                                   </body>
