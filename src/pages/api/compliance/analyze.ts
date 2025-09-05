@@ -48,9 +48,19 @@ async function analyzeItemWithContent(
         documentContent: documentContent
       });
     }
-    
-    console.log('Prompt length:', userPrompt.length);
-    console.log('Prompt preview:', userPrompt.substring(0, 500) + '...');
+  } catch (error) {
+    // Fallback to old system if centralized prompt fails
+    const promptTemplate = getPromptForTemplate(templateType);
+    userPrompt = formatPrompt(promptTemplate, {
+      category: item.category,
+      item_name: item.item_name,
+      description: item.description,
+      relevant_content: documentContent
+    });
+  }
+  
+  console.log('Prompt length:', userPrompt.length);
+  console.log('Prompt preview:', userPrompt.substring(0, 500) + '...');
     }
   } catch (error) {
     // Fallback to old system if centralized prompt fails
