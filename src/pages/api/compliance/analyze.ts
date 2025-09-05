@@ -107,13 +107,13 @@ async function analyzeItemWithContent(
       if (templateType === 'legal' && Array.isArray(parsed)) {
         // For legal analysis, return the first result (will be processed differently in main handler)
         const firstResult = parsed[0] || {};
-        const result = {
-          status: firstResult.answer === 'Yes' ? 'FOUND' : 
-                  firstResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION',
-          coverage_score: firstResult.risk_score || 0,
+        const result: ResultType = {
+          status: (firstResult.answer === 'Yes' ? 'FOUND' : 
+                  firstResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION') as 'FOUND' | 'MISSING' | 'NEEDS_CLARIFICATION',
+          coverage_score: Number(firstResult.risk_score) || 0,
           evidence: firstResult.evidence_snippets ? 
             firstResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-          reasoning: firstResult.reasoning || 'No reasoning provided'
+          reasoning: String(firstResult.reasoning) || 'No reasoning provided'
         };
         // Store the full array in a property we can access
         (result as any).fullLegalResults = parsed;
