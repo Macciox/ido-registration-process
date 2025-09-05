@@ -117,7 +117,7 @@ async function analyzeItemWithContent(
           evidence: [] as any[],
           reasoning: 'Legal analysis completed'
         };
-        // Store the full array in a property we can access
+        // Store the full array in the new format
         (result as any).fullLegalResults = parsed;
         return result as ResultType;
       }
@@ -227,21 +227,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Extract full legal results array
           const legalResults = (analysis as any).fullLegalResults || [];
           
-          // Map each result to corresponding item
+          // Map each result to corresponding item (new format)
           for (let i = 0; i < template.checker_items.length; i++) {
             const item = template.checker_items[i];
             const legalResult = legalResults[i] || {};
+            
+            // Extract selected answer from field_type
+            const fieldType = legalResult.field_type || '';
+            const selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
+            const selectedAnswer = selectedMatch ? selectedMatch[1] : '';
+            
+            // Determine status based on risk score
+            const riskScore = typeof legalResult.risk_score === 'string' && legalResult.risk_score !== 'Not scored' 
+              ? parseInt(legalResult.risk_score) : 0;
             
             results.push({
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: legalResult.answer === 'Yes' ? 'FOUND' : 
-                      legalResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION',
-              coverage_score: legalResult.risk_score || 0,
+              status: riskScore > 100 ? 'FOUND' : riskScore > 0 ? 'NEEDS_CLARIFICATION' : 'MISSING',
+              coverage_score: riskScore,
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
-                legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : []
+                legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
+              // Store additional legal fields
+              field_type: legalResult.field_type || '',
+              scoring_logic: legalResult.scoring_logic || '',
+              selected_answer: selectedAnswer
             });
             processedCount++;
           }

@@ -1262,6 +1262,13 @@ export default function CompliancePage() {
                       <th className="text-left py-3 px-4 text-white font-medium">Status</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Manual Override</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Score</th>
+                      {results.templateName?.includes('Legal') && (
+                        <>
+                          <th className="text-left py-3 px-4 text-white font-medium">Field Type</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Scoring Logic</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
+                        </>
+                      )}
                       <th className="text-left py-3 px-4 text-white font-medium">Evidence</th>
                     </tr>
                   </thead>
@@ -1341,6 +1348,40 @@ export default function CompliancePage() {
                           </select>
                         </td>
                         <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
+                        {results.templateName?.includes('Legal') && (
+                          <>
+                            <td className="py-3 px-4">
+                              <div className="text-xs text-text-secondary max-w-xs truncate" title={item.field_type}>
+                                {item.field_type || 'N/A'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              {results.templateName?.includes('Whitepaper') ? (
+                                <input
+                                  type="text"
+                                  value={item.scoring_logic || ''}
+                                  onChange={(e) => {
+                                    const updatedResults = results.results.map((r: any, i: number) => 
+                                      i === index ? { ...r, scoring_logic: e.target.value } : r
+                                    );
+                                    setResults({ ...results, results: updatedResults });
+                                  }}
+                                  className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
+                                  placeholder="Enter scoring logic"
+                                />
+                              ) : (
+                                <div className="text-xs text-text-secondary max-w-xs truncate" title={item.scoring_logic}>
+                                  {item.scoring_logic || 'N/A'}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs text-white font-medium">
+                                {item.selected_answer || 'N/A'}
+                              </div>
+                            </td>
+                          </>
+                        )}
                         <td className="py-3 px-4">
                           {item.evidence?.length > 0 ? (
                             <button 
