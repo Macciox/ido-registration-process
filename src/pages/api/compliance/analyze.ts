@@ -105,19 +105,16 @@ async function analyzeItemWithContent(
       
       // Handle legal template array response vs single object
       if (templateType === 'legal' && Array.isArray(parsed)) {
-        // For legal analysis, return the first result (will be processed differently in main handler)
-        const firstResult = parsed[0] || {};
-        const result: ResultType = {
-          status: (firstResult.answer === 'Yes' ? 'FOUND' : 
-                  firstResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION') as 'FOUND' | 'MISSING' | 'NEEDS_CLARIFICATION',
-          coverage_score: Number(firstResult.risk_score) || 0,
-          evidence: firstResult.evidence_snippets ? 
-            firstResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-          reasoning: String(firstResult.reasoning) || 'No reasoning provided'
+        // For legal analysis, return a result with the full array stored
+        const result = {
+          status: 'FOUND' as const,
+          coverage_score: 0,
+          evidence: [] as any[],
+          reasoning: 'Legal analysis completed'
         };
         // Store the full array in a property we can access
         (result as any).fullLegalResults = parsed;
-        return result;
+        return result as ResultType;
       }
       
       const validated = Result.parse(parsed);
