@@ -1262,10 +1262,10 @@ export default function CompliancePage() {
                       <th className="text-left py-3 px-4 text-white font-medium">Category</th>
                       {results.templateName?.toLowerCase().includes('legal') ? (
                         <>
-                          <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Risk Score</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Field Type</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Scoring Logic</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Reasoning</th>
                         </>
                       ) : (
                         <>
@@ -1285,15 +1285,6 @@ export default function CompliancePage() {
                         {results.templateName?.toLowerCase().includes('legal') ? (
                           <>
                             <td className="py-3 px-4">
-                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                item.coverage_score > 100 ? 'bg-red-500/20 text-red-400' :
-                                item.coverage_score > 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
-                              }`}>
-                                {item.selected_answer || 'N/A'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
                               <span className={`font-medium ${
                                 item.coverage_score > 100 ? 'text-red-400' :
                                 item.coverage_score > 0 ? 'text-yellow-400' :
@@ -1310,6 +1301,11 @@ export default function CompliancePage() {
                             <td className="py-3 px-4">
                               <div className="text-xs text-text-secondary max-w-xs truncate" title={item.scoring_logic}>
                                 {item.scoring_logic || 'N/A'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs text-text-secondary max-w-xs truncate" title={item.reasoning}>
+                                {item.reasoning || 'N/A'}
                               </div>
                             </td>
                           </>
