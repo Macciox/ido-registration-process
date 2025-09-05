@@ -94,10 +94,15 @@ async function analyzeItemWithContent(
         throw new Error('No response content from OpenAI');
       }
 
+      // Log OpenAI response for debugging
+      console.log('OpenAI response length:', content.length);
+      console.log('OpenAI response preview:', content.substring(0, 1000) + '...');
+      
       // Parse and validate JSON response
       let parsed;
       try {
         parsed = JSON.parse(content);
+        console.log('Parsed JSON structure:', Array.isArray(parsed) ? `Array with ${parsed.length} items` : 'Single object');
       } catch (jsonError: any) {
         console.error('JSON parse error. Content:', content.substring(0, 500) + '...');
         throw new Error(`Invalid JSON response: ${jsonError.message}`);
