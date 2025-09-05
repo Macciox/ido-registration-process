@@ -60,20 +60,19 @@ export async function storeDocumentChunks(documentId: string, chunks: string[]):
   try {
     // Delete existing chunks for this document
     await serviceClient
-      .from('document_chunks')
+      .from('compliance_chunks')
       .delete()
       .eq('document_id', documentId);
 
     // Insert new chunks
     const chunksToInsert = chunks.map((content, index) => ({
       document_id: documentId,
-      chunk_index: index,
       content: content,
-      word_count: content.split(/\s+/).length
+      page: index + 1
     }));
 
     const { error } = await serviceClient
-      .from('document_chunks')
+      .from('compliance_chunks')
       .insert(chunksToInsert);
 
     if (error) {
@@ -93,10 +92,10 @@ export async function storeDocumentChunks(documentId: string, chunks: string[]):
 export async function getDocumentChunks(documentId: string): Promise<DocumentChunk[]> {
   try {
     const { data, error } = await serviceClient
-      .from('document_chunks')
+      .from('compliance_chunks')
       .select('*')
       .eq('document_id', documentId)
-      .order('chunk_index');
+      .order('page');
 
     if (error) {
       throw error;
