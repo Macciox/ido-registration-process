@@ -103,8 +103,22 @@ async function analyzeItemWithContent(
         throw new Error(`Invalid JSON response: ${jsonError.message}`);
       }
       
+      // Handle legal template array response vs single object
+      if (templateType === 'legal' && Array.isArray(parsed)) {
+        // For legal analysis, return the first result from the array
+        // (since we're processing one item at a time)
+        const firstResult = parsed[0] || {};
+        return {
+          status: firstResult.answer === 'Yes' ? 'FOUND' : 
+                  firstResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION',
+          coverage_score: firstResult.risk_score || 0,
+          evidence: firstResult.evidence_snippets ? 
+            firstResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
+          reasoning: firstResult.reasoning || 'No reasoning provided'
+        };
+      }
+      
       const validated = Result.parse(parsed);
-
       return validated;
 
     } catch (error: any) {
