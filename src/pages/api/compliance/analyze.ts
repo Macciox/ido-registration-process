@@ -136,7 +136,13 @@ async function analyzeItemWithContent(
     }
   }
 
-  throw new Error('Should not reach here');
+  // Final fallback if all retries failed
+  return {
+    status: 'NEEDS_CLARIFICATION',
+    coverage_score: 0,
+    evidence: [],
+    reasoning: `Analysis failed after ${retries + 1} attempts`,
+  };
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
