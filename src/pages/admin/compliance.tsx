@@ -1259,14 +1259,18 @@ export default function CompliancePage() {
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-4 text-white font-medium">Item</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Category</th>
-                      <th className="text-left py-3 px-4 text-white font-medium">Status</th>
-                      <th className="text-left py-3 px-4 text-white font-medium">Manual Override</th>
-                      <th className="text-left py-3 px-4 text-white font-medium">Score</th>
-                      {results.templateName?.includes('Legal') && (
+                      {results.templateName?.includes('Legal') ? (
                         <>
+                          <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Risk Score</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Field Type</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Scoring Logic</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="text-left py-3 px-4 text-white font-medium">Status</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Manual Override</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Score</th>
                         </>
                       )}
                       <th className="text-left py-3 px-4 text-white font-medium">Evidence</th>
@@ -1277,109 +1281,110 @@ export default function CompliancePage() {
                       <tr key={index} className="border-b border-border/50">
                         <td className="py-3 px-4 text-white">{item.item_name}</td>
                         <td className="py-3 px-4 text-text-secondary">{item.category}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                              item.status === 'FOUND' ? 'bg-green-500/20 text-green-400' :
-                              item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-500/20 text-yellow-400' :
-                              item.status === 'NOT_APPLICABLE' ? 'bg-gray-500/20 text-gray-400' :
-                              'bg-red-500/20 text-red-400'
-                            }`}>
-                              {item.status === 'FOUND' ? '✅' : 
-                               item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : 
-                               item.status === 'NOT_APPLICABLE' ? '➖' : '❌'}
-                              {item.status}
-                            </span>
-                            {item.manually_overridden && (
-                              <span className="text-xs text-orange-400" title="Manually overridden">🔧</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <select
-                            value={item.status}
-                            onChange={async (e) => {
-                              const newStatus = e.target.value;
-                              try {
-                                const response = await fetch('/api/compliance/update-status', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    resultId: item.result_id,
-                                    newStatus: newStatus
-                                  })
-                                });
-                                
-                                if (response.ok) {
-                                  // Update local state
-                                  const updatedResults = results.results.map((r: any, i: number) => 
-                                    i === index ? { ...r, status: newStatus, manually_overridden: true } : r
-                                  );
-                                  
-                                  // Recalculate summary
-                                  const newSummary = {
-                                    found_items: updatedResults.filter((r: any) => r.status === 'FOUND').length,
-                                    clarification_items: updatedResults.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
-                                    missing_items: updatedResults.filter((r: any) => r.status === 'MISSING').length,
-                                    not_applicable_items: updatedResults.filter((r: any) => r.status === 'NOT_APPLICABLE').length,
-                                    applicable_items: updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length,
-                                    overall_score: Math.round(
-                                      updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length > 0 ?
-                                      (updatedResults.filter((r: any) => r.status === 'FOUND').length / 
-                                       updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length) * 100 : 0
-                                    )
-                                  };
-                                  
-                                  setResults({ ...results, results: updatedResults, summary: newSummary });
-                                  showToast('Status updated successfully', 'success');
-                                } else {
-                                  showToast('Failed to update status', 'error');
-                                }
-                              } catch (error) {
-                                showToast('Error updating status', 'error');
-                              }
-                            }}
-                            className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
-                            style={{ color: 'white' }}
-                          >
-                            <option value="FOUND" className="bg-gray-800 text-white">✅ Found</option>
-                            <option value="NEEDS_CLARIFICATION" className="bg-gray-800 text-white">⚠️ Clarification</option>
-                            <option value="MISSING" className="bg-gray-800 text-white">❌ Missing</option>
-                          </select>
-                        </td>
-                        <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
-                        {results.templateName?.includes('Legal') && (
+                        {results.templateName?.includes('Legal') ? (
                           <>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                item.coverage_score > 100 ? 'bg-red-500/20 text-red-400' :
+                                item.coverage_score > 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                {item.selected_answer || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`font-medium ${
+                                item.coverage_score > 100 ? 'text-red-400' :
+                                item.coverage_score > 0 ? 'text-yellow-400' :
+                                'text-green-400'
+                              }`}>
+                                {item.coverage_score}
+                              </span>
+                            </td>
                             <td className="py-3 px-4">
                               <div className="text-xs text-text-secondary max-w-xs truncate" title={item.field_type}>
                                 {item.field_type || 'N/A'}
                               </div>
                             </td>
                             <td className="py-3 px-4">
-                              {results.templateName?.includes('Whitepaper') ? (
-                                <input
-                                  type="text"
-                                  value={item.scoring_logic || ''}
-                                  onChange={(e) => {
-                                    const updatedResults = results.results.map((r: any, i: number) => 
-                                      i === index ? { ...r, scoring_logic: e.target.value } : r
-                                    );
-                                    setResults({ ...results, results: updatedResults });
-                                  }}
-                                  className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
-                                  placeholder="Enter scoring logic"
-                                />
-                              ) : (
-                                <div className="text-xs text-text-secondary max-w-xs truncate" title={item.scoring_logic}>
-                                  {item.scoring_logic || 'N/A'}
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="text-xs text-white font-medium">
-                                {item.selected_answer || 'N/A'}
+                              <div className="text-xs text-text-secondary max-w-xs truncate" title={item.scoring_logic}>
+                                {item.scoring_logic || 'N/A'}
                               </div>
                             </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                  item.status === 'FOUND' ? 'bg-green-500/20 text-green-400' :
+                                  item.status === 'NEEDS_CLARIFICATION' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  item.status === 'NOT_APPLICABLE' ? 'bg-gray-500/20 text-gray-400' :
+                                  'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {item.status === 'FOUND' ? '✅' : 
+                                   item.status === 'NEEDS_CLARIFICATION' ? '⚠️' : 
+                                   item.status === 'NOT_APPLICABLE' ? '➖' : '❌'}
+                                  {item.status}
+                                </span>
+                                {item.manually_overridden && (
+                                  <span className="text-xs text-orange-400" title="Manually overridden">🔧</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <select
+                                value={item.status}
+                                onChange={async (e) => {
+                                  const newStatus = e.target.value;
+                                  try {
+                                    const response = await fetch('/api/compliance/update-status', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        resultId: item.result_id,
+                                        newStatus: newStatus
+                                      })
+                                    });
+                                    
+                                    if (response.ok) {
+                                      // Update local state
+                                      const updatedResults = results.results.map((r: any, i: number) => 
+                                        i === index ? { ...r, status: newStatus, manually_overridden: true } : r
+                                      );
+                                      
+                                      // Recalculate summary
+                                      const newSummary = {
+                                        found_items: updatedResults.filter((r: any) => r.status === 'FOUND').length,
+                                        clarification_items: updatedResults.filter((r: any) => r.status === 'NEEDS_CLARIFICATION').length,
+                                        missing_items: updatedResults.filter((r: any) => r.status === 'MISSING').length,
+                                        not_applicable_items: updatedResults.filter((r: any) => r.status === 'NOT_APPLICABLE').length,
+                                        applicable_items: updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length,
+                                        overall_score: Math.round(
+                                          updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length > 0 ?
+                                          (updatedResults.filter((r: any) => r.status === 'FOUND').length / 
+                                           updatedResults.filter((r: any) => r.status !== 'NOT_APPLICABLE').length) * 100 : 0
+                                        )
+                                      };
+                                      
+                                      setResults({ ...results, results: updatedResults, summary: newSummary });
+                                      showToast('Status updated successfully', 'success');
+                                    } else {
+                                      showToast('Failed to update status', 'error');
+                                    }
+                                  } catch (error) {
+                                    showToast('Error updating status', 'error');
+                                  }
+                                }}
+                                className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
+                                style={{ color: 'white' }}
+                              >
+                                <option value="FOUND" className="bg-gray-800 text-white">✅ Found</option>
+                                <option value="NEEDS_CLARIFICATION" className="bg-gray-800 text-white">⚠️ Clarification</option>
+                                <option value="MISSING" className="bg-gray-800 text-white">❌ Missing</option>
+                              </select>
+                            </td>
+                            <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
                           </>
                         )}
                         <td className="py-3 px-4">

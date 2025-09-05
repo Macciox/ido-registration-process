@@ -73,7 +73,9 @@ async function analyzeItemWithContent(
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [
+          messages: templateType === 'legal' ? [
+            { role: 'user', content: userPrompt }
+          ] : [
             { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
             { role: 'user', content: userPrompt }
           ],
@@ -243,10 +245,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
             const selectedAnswer = selectedMatch ? selectedMatch[1] : '';
             
-            // Parse risk_score (can be string "Not scored" or numeric string)
+            // Parse risk_score (can be string "Not scored", number, or numeric string)
             let riskScore = 0;
             if (legalResult.risk_score === 'Not scored') {
               riskScore = 0;
+            } else if (typeof legalResult.risk_score === 'number') {
+              riskScore = legalResult.risk_score;
             } else {
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
