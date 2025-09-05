@@ -105,16 +105,13 @@ async function analyzeItemWithContent(
       
       // Handle legal template array response vs single object
       if (templateType === 'legal' && Array.isArray(parsed)) {
-        // For legal analysis, return the first result from the array
-        // (since we're processing one item at a time)
-        const firstResult = parsed[0] || {};
+        // For legal analysis, return array of all results
         return {
-          status: firstResult.answer === 'Yes' ? 'FOUND' : 
-                  firstResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION',
-          coverage_score: firstResult.risk_score || 0,
-          evidence: firstResult.evidence_snippets ? 
-            firstResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-          reasoning: firstResult.reasoning || 'No reasoning provided'
+          status: 'FOUND', // Will be overridden per item
+          coverage_score: 0, // Will be overridden per item
+          evidence: [],
+          reasoning: 'Legal analysis completed',
+          legalResults: parsed // Store full array for processing
         };
       }
       
@@ -214,37 +211,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Template type:', template.type);
       console.log('Number of items to analyze:', template.checker_items.length);
 
-      // Process each item
-      for (const item of template.checker_items) {
+      // Optimize for legal templates - analyze all questions at once
+      if (template.type === 'legal') {
         try {
-          console.log(`Analyzing item: ${item.item_name}`);
-          const analysis = await analyzeItemWithContent(item, documentContent, template.type);
-
-          results.push({
-            item_id: item.id,
-            item_name: item.item_name,
-            category: item.category,
-            status: analysis.status,
-            coverage_score: analysis.coverage_score,
-            reasoning: analysis.reasoning,
-            evidence: analysis.evidence || []
-          });
-
-          processedCount++;
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-        } catch (error: any) {
-          console.error(`Failed to analyze item ${item.id}:`, error);
+          console.log('Analyzing all legal questions at once...');
+          const analysis = await analyzeItemWithContent(template.checker_items[0], documentContent, template.type);
           
-          results.push({
-            item_id: item.id,
-            item_name: item.item_name,
-            category: item.category,
-            status: 'NEEDS_CLARIFICATION',
-            coverage_score: 0,
-            reasoning: `Analysis failed: ${error.message}`,
-            evidence: []
-          });
+          // Legal analysis returns array, map to all items
+          for (let i = 0; i < template.checker_items.length; i++) {
+            const item = template.checker_items[i];
+            results.push({
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: analysis.status,
+              coverage_score: analysis.coverage_score,
+              reasoning: analysis.reasoning,
+              evidence: analysis.evidence || []
+            });
+            processedCount++;
+          }
+        } catch (error: any) {
+          console.error('Failed to analyze legal document:', error);
+          
+          // Add error result for all items
+          for (const item of template.checker_items) {
+            results.push({
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: 'NEEDS_CLARIFICATION',
+              coverage_score: 0,
+              reasoning: `Analysis failed: ${error.message}`,
+              evidence: []
+            });
+          }
+        }
+      } else {
+        // Process each item individually for non-legal templates
+        for (const item of template.checker_items) {
+          try {
+            console.log(`Analyzing item: ${item.item_name}`);
+            const analysis = await analyzeItemWithContent(item, documentContent, template.type);
+
+            results.push({
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: analysis.status,
+              coverage_score: analysis.coverage_score,
+              reasoning: analysis.reasoning,
+              evidence: analysis.evidence || []
+            });
+
+            processedCount++;
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+          } catch (error: any) {
+            console.error(`Failed to analyze item ${item.id}:`, error);
+            
+            results.push({
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: 'NEEDS_CLARIFICATION',
+              coverage_score: 0,
+              reasoning: `Analysis failed: ${error.message}`,
+              evidence: []
+            });
+          }
         }
       }
 
