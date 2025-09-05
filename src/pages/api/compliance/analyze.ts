@@ -78,7 +78,7 @@ async function analyzeItemWithContent(
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
-          max_tokens: 1000,
+          max_tokens: 4000,
         }),
       });
 
