@@ -227,7 +227,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (template.type === 'legal') {
         try {
           console.log('Analyzing all legal questions at once...');
-          const analysis = await analyzeItemWithContent(template.checker_items[0], documentContent, template.type);
+          // For legal templates, pass empty item since questions are hardcoded in prompt
+          const emptyItem = { category: '', item_name: '', description: '' };
+          const analysis = await analyzeItemWithContent(emptyItem, documentContent, template.type);
           
           // Extract full legal results array
           const legalResults = (analysis as any).fullLegalResults || [];
@@ -328,7 +330,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         found_items: results.filter(r => r.status === 'FOUND').length,
         clarification_items: results.filter(r => r.status === 'NEEDS_CLARIFICATION').length,
         missing_items: results.filter(r => r.status === 'MISSING').length,
-        overall_score: Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
+        overall_score: template.type === 'legal' ? 
+          Math.round(100 - (results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)) :
+          Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
       };
 
       return res.status(200).json({
