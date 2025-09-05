@@ -1,6 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { getCurrentUser } from '@/lib/auth';
+import { createClient } from '@supabase/supabase-js';
+
+const serviceClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 import { retrieveWithExpansion } from '@/lib/compliance/retrieval';
 import { Result, ResultType } from '@/lib/compliance/schema';
 import { getPromptForTemplate, formatPrompt, COMPLIANCE_PROMPTS } from '@/lib/compliance/prompts';
@@ -118,9 +123,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
     }
 
     const { check_id, documentId, templateId, whitepaperSection }: AnalyzeRequest = req.body;
@@ -133,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // If documentId provided, create a temporary check
     if (documentId && templateId) {
       // Create temporary check for analysis
-      const { data: tempCheck, error: tempError } = await supabase
+      const { data: tempCheck, error: tempError } = await serviceClient
         .from('compliance_checks')
         .insert({
           user_id: user.id,
@@ -153,7 +163,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const actualCheckId = tempCheck.id;
 
       // Continue with existing logic...
-      const { data: items, error: itemsError } = await supabase
+      const { data: items, error: itemsError } = await serviceClient
         .from('checker_items')
         .select('*')
         .eq('template_id', checkData.template_id)
@@ -164,7 +174,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Get document chunks - if none exist, try to process the document
-      let { data: allChunks } = await supabase
+      let { data: allChunks } = await serviceClient
         .from('compliance_chunks')
         .select('content, page')
         .eq('check_id', actualCheckId)
@@ -172,7 +182,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (!allChunks || allChunks.length === 0) {
         // Try to get chunks from document directly
-        const { data: docChunks } = await supabase
+        const { data: docChunks } = await serviceClient
           .from('compliance_chunks')
           .select('content, page')
           .eq('document_id', documentId)
@@ -188,7 +198,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             page: chunk.page
           }));
 
-          await supabase.from('compliance_chunks').insert(chunksToInsert);
+          await serviceClient.from('compliance_chunks').insert(chunksToInsert);
           allChunks = docChunks;
         } else {
           return res.status(400).json({ 
@@ -249,7 +259,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       // Clean up temporary check
-      await supabase.from('compliance_checks').delete().eq('id', actualCheckId);
+      await serviceClient.from('compliance_checks').delete().eq('id', actualCheckId);
 
       return res.status(200).json({
         success: true,
@@ -261,7 +271,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Handle existing check analysis
-    const { data: checkData, error: checkError } = await supabase
+    const { data: checkData, error: checkError } = await serviceClient
       .from('compliance_checks')
       .select('*, checker_templates(*)')
       .eq('id', check_id!)
@@ -279,7 +289,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const actualCheckId = check_id!;
 
     // Get checklist items for this template
-    const { data: items, error: itemsError } = await supabase
+    const { data: items, error: itemsError } = await serviceClient
       .from('checker_items')
       .select('*')
       .eq('template_id', checkData.template_id)
@@ -290,7 +300,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get ALL chunks once for the entire analysis
-    const { data: allChunks } = await supabase
+    const { data: allChunks } = await serviceClient
       .from('compliance_chunks')
       .select('content, page')
       .eq('check_id', actualCheckId)
@@ -317,7 +327,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const analysis = await analyzeItemWithContent(item, documentContent, checkData.checker_templates.type);
 
         // Save result to database
-        const { data: resultData, error: resultError } = await supabase
+        const { data: resultData, error: resultError } = await serviceClient
           .from('check_results')
           .insert({
             check_id: actualCheckId,
@@ -342,7 +352,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             snippet: evidence.snippet,
           }));
 
-          const { error: evidenceError } = await supabase
+          const { error: evidenceError } = await serviceClient
             .from('compliance_evidences')
             .insert(evidenceData);
 
@@ -367,7 +377,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error(`Failed to analyze item ${item.id}:`, error);
         
         // Save error result
-        await supabase
+        await serviceClient
           .from('check_results')
           .insert({
             check_id: actualCheckId,
