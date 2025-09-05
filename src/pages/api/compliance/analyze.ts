@@ -40,6 +40,7 @@ async function analyzeItemWithContent(
     // Legal prompts have requirements hardcoded, only need documentContent
     if (templateType === 'legal') {
       userPrompt = await renderPrompt(promptId, {
+        requirementsList: '', // Empty since questions are hardcoded in template
         documentContent: documentContent
       });
     } else {
@@ -59,9 +60,6 @@ async function analyzeItemWithContent(
     });
   }
   
-  console.log('Prompt length:', userPrompt.length);
-  console.log('Prompt preview:', userPrompt.substring(0, 500) + '...');
-    }
   } catch (error) {
     // Fallback to old system if centralized prompt fails
     const promptTemplate = getPromptForTemplate(templateType);
@@ -72,6 +70,9 @@ async function analyzeItemWithContent(
       relevant_content: documentContent
     });
   }
+  
+  console.log('Prompt length:', userPrompt.length);
+  console.log('Prompt preview:', userPrompt.substring(0, 500) + '...');
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
