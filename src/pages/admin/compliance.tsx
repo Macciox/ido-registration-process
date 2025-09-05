@@ -794,36 +794,79 @@ export default function CompliancePage() {
                     {isUploading ? 'Analyzing...' : 'Analyze Document'}
                   </button>
                   
-                  {selectedDocument && documents.find(d => d.id === selectedDocument)?.processing_status === 'failed' && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          const response = await fetch('/api/compliance/reprocess-document', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${session?.access_token}`
-                            },
-                            body: JSON.stringify({ documentId: selectedDocument })
-                          });
-                          
-                          const data = await response.json();
-                          if (data.success) {
-                            showToast(`Document reprocessed: ${data.chunksCount} chunks created`, 'success');
-                            fetchDocuments();
-                          } else {
-                            showToast(`Reprocessing failed: ${data.message}`, 'error');
+                  {selectedDocument && (
+                    <div className="flex gap-3">
+                      {documents.find(d => d.id === selectedDocument)?.processing_status === 'failed' && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const response = await fetch('/api/compliance/reprocess-document', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${session?.access_token}`
+                                },
+                                body: JSON.stringify({ documentId: selectedDocument })
+                              });
+                              
+                              const data = await response.json();
+                              if (data.success) {
+                                showToast(`Document reprocessed: ${data.chunksCount} chunks created`, 'success');
+                                fetchDocuments();
+                              } else {
+                                showToast(`Reprocessing failed: ${data.message}`, 'error');
+                              }
+                            } catch (error: any) {
+                              showToast('Reprocessing error: ' + error.message, 'error');
+                            }
+                          }}
+                          className="flex-1 px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                          🔄 Reprocess
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/debug/document-chunks?documentId=${selectedDocument}`);
+                            const data = await response.json();
+                            
+                            const newWindow = window.open('', '_blank');
+                            if (newWindow) {
+                              const chunksHtml = data.chunks.map((chunk: any, i: number) => 
+                                `<div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px;">
+                                  <h3>Chunk ${i + 1} (Page ${chunk.page || 'N/A'})</h3>
+                                  <pre style="white-space: pre-wrap; font-family: inherit;">${chunk.content}</pre>
+                                </div>`
+                              ).join('');
+                              
+                              newWindow.document.write(`
+                                <html>
+                                  <head><title>Document Chunks - ${data.document?.filename}</title></head>
+                                  <body style="font-family: Arial; padding: 20px; line-height: 1.6;">
+                                    <h1>Document Chunks</h1>
+                                    <p><strong>File:</strong> ${data.document?.filename}</p>
+                                    <p><strong>Status:</strong> ${data.document?.processing_status}</p>
+                                    <p><strong>Total Chunks:</strong> ${data.totalChunks}</p>
+                                    <hr>
+                                    ${chunksHtml}
+                                  </body>
+                                </html>
+                              `);
+                              newWindow.document.close();
+                            }
+                          } catch (error) {
+                            showToast('Error loading chunks: ' + error, 'error');
                           }
-                        } catch (error: any) {
-                          showToast('Reprocessing error: ' + error.message, 'error');
-                        }
-                      }}
-                      className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors"
-                    >
-                      🔄 Reprocess Document
-                    </button>
+                        }}
+                        className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                      >
+                        📄 View Chunks
+                      </button>
+                    </div>
                   )}
                 </div>
               </form>
