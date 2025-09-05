@@ -49,7 +49,7 @@ async function analyzeItemWithContent(
         documentContent: documentContent
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     // Fallback to old system if centralized prompt fails
     const promptTemplate = getPromptForTemplate(templateType);
     userPrompt = formatPrompt(promptTemplate, {
@@ -98,7 +98,7 @@ async function analyzeItemWithContent(
       let parsed;
       try {
         parsed = JSON.parse(content);
-      } catch (jsonError) {
+      } catch (jsonError: any) {
         console.error('JSON parse error. Content:', content.substring(0, 500) + '...');
         throw new Error(`Invalid JSON response: ${jsonError.message}`);
       }
