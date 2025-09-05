@@ -1198,6 +1198,7 @@ export default function CompliancePage() {
                     <p className="text-sm text-text-secondary mt-1">
                       📋 Template: <span className="text-primary font-medium">{results.templateName}</span>
                       {results.version && <span className="ml-2">• Version {results.version}</span>}
+                      <span className="ml-2 text-xs text-gray-500">Debug: {JSON.stringify({templateName: results.templateName, isLegal: results.templateName?.toLowerCase().includes('legal')})}</span>
                     </p>
                   )}
                 </div>
