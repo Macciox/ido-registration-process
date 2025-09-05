@@ -19,6 +19,9 @@ export interface AnalysisResult {
   coverage_score: number;
   reasoning: string;
   evidence: Array<{ snippet: string }>;
+  field_type?: string;
+  scoring_logic?: string;
+  selected_answer?: string;
 }
 
 export interface AnalysisData {
@@ -180,7 +183,10 @@ export async function saveAnalysis(
       status: result.status,
       coverage_score: result.coverage_score,
       reasoning: result.reasoning,
-      evidence_snippets: result.evidence?.map(e => e.snippet) || []
+      evidence_snippets: result.evidence?.map(e => e.snippet) || [],
+      field_type: result.field_type || null,
+      scoring_logic: result.scoring_logic || null,
+      selected_answer: result.selected_answer || null
     }));
 
     const { error: resultsError } = await serviceClient
