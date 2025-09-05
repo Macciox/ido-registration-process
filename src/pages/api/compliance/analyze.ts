@@ -58,15 +58,6 @@ async function analyzeItemWithContent(
       description: item.description,
       relevant_content: documentContent
     });
-  } catch (error) {
-    // Fallback to old system if centralized prompt fails
-    const promptTemplate = getPromptForTemplate(templateType);
-    userPrompt = formatPrompt(promptTemplate, {
-      category: item.category,
-      item_name: item.item_name,
-      description: item.description,
-      relevant_content: documentContent
-    });
   }
   
   console.log('Prompt length:', userPrompt.length);
