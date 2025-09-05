@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import { getDocumentChunks } from '@/lib/pdf-processor';
+
 import { renderPrompt } from '@/lib/prompts';
 
 const serviceClient = createClient(
@@ -25,8 +25,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`Template: ${templateId}`);
     console.log(`Items to regenerate: ${nonFoundItems.length}`);
     
-    // Get document chunks
-    const chunks = await getDocumentChunks(documentId);
+    // Get document chunks from database
+    const { data: chunks } = await serviceClient
+      .from('compliance_chunks')
+      .select('content, page')
+      .eq('document_id', documentId)
+      .order('page');
     
     if (!chunks || chunks.length === 0) {
       throw new Error('No document chunks found');
