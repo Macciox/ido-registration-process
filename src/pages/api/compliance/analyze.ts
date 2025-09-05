@@ -140,87 +140,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Either check_id or (documentId + templateId) is required' });
     }
 
-    // If documentId provided, create a temporary check
+    // If documentId provided, analyze directly without creating check
     if (documentId && templateId) {
-      // Create temporary check for analysis
-      const { data: tempCheck, error: tempError } = await serviceClient
-        .from('compliance_checks')
-        .insert({
-          user_id: user.id,
-          document_id: documentId,
-          template_id: templateId,
-          status: 'processing'
-        })
-        .select('*, checker_templates(*)')
-        .single();
-
-      if (tempError || !tempCheck) {
-        return res.status(400).json({ error: 'Failed to create temporary check' });
-      }
-
-      // Use the temporary check
-      const checkData = tempCheck;
-      const actualCheckId = tempCheck.id;
-
-      // Continue with existing logic...
-      const { data: items, error: itemsError } = await serviceClient
-        .from('checker_items')
-        .select('*')
-        .eq('template_id', checkData.template_id)
-        .order('sort_order');
-
-      if (itemsError || !items) {
-        throw new Error('Failed to load checklist items');
-      }
-
-      // Get document chunks - if none exist, try to process the document
-      let { data: allChunks } = await serviceClient
+      // Get existing chunks for this document
+      const { data: existingChunks } = await serviceClient
         .from('compliance_chunks')
         .select('content, page')
-        .eq('check_id', actualCheckId)
-        .order('page');
+        .eq('document_id', documentId)
+        .order('page')
+        .limit(43);
 
-      if (!allChunks || allChunks.length === 0) {
-        // Try to get chunks from document directly
-        const { data: docChunks } = await serviceClient
-          .from('compliance_chunks')
-          .select('content, page')
-          .eq('document_id', documentId)
-          .order('page')
-          .limit(43);
-
-        if (docChunks && docChunks.length > 0) {
-          // Copy chunks to this check
-          const chunksToInsert = docChunks.map(chunk => ({
-            check_id: actualCheckId,
-            document_id: documentId,
-            content: chunk.content,
-            page: chunk.page
-          }));
-
-          await serviceClient.from('compliance_chunks').insert(chunksToInsert);
-          allChunks = docChunks;
-        } else {
-          return res.status(400).json({ 
-            error: 'No document chunks found. Please re-upload the document.' 
-          });
-        }
+      if (!existingChunks || existingChunks.length === 0) {
+        return res.status(400).json({ 
+          error: 'No document chunks found. Please re-upload the document.' 
+        });
       }
 
-      // Continue with analysis using existing logic
-      const documentContent = allChunks.map((chunk, i) => 
+      // Get template and items
+      const { data: template } = await serviceClient
+        .from('checker_templates')
+        .select('*, checker_items(*)')
+        .eq('id', templateId)
+        .single();
+
+      if (!template) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      // Create document content from existing chunks
+      const documentContent = existingChunks.map((chunk, i) => 
         `[Excerpt ${i + 1}${chunk.page ? ` - Page ${chunk.page}` : ''}]\n${chunk.content}`
       ).join('\n\n');
 
-      console.log(`Using ${allChunks.length} chunks for analysis (${documentContent.length} chars)`);
+      console.log(`Using ${existingChunks.length} existing chunks for analysis (${documentContent.length} chars)`);
 
       const results = [];
       let processedCount = 0;
 
-      // Process each item with the same documentContent
-      for (const item of items) {
+      // Process each item
+      for (const item of template.checker_items) {
         try {
-          const analysis = await analyzeItemWithContent(item, documentContent, checkData.checker_templates.type);
+          const analysis = await analyzeItemWithContent(item, documentContent, template.type);
 
           results.push({
             item_id: item.id,
@@ -258,17 +218,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         overall_score: Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
       };
 
-      // Clean up temporary check
-      await serviceClient.from('compliance_checks').delete().eq('id', actualCheckId);
-
       return res.status(200).json({
         success: true,
         checkId: `temp-${Date.now()}`,
         results,
         summary,
-        message: `Analysis completed for ${processedCount}/${items.length} items (temporary)`
+        message: `Analysis completed for ${processedCount}/${template.checker_items.length} items (direct)`
       });
     }
+
+    // Original code for existing checks
+    if (!check_id) {
+      return res.status(400).json({ error: 'check_id is required for existing check analysis' });
+    }
+
 
     // Handle existing check analysis
     const { data: checkData, error: checkError } = await serviceClient
