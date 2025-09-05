@@ -37,10 +37,10 @@ async function analyzeItemWithContent(
     const promptId = templateType === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                     templateType === 'legal' ? 'LEGAL_ANALYSIS' : 'COMPLIANCE_ANALYSIS';
     
-    // Legal prompts have requirements hardcoded, only need documentContent
+    // Legal prompts get requirements dynamically
     if (templateType === 'legal') {
       userPrompt = await renderPrompt(promptId, {
-        requirementsList: '', // Empty since questions are hardcoded in template
+        requirementsList: item.description, // Contains all 21 questions
         documentContent: documentContent
       });
     } else {
@@ -227,9 +227,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (template.type === 'legal') {
         try {
           console.log('Analyzing all legal questions at once...');
-          // For legal templates, pass empty item since questions are hardcoded in prompt
-          const emptyItem = { category: '', item_name: '', description: '' };
-          const analysis = await analyzeItemWithContent(emptyItem, documentContent, template.type);
+          // For legal templates, pass all items as requirements list
+          const requirementsList = template.checker_items.map((item, i) => 
+            `${i + 1}. ${item.category} | ${item.item_name} | ${item.description}`
+          ).join('\n');
+          const pseudoItem = { category: 'Legal', item_name: 'All Questions', description: requirementsList };
+          const analysis = await analyzeItemWithContent(pseudoItem, documentContent, template.type);
           
           // Extract full legal results array
           const legalResults = (analysis as any).fullLegalResults || [];
