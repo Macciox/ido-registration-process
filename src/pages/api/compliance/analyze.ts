@@ -97,6 +97,9 @@ async function analyzeItemWithContent(
       // Log OpenAI response for debugging
       console.log('OpenAI response length:', content.length);
       console.log('OpenAI response preview:', content.substring(0, 1000) + '...');
+      console.log('=== FULL OPENAI RESPONSE ===');
+      console.log(content);
+      console.log('=== END FULL RESPONSE ===');
       
       // Parse and validate JSON response
       let parsed;
