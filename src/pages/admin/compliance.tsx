@@ -1260,7 +1260,7 @@ export default function CompliancePage() {
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-4 text-white font-medium">Item</th>
                       <th className="text-left py-3 px-4 text-white font-medium">Category</th>
-                      {results.templateName?.includes('Legal') ? (
+                      {results.templateName?.toLowerCase().includes('legal') ? (
                         <>
                           <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Risk Score</th>
@@ -1282,7 +1282,7 @@ export default function CompliancePage() {
                       <tr key={index} className="border-b border-border/50">
                         <td className="py-3 px-4 text-white">{item.item_name}</td>
                         <td className="py-3 px-4 text-text-secondary">{item.category}</td>
-                        {results.templateName?.includes('Legal') ? (
+                        {results.templateName?.toLowerCase().includes('legal') ? (
                           <>
                             <td className="py-3 px-4">
                               <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
