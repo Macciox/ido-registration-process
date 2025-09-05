@@ -48,6 +48,10 @@ async function analyzeItemWithContent(
         documentContent: documentContent
       });
     }
+    
+    console.log('Prompt length:', userPrompt.length);
+    console.log('Prompt preview:', userPrompt.substring(0, 500) + '...');
+    }
   } catch (error) {
     // Fallback to old system if centralized prompt fails
     const promptTemplate = getPromptForTemplate(templateType);
@@ -68,7 +72,7 @@ async function analyzeItemWithContent(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
             { role: 'user', content: userPrompt }
@@ -91,7 +95,14 @@ async function analyzeItemWithContent(
       }
 
       // Parse and validate JSON response
-      const parsed = JSON.parse(content);
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch (jsonError) {
+        console.error('JSON parse error. Content:', content.substring(0, 500) + '...');
+        throw new Error(`Invalid JSON response: ${jsonError.message}`);
+      }
+      
       const validated = Result.parse(parsed);
 
       return validated;
@@ -177,9 +188,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const results = [];
       let processedCount = 0;
 
+      // Log what we're sending to OpenAI
+      console.log('Document content length:', documentContent.length);
+      console.log('Document content preview:', documentContent.substring(0, 1000) + '...');
+      console.log('Template type:', template.type);
+      console.log('Number of items to analyze:', template.checker_items.length);
+
       // Process each item
       for (const item of template.checker_items) {
         try {
+          console.log(`Analyzing item: ${item.item_name}`);
           const analysis = await analyzeItemWithContent(item, documentContent, template.type);
 
           results.push({
