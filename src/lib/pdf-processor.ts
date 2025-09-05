@@ -142,6 +142,7 @@ export async function processPDFDocument(documentId: string, pdfBuffer: Buffer):
 
   } catch (error: any) {
     console.error('PDF processing error:', error);
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     return {
       success: false,
       chunksCount: 0,

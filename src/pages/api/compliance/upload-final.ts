@@ -102,12 +102,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Document record created:', docData.id);
 
     // Process PDF: extract text and create chunks
-    console.log('Starting PDF processing...');
+    console.log('Starting PDF processing for document ID:', docData.id);
     const processingResult = await processPDFDocument(docData.id, fileBuffer);
+    
+    console.log('Processing result:', processingResult);
     
     if (!processingResult.success) {
       console.error('PDF processing failed:', processingResult.message);
-      // Don't fail the upload, just log the error
+      return res.status(500).json({
+        statusCode: '500',
+        error: 'PDF Processing Failed',
+        message: processingResult.message
+      });
     } else {
       console.log('PDF processed successfully:', processingResult.message);
     }
