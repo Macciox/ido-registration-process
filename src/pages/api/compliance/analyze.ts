@@ -228,7 +228,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
           console.log('Analyzing all legal questions at once...');
           // For legal templates, pass all items as requirements list
-          const requirementsList = template.checker_items.map((item, i) => 
+          const requirementsList = template.checker_items.map((item: any, i: number) => 
             `${i + 1}. ${item.category} | ${item.item_name} | ${item.description}`
           ).join('\n');
           const pseudoItem = { category: 'Legal', item_name: 'All Questions', description: requirementsList };
