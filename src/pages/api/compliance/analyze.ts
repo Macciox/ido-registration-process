@@ -336,6 +336,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         checkId: `temp-${Date.now()}`,
         results,
         summary,
+        templateName: template.name,
         message: `Analysis completed for ${processedCount}/${template.checker_items.length} items (direct)`
       });
     }
