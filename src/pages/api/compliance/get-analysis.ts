@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get detailed results with template item info
     const { data: results, error: resultsError } = await serviceClient
-      .from('compliance_results')
+      .from('check_results')
       .select(`
         *,
         checker_items (
@@ -63,7 +63,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       coverage_score: result.coverage_score,
       reasoning: result.reasoning,
       manually_overridden: result.manually_overridden || false,
-      evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+      evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet })),
+      // Legal template fields
+      field_type: result.field_type,
+      scoring_logic: result.scoring_logic,
+      selected_answer: result.selected_answer
     }));
 
     const summary = {
