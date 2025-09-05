@@ -58,8 +58,6 @@ async function analyzeItemWithContent(
       description: item.description,
       relevant_content: documentContent
     });
-  }
-  
   } catch (error) {
     // Fallback to old system if centralized prompt fails
     const promptTemplate = getPromptForTemplate(templateType);
