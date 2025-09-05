@@ -105,14 +105,19 @@ async function analyzeItemWithContent(
       
       // Handle legal template array response vs single object
       if (templateType === 'legal' && Array.isArray(parsed)) {
-        // For legal analysis, return array of all results
-        return {
-          status: 'FOUND', // Will be overridden per item
-          coverage_score: 0, // Will be overridden per item
-          evidence: [],
-          reasoning: 'Legal analysis completed',
-          legalResults: parsed // Store full array for processing
+        // For legal analysis, return the first result (will be processed differently in main handler)
+        const firstResult = parsed[0] || {};
+        const result = {
+          status: firstResult.answer === 'Yes' ? 'FOUND' : 
+                  firstResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION',
+          coverage_score: firstResult.risk_score || 0,
+          evidence: firstResult.evidence_snippets ? 
+            firstResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
+          reasoning: firstResult.reasoning || 'No reasoning provided'
         };
+        // Store the full array in a property we can access
+        (result as any).fullLegalResults = parsed;
+        return result;
       }
       
       const validated = Result.parse(parsed);
@@ -217,17 +222,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.log('Analyzing all legal questions at once...');
           const analysis = await analyzeItemWithContent(template.checker_items[0], documentContent, template.type);
           
-          // Legal analysis returns array, map to all items
+          // Extract full legal results array
+          const legalResults = (analysis as any).fullLegalResults || [];
+          
+          // Map each result to corresponding item
           for (let i = 0; i < template.checker_items.length; i++) {
             const item = template.checker_items[i];
+            const legalResult = legalResults[i] || {};
+            
             results.push({
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: analysis.status,
-              coverage_score: analysis.coverage_score,
-              reasoning: analysis.reasoning,
-              evidence: analysis.evidence || []
+              status: legalResult.answer === 'Yes' ? 'FOUND' : 
+                      legalResult.answer === 'No' ? 'MISSING' : 'NEEDS_CLARIFICATION',
+              coverage_score: legalResult.risk_score || 0,
+              reasoning: legalResult.reasoning || 'No reasoning provided',
+              evidence: legalResult.evidence_snippets ? 
+                legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : []
             });
             processedCount++;
           }
