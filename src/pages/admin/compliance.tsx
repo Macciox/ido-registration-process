@@ -1109,6 +1109,8 @@ export default function CompliancePage() {
                                       
                                       const data = await response.json();
                                       console.log('Loaded analysis data:', data);
+                                      console.log('Results array length:', data.results?.length);
+                                      console.log('First result:', data.results?.[0]);
                                       setResults(data);
                                       setShowResults(true);
                                     } catch (error: any) {
