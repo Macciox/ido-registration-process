@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: documents, error } = await serviceClient
       .from('compliance_documents')
-      .select('id, filename, file_path, created_at')
+      .select('id, filename, file_path, created_at, processing_status')
       .eq('user_id', user.id)
       .neq('mime_type', 'text/html')
       .order('created_at', { ascending: false })

@@ -86,7 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         filename: file.originalFilename,
         file_path: uploadData.path,
         file_size: fileBuffer.length,
-        mime_type: 'application/pdf'
+        mime_type: 'application/pdf',
+        processing_status: 'processing'
       })
       .select()
       .single();
@@ -107,13 +108,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log('Processing result:', processingResult);
     
+    // Update processing status
+    const status = processingResult.success ? 'completed' : 'failed';
+    await serviceClient
+      .from('compliance_documents')
+      .update({ processing_status: status })
+      .eq('id', docData.id);
+    
     if (!processingResult.success) {
       console.error('PDF processing failed:', processingResult.message);
-      return res.status(500).json({
-        statusCode: '500',
-        error: 'PDF Processing Failed',
-        message: processingResult.message
-      });
+      // Don't fail upload, just mark as failed
     } else {
       console.log('PDF processed successfully:', processingResult.message);
     }

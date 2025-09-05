@@ -25,6 +25,7 @@ interface Document {
   filename: string;
   file_path: string;
   created_at: string;
+  processing_status?: string;
   compliance_checks: Array<{
     id: string;
     template_id: string;
@@ -721,7 +722,10 @@ export default function CompliancePage() {
                     <option value="" className="bg-card text-white">Choose document...</option>
                     {documents.map((doc) => (
                       <option key={doc.id} value={doc.id} className="bg-card text-white">
-                        {doc.filename} ({new Date(doc.created_at).toLocaleDateString()})
+                        {doc.filename} ({new Date(doc.created_at).toLocaleDateString()}) 
+                        {doc.processing_status === 'failed' ? ' ❌ Processing Failed' : 
+                         doc.processing_status === 'processing' ? ' ⏳ Processing...' : 
+                         doc.processing_status === 'completed' ? ' ✅ Ready' : ''}
                       </option>
                     ))}
                   </select>
@@ -781,13 +785,47 @@ export default function CompliancePage() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isUploading || !selectedDocument || !selectedTemplate}
-                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUploading ? 'Analyzing...' : 'Analyze Document'}
-                </button>
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isUploading || !selectedDocument || !selectedTemplate}
+                    className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUploading ? 'Analyzing...' : 'Analyze Document'}
+                  </button>
+                  
+                  {selectedDocument && documents.find(d => d.id === selectedDocument)?.processing_status === 'failed' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const response = await fetch('/api/compliance/reprocess-document', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${session?.access_token}`
+                            },
+                            body: JSON.stringify({ documentId: selectedDocument })
+                          });
+                          
+                          const data = await response.json();
+                          if (data.success) {
+                            showToast(`Document reprocessed: ${data.chunksCount} chunks created`, 'success');
+                            fetchDocuments();
+                          } else {
+                            showToast(`Reprocessing failed: ${data.message}`, 'error');
+                          }
+                        } catch (error: any) {
+                          showToast('Reprocessing error: ' + error.message, 'error');
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors"
+                    >
+                      🔄 Reprocess Document
+                    </button>
+                  )}
+                </div>
               </form>
             ) : activeTab === 'url' ? (
               <div className="space-y-6">
