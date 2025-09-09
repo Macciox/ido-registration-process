@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get detailed results with template item info
     const { data: results, error: resultsError } = await serviceClient
-      .from('check_results')
+      .from('compliance_results')
       .select(`
         *,
         checker_items (
