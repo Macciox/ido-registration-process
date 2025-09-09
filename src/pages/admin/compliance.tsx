@@ -1255,13 +1255,25 @@ export default function CompliancePage() {
                     {results.templateName?.toLowerCase().includes('legal') ? (
                       (() => {
                         // For legal templates, calculate points collected
-                        const scoredItems = results.results?.filter((r: any) => r.coverage_score !== 'Not scored') || [];
+                        const allItems = results.results || [];
+                        const scoredItems = allItems.filter((r: any) => r.coverage_score !== 'Not scored');
                         const totalRiskScore = scoredItems.reduce((sum: number, r: any) => 
                           sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0
                         );
-                        const maxPossibleScore = 6052; // Correct maximum for legal template
-                        const pointsCollected = maxPossibleScore - totalRiskScore; // Lower risk = higher points
-                        return `${pointsCollected}/${maxPossibleScore}`;
+                        
+                        // Calculate max possible score for scored items only
+                        let maxForScoredItems = 0;
+                        scoredItems.forEach((item: any) => {
+                          const scoring = item.scoring_logic || '';
+                          const numbers = scoring.match(/\d+/g);
+                          if (numbers) {
+                            maxForScoredItems += Math.max(...numbers.map((n: string) => parseInt(n)));
+                          }
+                        });
+                        
+                        const pointsCollected = maxForScoredItems - totalRiskScore;
+                        const percentage = maxForScoredItems > 0 ? Math.round((pointsCollected / maxForScoredItems) * 100) : 0;
+                        return `${pointsCollected}/${maxForScoredItems} (${percentage}%)`;
                       })()
                     ) : (
                       `${results.summary?.overall_score || 0}%`
@@ -1284,35 +1296,35 @@ export default function CompliancePage() {
 
               {/* Results Table */}
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-white font-medium">Item</th>
-                      <th className="text-left py-3 px-4 text-white font-medium">Category</th>
+                      <th className="text-left py-4 px-6 text-white font-medium w-1/4">Item</th>
+                      <th className="text-left py-4 px-6 text-white font-medium w-1/6">Category</th>
                       {results.templateName?.toLowerCase().includes('legal') ? (
                         <>
-                          <th className="text-left py-3 px-4 text-white font-medium">Risk Score</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Reasoning & Actions</th>
+                          <th className="text-left py-4 px-6 text-white font-medium w-1/12">Risk Score</th>
+                          <th className="text-left py-4 px-6 text-white font-medium w-1/6">Selected Answer</th>
+                          <th className="text-left py-4 px-6 text-white font-medium w-1/3">Reasoning & Actions</th>
                         </>
                       ) : (
                         <>
-                          <th className="text-left py-3 px-4 text-white font-medium">Status</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Manual Override</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Score</th>
+                          <th className="text-left py-4 px-6 text-white font-medium w-1/8">Status</th>
+                          <th className="text-left py-4 px-6 text-white font-medium w-1/6">Manual Override</th>
+                          <th className="text-left py-4 px-6 text-white font-medium w-1/12">Score</th>
                         </>
                       )}
-                      <th className="text-left py-3 px-4 text-white font-medium">Evidence</th>
+                      <th className="text-left py-4 px-6 text-white font-medium w-1/8">Evidence</th>
                     </tr>
                   </thead>
                   <tbody>
                     {results.results?.map((item: any, index: number) => (
                       <tr key={index} className="border-b border-border/50">
-                        <td className="py-3 px-4 text-white">{item.item_name}</td>
-                        <td className="py-3 px-4 text-text-secondary">{item.category}</td>
+                        <td className="py-4 px-6 text-white font-medium">{item.item_name}</td>
+                        <td className="py-4 px-6 text-text-secondary">{item.category}</td>
                         {results.templateName?.toLowerCase().includes('legal') ? (
                           <>
-                            <td className="py-3 px-4">
+                            <td className="py-4 px-6">
                               {editingItem === item.item_id ? (
                                 <input
                                   type="text"
@@ -1337,7 +1349,7 @@ export default function CompliancePage() {
                                 </span>
                               )}
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-4 px-6">
                               {editingItem === item.item_id ? (
                                 <input
                                   type="text"
@@ -1353,13 +1365,13 @@ export default function CompliancePage() {
                                   placeholder="Selected answer"
                                 />
                               ) : (
-                                <div className="text-xs text-text-secondary space-y-1">
+                                <div className="text-sm text-text-secondary space-y-1">
                                   <div className="font-medium text-white">{item.selected_answer || 'N/A'}</div>
                                   <div className="text-xs">{item.scoring_logic || 'N/A'}</div>
                                 </div>
                               )}
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-4 px-6">
                               {editingItem === item.item_id ? (
                                 <div className="space-y-2">
                                   <textarea
@@ -1514,7 +1526,7 @@ export default function CompliancePage() {
                             <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
                           </>
                         )}
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-6">
                           {item.evidence?.length > 0 ? (
                             <button 
                               onClick={() => {
