@@ -220,119 +220,67 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Template type:', template.type);
       console.log('Number of items to analyze:', template.checker_items.length);
 
-      // Optimize for legal templates - analyze all questions at once
+      // Process legal templates with individual calls for each question
       if (template.type === 'legal') {
         try {
-          console.log('Analyzing all legal questions at once...');
-          
-          // Create requirements list in the format expected by the prompt
-          const requirementsList = template.checker_items.map((item: any, i: number) => 
-            `${i + 1}. ${item.item_name} | ${item.field_type || 'Yes/No'} | ${item.scoring_logic || 'Yes = 1000, No = 0'}`
-          ).join('\n');
-          
-          console.log('Requirements list being sent to OpenAI:');
-          console.log(requirementsList);
-          
-          // Use the legal prompt template with placeholders
-          const legalPromptTemplate = `You are a **MiCAR legal compliance expert**.  
-You will analyze a **LEGAL OPINION document** (full or in chunks) against a set of predefined **LEGAL QUESTIONS**.  
-
-Your task is to produce a **STRICT JSON array** (no extra text, no explanations outside JSON).  
-Each JSON object must correspond exactly to one row from the \`requirementsList\`, in the same order.  
-
----
-
-## LEGAL QUESTIONS TEMPLATE (requirementsList)
-
-{{requirementsList}}
-
----
-
-## DOCUMENT TO ANALYZE
-
-{{documentContent}}
-
----
-
-## RULES FOR ANALYSIS
-1. **Follow order**: Output one JSON object per requirement, in the same order as in the \`requirementsList\`.  
-2. **Field type**:  
-   - Copy the \`"field_type"\` string **exactly as written** in the \`requirementsList\`.  
-   - Then append the chosen answer to it using the format:  
-     \`"field_type": "[Exact field type from requirementsList] → Selected: [Answer]"\`.  
-     Example:  
-     - Template: \`Dropdown: Access to services / Governance only / Investment returns / Other + Text field\`  
-     - Answer: \`Investment returns\`  
-     - Output: \`"field_type": "Dropdown: Access to services / Governance only / Investment returns / Other + Text field → Selected: Investment returns"\`  
-3. **Answer values**:  
-   - Must always be one of the options listed in the \`field_type\` from the template.  
-   - If "Other" is chosen, format as \`"Other - [short explanation]"\`.  
-   - If no relevant information is found in the document:  
-     - Use \`"Not sure"\` if it is listed in the \`field_type\` options.  
-     - Otherwise use \`"No evidence found"\`.  
-4. **Scoring logic**:  
-   - Copy the \`"scoring_logic"\` string **exactly as written** in the \`requirementsList\` (no rewriting).  
-5. **Risk score**:  
-   - If the \`"scoring_logic"\` contains numeric rules, set \`"risk_score"\` to the **exact numeric value** that corresponds to the chosen answer.  
-   - If \`"scoring_logic"\` = \`"Not scored"\`, then \`"risk_score"\` must be exactly \`"Not scored"\` (not 0).  
-   Example:
-   - If scoring_logic = "Yes = 1000, No = 0" and answer = "Yes", then risk_score = 1000
-   - If scoring_logic = "No = 5, Not sure = 3, Yes = 0" and answer = "Not sure", then risk_score = 3
-
-6. **Reasoning**: Write a short (1–3 sentences) legal analysis justifying the selected answer.  
-7. **Evidence snippets**: Always include verbatim quotes from the document that support the answer. If no relevant evidence is found, output \`["No evidence found"]\`.  
-8. **Contradictions**:  
-   - If conflicting evidence is found, select the answer that corresponds to the **highest risk score** according to the \`scoring_logic\`.  
-   - Clearly mention the contradiction in the \`"reasoning"\`.  
-9. **Output format**: Return only a valid JSON array. Do not add any text outside of the JSON.  
-
----
-
-## JSON OUTPUT FORMAT
-[
-  {
-    "field_type": "[Exact field type from requirementsList] → Selected: [Answer]",
-    "scoring_logic": "[Exact scoring logic from requirementsList or 'Not scored']",
-    "risk_score": "[Exact score from scoring logic, or 'Not scored']",
-    "reasoning": "Short legal reasoning (1–3 sentences)",
-    "evidence_snippets": ["Exact quotes from legal opinion or 'No evidence found'"]
-  }
-]`;
-          
-          // Replace placeholders with actual content
-          const finalPrompt = legalPromptTemplate
-            .replace('{{requirementsList}}', requirementsList)
-            .replace('{{documentContent}}', documentContent);
-          
-          // Create pseudo item for the analysis function
-          const pseudoItem = { 
-            category: 'Legal', 
-            item_name: 'All Questions', 
-            description: finalPrompt 
-          };
-          
-          const analysis = await analyzeItemWithContent(pseudoItem, '', template.type);
-          
-          // Extract full legal results array
-          const legalResults = (analysis as any).fullLegalResults || [];
-          
-          // Map each result to corresponding item (new format)
-          for (let i = 0; i < template.checker_items.length; i++) {
-            const item = template.checker_items[i];
-            const legalResult = legalResults[i] || {};
+          console.log('Analyzing legal questions individually (21 separate calls)...');
+        
+        for (const item of template.checker_items) {
+          try {
+            console.log(`Analyzing legal item: ${item.item_name}`);
             
-            // Parse new format fields
+            // Create focused prompt for this specific legal question
+            const legalPrompt = `You are a MiCAR legal compliance expert. Analyze this legal opinion document for ONE specific question.
+
+=== QUESTION TO ANALYZE ===
+QUESTION: "${item.item_name}"
+FIELD TYPE: ${item.field_type || 'Yes/No'}
+SCORING LOGIC: ${item.scoring_logic || 'Yes = 1000, No = 0'}
+
+=== DOCUMENT CONTENT ===
+${documentContent}
+
+=== ANALYSIS INSTRUCTIONS ===
+
+**CRITICAL**: Answer "Yes" when you find ANY evidence about this topic in the document (whether positive or negative evidence).
+
+**Examples:**
+- Question "Rights similar to shares/bonds" + Document says "tokens are NOT securities" → Answer: "Yes" (found evidence)
+- Question "Registered legal entity" + Document says "company is incorporated" → Answer: "Yes" (found evidence)
+- Question "Website link" + Document contains "www.example.com" → Extract: "www.example.com"
+
+**Answer "No" ONLY when:**
+- Document contains absolutely NO information about this topic
+- You cannot find any relevant text
+
+**For scoring:**
+- Apply the exact scoring logic provided
+- If "Not scored", return "Not scored"
+
+**Return ONLY this JSON:**
+{
+  "field_type": "${item.field_type || 'Yes/No'} → Selected: [Your Answer]",
+  "scoring_logic": "${item.scoring_logic || 'Yes = 1000, No = 0'}",
+  "risk_score": [Apply scoring logic to get numeric value or "Not scored"],
+  "reasoning": "Why you selected this answer based on document evidence",
+  "evidence_snippets": ["Exact quotes from document that support your answer"]
+}`;
+            
+            const analysis = await analyzeItemWithContent({
+              category: item.category,
+              item_name: item.item_name,
+              description: legalPrompt
+            }, '', 'legal');
+            
+            // Parse the individual response
+            const legalResult = (analysis as any).fullLegalResults?.[0] || {};
+            
+            // Extract selected answer
             const fieldType = legalResult.field_type || '';
-            const scoringLogic = legalResult.scoring_logic || '';
-            
-            // Extract selected answer from field_type
-            let selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
-            if (!selectedMatch) {
-              selectedMatch = fieldType.match(/Selected: ([^→]+)$/);
-            }
+            let selectedMatch = fieldType.match(/Selected: ([^→]+)$/);
             const selectedAnswer = selectedMatch ? selectedMatch[1].trim() : '';
             
-            // Parse risk_score (can be string "Not scored", number, or numeric string)
+            // Parse risk score
             let riskScore: number | string = 0;
             if (legalResult.risk_score === 'Not scored') {
               riskScore = 'Not scored';
@@ -342,59 +290,45 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
             
-            // Always recalculate score based on database scoring logic
-            const dbScoringLogic = item.scoring_logic || 'Yes = 1000, No = 0';
-            if (dbScoringLogic !== 'Not scored' && selectedAnswer && riskScore !== 'Not scored') {
-              // Clean the selected answer (remove extra text after dash)
-              const cleanAnswer = selectedAnswer.split(' - ')[0].trim();
-              
-              // Try exact match first
-              let scoreMatch = dbScoringLogic.match(new RegExp(`${cleanAnswer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=\\s*(\\d+)`, 'i'));
-              
-              // Try partial matches for common cases
-              if (!scoreMatch) {
-                if (cleanAnswer.toLowerCase().includes('other')) {
-                  scoreMatch = dbScoringLogic.match(/Other\s*=\s*(\d+)/i);
-                } else if (cleanAnswer.toLowerCase().includes('access') || cleanAnswer.toLowerCase().includes('governance')) {
-                  scoreMatch = dbScoringLogic.match(/Access\/Governance\s*=\s*(\d+)/i);
-                } else if (cleanAnswer.toLowerCase().includes('investment')) {
-                  scoreMatch = dbScoringLogic.match(/Investment returns\s*=\s*(\d+)/i);
-                } else if (cleanAnswer.toLowerCase().includes('actively')) {
-                  scoreMatch = dbScoringLogic.match(/Actively marketing\s*=\s*(\d+)/i);
-                } else if (cleanAnswer.toLowerCase().includes('reverse')) {
-                  scoreMatch = dbScoringLogic.match(/Reverse\s*=\s*(\d+)/i);
-                } else if (cleanAnswer.toLowerCase().includes('planning')) {
-                  scoreMatch = dbScoringLogic.match(/Planning\s*=\s*(\d+)/i);
-                }
-              }
-              
-              if (scoreMatch) {
-                const calculatedScore = parseInt(scoreMatch[1]);
-                if (calculatedScore !== riskScore) {
-                  console.log(`Score corrected for ${item.item_name}: ${riskScore} → ${calculatedScore} (Answer: "${cleanAnswer}", Logic: "${dbScoringLogic}")`);
-                  riskScore = calculatedScore;
-                }
-              } else {
-                console.log(`Could not match answer "${cleanAnswer}" in scoring logic "${dbScoringLogic}" for ${item.item_name}`);
-              }
-            }
+            results.push({
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: riskScore === 'Not scored' ? 'MISSING' : 
+                     riskScore >= 1000 ? 'FOUND' : 
+                     riskScore > 0 ? 'NEEDS_CLARIFICATION' : 'MISSING',
+              coverage_score: riskScore,
+              reasoning: legalResult.reasoning || 'No reasoning provided',
+              evidence: legalResult.evidence_snippets ? 
+                legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
+              field_type: fieldType,
+              scoring_logic: legalResult.scoring_logic || item.scoring_logic,
+              selected_answer: selectedAnswer
+            });
+            
+            processedCount++;
+            
+            // Rate limiting between calls
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+          } catch (error: any) {
+            console.error(`Failed to analyze legal item ${item.item_name}:`, error);
             
             results.push({
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: riskScore > 100 ? 'FOUND' : riskScore > 0 ? 'NEEDS_CLARIFICATION' : 'MISSING',
-              coverage_score: riskScore,
-              reasoning: legalResult.reasoning || 'No reasoning provided',
-              evidence: legalResult.evidence_snippets ? 
-                legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-              // Store legal fields from new format
-              field_type: fieldType,
-              scoring_logic: scoringLogic,
-              selected_answer: selectedAnswer
+              status: 'NEEDS_CLARIFICATION',
+              coverage_score: 0,
+              reasoning: `Analysis failed: ${error.message}`,
+              evidence: [],
+              field_type: item.field_type || 'Yes/No',
+              scoring_logic: item.scoring_logic || 'Yes = 1000, No = 0',
+              selected_answer: ''
             });
-            processedCount++;
           }
+        }
+
         } catch (error: any) {
           console.error('Failed to analyze legal document:', error);
           
