@@ -110,18 +110,29 @@ async function analyzeItemWithContent(
         throw new Error(`Invalid JSON response: ${jsonError.message}`);
       }
       
-      // Handle legal template array response vs single object
-      if (templateType === 'legal' && Array.isArray(parsed)) {
-        // For legal analysis, return a result with the full array stored
-        const result = {
-          status: 'FOUND' as const,
-          coverage_score: 0,
-          evidence: [] as any[],
-          reasoning: 'Legal analysis completed'
-        };
-        // Store the full array in the new format
-        (result as any).fullLegalResults = parsed;
-        return result as ResultType;
+      // Handle legal template response (single object or array)
+      if (templateType === 'legal') {
+        if (Array.isArray(parsed)) {
+          // Multiple legal results (old bulk format)
+          const result = {
+            status: 'FOUND' as const,
+            coverage_score: 0,
+            evidence: [] as any[],
+            reasoning: 'Legal analysis completed'
+          };
+          (result as any).fullLegalResults = parsed;
+          return result as ResultType;
+        } else {
+          // Single legal result (new individual format)
+          const result = {
+            status: 'FOUND' as const,
+            coverage_score: 0,
+            evidence: [] as any[],
+            reasoning: 'Legal analysis completed'
+          };
+          (result as any).fullLegalResults = [parsed]; // Wrap in array for consistency
+          return result as ResultType;
+        }
       }
       
       const validated = Result.parse(parsed);
