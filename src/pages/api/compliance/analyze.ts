@@ -387,8 +387,8 @@ ${documentContent}
         clarification_items: results.filter(r => r.status === 'NEEDS_CLARIFICATION').length,
         missing_items: results.filter(r => r.status === 'MISSING').length,
         overall_score: template.type === 'legal' ? 
-          Math.round(100 - (results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)) :
-          Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
+          Math.round(100 - (results.reduce((sum, r) => sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0) / results.length)) :
+          Math.round(results.reduce((sum, r) => sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0) / results.length)
       };
 
       return res.status(200).json({
