@@ -232,7 +232,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             template.checker_items.map((item: any) => 
               `${item.category}\t${item.item_name}\t${item.field_type || 'Yes/No'}\t${item.scoring_logic || 'Yes = 1000, No = 0'}`
             ).join('\n');
+          console.log('Requirements list being sent to OpenAI:');
+          console.log(requirementsList);
           const pseudoItem = { category: 'Legal', item_name: 'All Questions', description: requirementsList };
+          console.log('First few items from template:');
+          template.checker_items.slice(0, 3).forEach((item: any, i: number) => {
+            console.log(`${i + 1}. ${item.item_name}`);
+            console.log(`   field_type: ${item.field_type}`);
+            console.log(`   scoring_logic: ${item.scoring_logic}`);
+          });
           const analysis = await analyzeItemWithContent(pseudoItem, documentContent, template.type);
           
           // Extract full legal results array
