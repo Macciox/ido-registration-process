@@ -1271,9 +1271,20 @@ export default function CompliancePage() {
                           }
                         });
                         
+                        // Debug each item's contribution
+                        console.log('=== SCORING DEBUG ===');
+                        scoredItems.forEach((item: any, i: number) => {
+                          const scoring = item.scoring_logic || '';
+                          const numbers = scoring.match(/\d+/g);
+                          const maxForItem = numbers ? Math.max(...numbers.map((n: string) => parseInt(n))) : 0;
+                          console.log(`Item ${i+1}: ${item.item_name}`);
+                          console.log(`  Scoring: ${scoring}`);
+                          console.log(`  Max: ${maxForItem}, Current Risk: ${item.coverage_score}`);
+                        });
+                        
                         // Points collected = max possible - total risk (lower risk = more points)
                         const pointsCollected = maxForScoredItems - totalRiskScore;
-                        console.log('Debug calc:', { maxForScoredItems, totalRiskScore, pointsCollected, scoredItemsCount: scoredItems.length });
+                        console.log('Final calc:', { maxForScoredItems, totalRiskScore, pointsCollected, scoredItemsCount: scoredItems.length });
                         const percentage = maxForScoredItems > 0 ? Math.round((pointsCollected / maxForScoredItems) * 100) : 0;
                         return `${pointsCollected}/${maxForScoredItems} (${percentage}%)`;
                       })()
@@ -1430,7 +1441,7 @@ export default function CompliancePage() {
                                       });
                                       setShowEvidenceModal(true);
                                     }}
-                                    className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer text-left flex-1"
+                                    className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer text-left flex-1 leading-relaxed break-words"
                                   >
                                     {(item.reasoning || 'N/A').substring(0, 80)}{(item.reasoning || '').length > 80 ? '...' : ''}
                                   </button>
