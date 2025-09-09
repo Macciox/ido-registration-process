@@ -333,9 +333,9 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
             const selectedAnswer = selectedMatch ? selectedMatch[1].trim() : '';
             
             // Parse risk_score (can be string "Not scored", number, or numeric string)
-            let riskScore = 0;
+            let riskScore: number | string = 0;
             if (legalResult.risk_score === 'Not scored') {
-              riskScore = 0;
+              riskScore = 'Not scored';
             } else if (typeof legalResult.risk_score === 'number') {
               riskScore = legalResult.risk_score;
             } else {
@@ -344,7 +344,7 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
             
             // Always recalculate score based on database scoring logic
             const dbScoringLogic = item.scoring_logic || 'Yes = 1000, No = 0';
-            if (dbScoringLogic !== 'Not scored' && selectedAnswer) {
+            if (dbScoringLogic !== 'Not scored' && selectedAnswer && riskScore !== 'Not scored') {
               // Clean the selected answer (remove extra text after dash)
               const cleanAnswer = selectedAnswer.split(' - ')[0].trim();
               
