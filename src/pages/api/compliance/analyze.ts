@@ -321,13 +321,25 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
             const item = template.checker_items[i];
             const legalResult = legalResults[i] || {};
             
+            console.log(`=== PROCESSING ITEM ${i + 1}: ${item.item_name} ===`);
+            console.log('Raw legalResult:', JSON.stringify(legalResult, null, 2));
+            
             // Parse new format fields
             const fieldType = legalResult.field_type || '';
             const scoringLogic = legalResult.scoring_logic || '';
             
-            // Extract selected answer from field_type
-            const selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
-            const selectedAnswer = selectedMatch ? selectedMatch[1] : '';
+            console.log('fieldType:', fieldType);
+            console.log('scoringLogic:', scoringLogic);
+            console.log('raw risk_score:', legalResult.risk_score, 'type:', typeof legalResult.risk_score);
+            
+            // Extract selected answer from field_type - try both formats
+            let selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
+            if (!selectedMatch) {
+              selectedMatch = fieldType.match(/Selected: ([^→]+)$/);
+            }
+            const selectedAnswer = selectedMatch ? selectedMatch[1].trim() : '';
+            
+            console.log('selectedAnswer extracted:', selectedAnswer);
             
             // Parse risk_score (can be string "Not scored", number, or numeric string)
             let riskScore = 0;
@@ -338,6 +350,9 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
             } else {
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
+            
+            console.log('Final riskScore:', riskScore);
+            console.log('=== END ITEM PROCESSING ===');
             
             results.push({
               item_id: item.id,
