@@ -29,7 +29,7 @@ export function Toast({ message, type, duration = 3000, onClose }: ToastProps) {
 
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm animate-in slide-in-from-right duration-300">
-      <div className={`bg-gray-900 border border-border rounded-lg shadow-2xl border-l-4 ${bgColor}`}>
+      <div className={`bg-gray-800 border border-gray-600 rounded-lg shadow-2xl border-l-4 ${bgColor}`}>
         <div className="p-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 text-lg">{icon}</div>
