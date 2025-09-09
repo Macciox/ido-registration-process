@@ -321,25 +321,16 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
             const item = template.checker_items[i];
             const legalResult = legalResults[i] || {};
             
-            console.log(`=== PROCESSING ITEM ${i + 1}: ${item.item_name} ===`);
-            console.log('Raw legalResult:', JSON.stringify(legalResult, null, 2));
-            
             // Parse new format fields
             const fieldType = legalResult.field_type || '';
             const scoringLogic = legalResult.scoring_logic || '';
             
-            console.log('fieldType:', fieldType);
-            console.log('scoringLogic:', scoringLogic);
-            console.log('raw risk_score:', legalResult.risk_score, 'type:', typeof legalResult.risk_score);
-            
-            // Extract selected answer from field_type - try both formats
+            // Extract selected answer from field_type
             let selectedMatch = fieldType.match(/Selected: \[([^\]]+)\]/);
             if (!selectedMatch) {
               selectedMatch = fieldType.match(/Selected: ([^→]+)$/);
             }
             const selectedAnswer = selectedMatch ? selectedMatch[1].trim() : '';
-            
-            console.log('selectedAnswer extracted:', selectedAnswer);
             
             // Parse risk_score (can be string "Not scored", number, or numeric string)
             let riskScore = 0;
@@ -351,8 +342,17 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
             
-            console.log('Final riskScore:', riskScore);
-            console.log('=== END ITEM PROCESSING ===');
+            // Validate scoring logic matches database - if not, recalculate
+            const dbScoringLogic = item.scoring_logic || 'Yes = 1000, No = 0';
+            if (scoringLogic !== dbScoringLogic && dbScoringLogic !== 'Not scored') {
+              console.log(`Scoring mismatch for ${item.item_name}. DB: ${dbScoringLogic}, OpenAI: ${scoringLogic}`);
+              // Try to recalculate score based on database scoring logic
+              const scoreMatch = dbScoringLogic.match(new RegExp(`${selectedAnswer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=\\s*(\\d+)`));
+              if (scoreMatch) {
+                riskScore = parseInt(scoreMatch[1]);
+                console.log(`Recalculated score for ${item.item_name}: ${riskScore}`);
+              }
+            }
             
             results.push({
               item_id: item.id,
