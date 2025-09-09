@@ -1282,18 +1282,17 @@ export default function CompliancePage() {
                           console.log(`  Max: ${maxForItem}, Current Risk: ${item.coverage_score}`);
                         });
                         
-                        // Points collected = max possible - total risk (lower risk = more points)
-                        const pointsCollected = maxForScoredItems - totalRiskScore;
-                        console.log('Final calc:', { maxForScoredItems, totalRiskScore, pointsCollected, scoredItemsCount: scoredItems.length });
-                        const percentage = maxForScoredItems > 0 ? Math.round((pointsCollected / maxForScoredItems) * 100) : 0;
-                        return `${pointsCollected}/${maxForScoredItems} (${percentage}%)`;
+                        // Show risk score and risk percentage
+                        console.log('Final calc:', { maxForScoredItems, totalRiskScore, scoredItemsCount: scoredItems.length });
+                        const riskPercentage = maxForScoredItems > 0 ? Math.round((totalRiskScore / maxForScoredItems) * 100) : 0;
+                        return `${totalRiskScore}/${maxForScoredItems} (${riskPercentage}%)`;
                       })()
                     ) : (
                       `${results.summary?.overall_score || 0}%`
                     )}
                   </div>
                   <div className="text-blue-300 text-sm">
-                    {results.templateName?.toLowerCase().includes('legal') ? 'Points Collected' : 'Overall Score'}
+                    {results.templateName?.toLowerCase().includes('legal') ? 'Risk Score (Lower = Better)' : 'Overall Score'}
                   </div>
                 </div>
               </div>
