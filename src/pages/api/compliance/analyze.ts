@@ -295,8 +295,8 @@ ${documentContent}
               item_name: item.item_name,
               category: item.category,
               status: riskScore === 'Not scored' ? 'MISSING' : 
-                     riskScore >= 1000 ? 'FOUND' : 
-                     riskScore > 0 ? 'NEEDS_CLARIFICATION' : 'MISSING',
+                     typeof riskScore === 'number' && riskScore >= 1000 ? 'FOUND' : 
+                     typeof riskScore === 'number' && riskScore > 0 ? 'NEEDS_CLARIFICATION' : 'MISSING',
               coverage_score: riskScore,
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
