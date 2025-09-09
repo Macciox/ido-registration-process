@@ -50,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Extract numbers from scoring logic
         const numbers = scoringLogic.match(/\d+/g);
         if (numbers) {
-          itemMaxScore = Math.max(...numbers.map(n => parseInt(n)));
+          itemMaxScore = Math.max(...numbers.map((n: string) => parseInt(n)));
         }
       }
       
