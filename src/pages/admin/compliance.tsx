@@ -1271,7 +1271,9 @@ export default function CompliancePage() {
                           }
                         });
                         
+                        // Points collected = max possible - total risk (lower risk = more points)
                         const pointsCollected = maxForScoredItems - totalRiskScore;
+                        console.log('Debug calc:', { maxForScoredItems, totalRiskScore, pointsCollected, scoredItemsCount: scoredItems.length });
                         const percentage = maxForScoredItems > 0 ? Math.round((pointsCollected / maxForScoredItems) * 100) : 0;
                         return `${pointsCollected}/${maxForScoredItems} (${percentage}%)`;
                       })()
@@ -1295,17 +1297,17 @@ export default function CompliancePage() {
               )}
 
               {/* Results Table */}
-              <div className="overflow-x-auto">
+              <div>
                 <table className="w-full table-fixed">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-4 px-6 text-white font-medium w-1/4">Item</th>
-                      <th className="text-left py-4 px-6 text-white font-medium w-1/6">Category</th>
+                      <th className="text-left py-3 px-3 text-white font-medium w-1/5 text-sm">Item</th>
+                      <th className="text-left py-3 px-3 text-white font-medium w-1/8 text-sm">Category</th>
                       {results.templateName?.toLowerCase().includes('legal') ? (
                         <>
-                          <th className="text-left py-4 px-6 text-white font-medium w-1/12">Risk Score</th>
-                          <th className="text-left py-4 px-6 text-white font-medium w-1/6">Selected Answer</th>
-                          <th className="text-left py-4 px-6 text-white font-medium w-1/3">Reasoning & Actions</th>
+                          <th className="text-left py-3 px-3 text-white font-medium w-1/12 text-sm">Risk Score</th>
+                          <th className="text-left py-3 px-3 text-white font-medium w-1/8 text-sm">Selected Answer</th>
+                          <th className="text-left py-3 px-3 text-white font-medium w-1/3 text-sm">Reasoning & Actions</th>
                         </>
                       ) : (
                         <>
@@ -1314,17 +1316,17 @@ export default function CompliancePage() {
                           <th className="text-left py-4 px-6 text-white font-medium w-1/12">Score</th>
                         </>
                       )}
-                      <th className="text-left py-4 px-6 text-white font-medium w-1/8">Evidence</th>
+                      <th className="text-left py-3 px-3 text-white font-medium w-1/8 text-sm">Evidence</th>
                     </tr>
                   </thead>
                   <tbody>
                     {results.results?.map((item: any, index: number) => (
                       <tr key={index} className="border-b border-border/50">
-                        <td className="py-4 px-6 text-white font-medium">{item.item_name}</td>
-                        <td className="py-4 px-6 text-text-secondary">{item.category}</td>
+                        <td className="py-3 px-3 text-white text-sm">{item.item_name}</td>
+                        <td className="py-3 px-3 text-text-secondary text-xs">{item.category}</td>
                         {results.templateName?.toLowerCase().includes('legal') ? (
                           <>
-                            <td className="py-4 px-6">
+                            <td className="py-3 px-3">
                               {editingItem === item.item_id ? (
                                 <input
                                   type="text"
@@ -1336,10 +1338,10 @@ export default function CompliancePage() {
                                       coverage_score: e.target.value
                                     }
                                   })}
-                                  className="w-20 px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                                  className="w-16 px-1 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs"
                                 />
                               ) : (
-                                <span className={`font-medium px-2 py-1 rounded text-sm ${
+                                <span className={`font-medium px-1 py-1 rounded text-xs ${
                                   item.coverage_score === 'Not scored' ? 'bg-gray-500/20 text-gray-400' :
                                   item.coverage_score >= 1000 ? 'bg-green-500/20 text-green-400' :
                                   (item.coverage_score === 3 || item.coverage_score === 5) ? 'bg-yellow-500/20 text-yellow-400' :
@@ -1349,7 +1351,7 @@ export default function CompliancePage() {
                                 </span>
                               )}
                             </td>
-                            <td className="py-4 px-6">
+                            <td className="py-3 px-3">
                               {editingItem === item.item_id ? (
                                 <input
                                   type="text"
@@ -1361,17 +1363,17 @@ export default function CompliancePage() {
                                       selected_answer: e.target.value
                                     }
                                   })}
-                                  className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs"
+                                  className="w-full px-1 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs"
                                   placeholder="Selected answer"
                                 />
                               ) : (
-                                <div className="text-sm text-text-secondary space-y-1">
-                                  <div className="font-medium text-white">{item.selected_answer || 'N/A'}</div>
+                                <div className="text-xs text-text-secondary space-y-1">
+                                  <div className="font-medium text-white text-xs">{item.selected_answer || 'N/A'}</div>
                                   <div className="text-xs">{item.scoring_logic || 'N/A'}</div>
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-6">
+                            <td className="py-3 px-3">
                               {editingItem === item.item_id ? (
                                 <div className="space-y-2">
                                   <textarea
@@ -1526,7 +1528,7 @@ export default function CompliancePage() {
                             <td className="py-3 px-4 text-white">{item.coverage_score}%</td>
                           </>
                         )}
-                        <td className="py-4 px-6">
+                        <td className="py-3 px-3">
                           {item.evidence?.length > 0 ? (
                             <button 
                               onClick={() => {
@@ -1536,12 +1538,12 @@ export default function CompliancePage() {
                                 });
                                 setShowEvidenceModal(true);
                               }}
-                              className="text-blue-400 hover:text-blue-300 text-sm underline cursor-pointer"
+                              className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer"
                             >
-                              View Evidence ({item.evidence.length})
+                              View ({item.evidence.length})
                             </button>
                           ) : (
-                            <span className="text-text-secondary text-sm">No evidence</span>
+                            <span className="text-text-secondary text-xs">No evidence</span>
                           )}
                         </td>
                       </tr>
