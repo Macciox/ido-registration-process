@@ -71,6 +71,8 @@ export default function CompliancePage() {
   const [whitepaperSections, setWhitepaperSections] = useState<string[]>(['A']);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [evidenceData, setEvidenceData] = useState<{title: string, evidence: any[]}>({title: '', evidence: []});
+  const [editingItem, setEditingItem] = useState<string>('');
+  const [editValues, setEditValues] = useState<{[key: string]: any}>({});
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -1087,7 +1089,17 @@ export default function CompliancePage() {
                                   analysis.overall_score >= 80 ? 'bg-green-500' :
                                   analysis.overall_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
                                 }`}></div>
-                                <span className="text-white">{analysis.overall_score}%</span>
+                                <span className="text-white">
+                                  {analysis.template_name?.toLowerCase().includes('legal') ? (
+                                    (() => {
+                                      // For legal templates, show points collected
+                                      const pointsCollected = Math.round((analysis.overall_score / 100) * 6052);
+                                      return `${pointsCollected}/6052`;
+                                    })()
+                                  ) : (
+                                    `${analysis.overall_score}%`
+                                  )}
+                                </span>
                               </div>
                             </td>
                             <td className="py-3 px-4 text-white">v{analysis.version}</td>
@@ -1240,9 +1252,24 @@ export default function CompliancePage() {
                 </div>
                 <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
                   <div className="text-2xl font-bold text-blue-400">
-                    {results.summary?.overall_score || 0}%
+                    {results.templateName?.toLowerCase().includes('legal') ? (
+                      (() => {
+                        // For legal templates, calculate points collected
+                        const scoredItems = results.results?.filter((r: any) => r.coverage_score !== 'Not scored') || [];
+                        const totalRiskScore = scoredItems.reduce((sum: number, r: any) => 
+                          sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0
+                        );
+                        const maxPossibleScore = 6052; // Correct maximum for legal template
+                        const pointsCollected = maxPossibleScore - totalRiskScore; // Lower risk = higher points
+                        return `${pointsCollected}/${maxPossibleScore}`;
+                      })()
+                    ) : (
+                      `${results.summary?.overall_score || 0}%`
+                    )}
                   </div>
-                  <div className="text-blue-300 text-sm">Overall Score</div>
+                  <div className="text-blue-300 text-sm">
+                    {results.templateName?.toLowerCase().includes('legal') ? 'Points Collected' : 'Overall Score'}
+                  </div>
                 </div>
               </div>
               
@@ -1265,8 +1292,8 @@ export default function CompliancePage() {
                       {results.templateName?.toLowerCase().includes('legal') ? (
                         <>
                           <th className="text-left py-3 px-4 text-white font-medium">Risk Score</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Field Type & Scoring</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Reasoning</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Selected Answer</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Reasoning & Actions</th>
                         </>
                       ) : (
                         <>
@@ -1286,34 +1313,130 @@ export default function CompliancePage() {
                         {results.templateName?.toLowerCase().includes('legal') ? (
                           <>
                             <td className="py-3 px-4">
-                              <span className={`font-medium px-2 py-1 rounded text-sm ${
-                                item.coverage_score === 'Not scored' ? 'bg-gray-500/20 text-gray-400' :
-                                item.coverage_score >= 1000 ? 'bg-green-500/20 text-green-400' :
-                                (item.coverage_score === 3 || item.coverage_score === 5) ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>
-                                {item.coverage_score}
-                              </span>
+                              {editingItem === item.item_id ? (
+                                <input
+                                  type="text"
+                                  value={editValues[item.item_id]?.coverage_score || item.coverage_score}
+                                  onChange={(e) => setEditValues({
+                                    ...editValues,
+                                    [item.item_id]: {
+                                      ...editValues[item.item_id],
+                                      coverage_score: e.target.value
+                                    }
+                                  })}
+                                  className="w-20 px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                                />
+                              ) : (
+                                <span className={`font-medium px-2 py-1 rounded text-sm ${
+                                  item.coverage_score === 'Not scored' ? 'bg-gray-500/20 text-gray-400' :
+                                  item.coverage_score >= 1000 ? 'bg-green-500/20 text-green-400' :
+                                  (item.coverage_score === 3 || item.coverage_score === 5) ? 'bg-yellow-500/20 text-yellow-400' :
+                                  'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {item.coverage_score}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 px-4">
-                              <div className="text-xs text-text-secondary space-y-1">
-                                <div className="font-medium text-white">{item.field_type || 'N/A'}</div>
-                                <div className="text-xs">{item.scoring_logic || 'N/A'}</div>
-                              </div>
+                              {editingItem === item.item_id ? (
+                                <input
+                                  type="text"
+                                  value={editValues[item.item_id]?.selected_answer || item.selected_answer || ''}
+                                  onChange={(e) => setEditValues({
+                                    ...editValues,
+                                    [item.item_id]: {
+                                      ...editValues[item.item_id],
+                                      selected_answer: e.target.value
+                                    }
+                                  })}
+                                  className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs"
+                                  placeholder="Selected answer"
+                                />
+                              ) : (
+                                <div className="text-xs text-text-secondary space-y-1">
+                                  <div className="font-medium text-white">{item.selected_answer || 'N/A'}</div>
+                                  <div className="text-xs">{item.scoring_logic || 'N/A'}</div>
+                                </div>
+                              )}
                             </td>
                             <td className="py-3 px-4">
-                              <button 
-                                onClick={() => {
-                                  setEvidenceData({
-                                    title: `Reasoning: ${item.item_name}`,
-                                    evidence: [{ snippet: item.reasoning || 'No reasoning provided' }]
-                                  });
-                                  setShowEvidenceModal(true);
-                                }}
-                                className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer text-left"
-                              >
-                                {(item.reasoning || 'N/A').substring(0, 100)}{(item.reasoning || '').length > 100 ? '...' : ''}
-                              </button>
+                              {editingItem === item.item_id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={editValues[item.item_id]?.reasoning || item.reasoning || ''}
+                                    onChange={(e) => setEditValues({
+                                      ...editValues,
+                                      [item.item_id]: {
+                                        ...editValues[item.item_id],
+                                        reasoning: e.target.value
+                                      }
+                                    })}
+                                    className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs"
+                                    rows={3}
+                                    placeholder="Reasoning"
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => {
+                                        // Save changes
+                                        const updatedResults = results.results.map((r: any) => 
+                                          r.item_id === item.item_id ? {
+                                            ...r,
+                                            coverage_score: editValues[item.item_id]?.coverage_score || r.coverage_score,
+                                            selected_answer: editValues[item.item_id]?.selected_answer || r.selected_answer,
+                                            reasoning: editValues[item.item_id]?.reasoning || r.reasoning
+                                          } : r
+                                        );
+                                        setResults({ ...results, results: updatedResults });
+                                        setEditingItem('');
+                                        setEditValues({});
+                                      }}
+                                      className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingItem('');
+                                        setEditValues({});
+                                      }}
+                                      className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => {
+                                      setEvidenceData({
+                                        title: `Reasoning: ${item.item_name}`,
+                                        evidence: [{ snippet: item.reasoning || 'No reasoning provided' }]
+                                      });
+                                      setShowEvidenceModal(true);
+                                    }}
+                                    className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer text-left flex-1"
+                                  >
+                                    {(item.reasoning || 'N/A').substring(0, 80)}{(item.reasoning || '').length > 80 ? '...' : ''}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingItem(item.item_id);
+                                      setEditValues({
+                                        [item.item_id]: {
+                                          coverage_score: item.coverage_score,
+                                          selected_answer: item.selected_answer || '',
+                                          reasoning: item.reasoning || ''
+                                        }
+                                      });
+                                    }}
+                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
+                                  >
+                                    ✏️
+                                  </button>
+                                </div>
+                              )}
                             </td>
                           </>
                         ) : (
@@ -1519,7 +1642,7 @@ export default function CompliancePage() {
         {/* Save Analysis Modal */}
         {showSaveModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-gray-600" style={{backgroundColor: '#111827', borderColor: '#4b5563'}}>
               <h3 className="text-lg font-bold text-white mb-4">Save Analysis</h3>
               <p className="text-text-secondary mb-6">
                 How would you like to save this analysis?
@@ -1557,7 +1680,7 @@ export default function CompliancePage() {
         {/* Versions Modal */}
         {showVersionsModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="bg-gray-900 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto border-2 border-gray-600" style={{backgroundColor: '#111827', borderColor: '#4b5563'}}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-white">Document Versions</h3>
                 <button
@@ -1646,7 +1769,7 @@ export default function CompliancePage() {
         {/* Evidence Modal */}
         {showEvidenceModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-card rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden border-2 border-gray-600" style={{backgroundColor: '#111827', borderColor: '#4b5563'}}>
               <div className="flex justify-between items-center p-6 border-b border-border">
                 <h3 className="text-lg font-bold text-white">📋 Evidence for: {evidenceData.title}</h3>
                 <button
@@ -1661,7 +1784,7 @@ export default function CompliancePage() {
                 {evidenceData.evidence.length > 0 ? (
                   <div className="space-y-4">
                     {evidenceData.evidence.map((evidence: any, index: number) => (
-                      <div key={index} className="bg-card-secondary rounded-lg p-4 border border-border">
+                      <div key={index} className="bg-gray-800 rounded-lg p-4 border-2 border-gray-600" style={{backgroundColor: '#1f2937', borderColor: '#4b5563'}}>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="bg-primary text-white px-2 py-1 rounded text-sm font-medium">
                             Evidence {index + 1}
