@@ -1341,14 +1341,44 @@ export default function CompliancePage() {
                                 <input
                                   type="text"
                                   value={editValues[item.item_id]?.coverage_score || item.coverage_score}
-                                  onChange={(e) => setEditValues({
-                                    ...editValues,
-                                    [item.item_id]: {
-                                      ...editValues[item.item_id],
-                                      coverage_score: e.target.value
+                                  onChange={(e) => {
+                                    const newValue = e.target.value;
+                                    
+                                    // Extract valid values from scoring logic
+                                    const scoring = item.scoring_logic || '';
+                                    const numbers = scoring.match(/\d+/g);
+                                    const validValues = numbers ? numbers.map((n: string) => parseInt(n)) : [];
+                                    validValues.push('Not scored'); // Always allow "Not scored"
+                                    
+                                    // Check if value is valid
+                                    const isValid = validValues.includes(parseInt(newValue)) || newValue === 'Not scored' || newValue === '';
+                                    
+                                    if (isValid || newValue === '') {
+                                      setEditValues({
+                                        ...editValues,
+                                        [item.item_id]: {
+                                          ...editValues[item.item_id],
+                                          coverage_score: newValue
+                                        }
+                                      });
                                     }
-                                  })}
-                                  className="w-16 px-1 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs"
+                                  }}
+                                  className={`w-16 px-1 py-1 rounded text-white text-xs ${
+                                    (() => {
+                                      const scoring = item.scoring_logic || '';
+                                      const numbers = scoring.match(/\d+/g);
+                                      const validValues = numbers ? numbers.map((n: string) => parseInt(n)) : [];
+                                      validValues.push('Not scored');
+                                      const currentValue = editValues[item.item_id]?.coverage_score;
+                                      const isValid = validValues.includes(parseInt(currentValue)) || currentValue === 'Not scored' || currentValue === '';
+                                      return isValid ? 'bg-gray-800 border border-gray-600' : 'bg-red-800 border border-red-500';
+                                    })()
+                                  }`}
+                                  title={`Valid values: ${(() => {
+                                    const scoring = item.scoring_logic || '';
+                                    const numbers = scoring.match(/\d+/g);
+                                    return numbers ? numbers.join(', ') + ', Not scored' : 'Not scored';
+                                  })()}`}
                                 />
                               ) : (
                                 <span className={`font-medium px-1 py-1 rounded text-xs ${
