@@ -1265,8 +1265,7 @@ export default function CompliancePage() {
                       {results.templateName?.toLowerCase().includes('legal') ? (
                         <>
                           <th className="text-left py-3 px-4 text-white font-medium">Risk Score</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Field Type</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Scoring Logic</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Field Type & Scoring</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Reasoning</th>
                         </>
                       ) : (
@@ -1287,28 +1286,33 @@ export default function CompliancePage() {
                         {results.templateName?.toLowerCase().includes('legal') ? (
                           <>
                             <td className="py-3 px-4">
-                              <span className={`font-medium ${
-                                item.coverage_score > 100 ? 'text-red-400' :
-                                item.coverage_score > 0 ? 'text-yellow-400' :
-                                'text-green-400'
+                              <span className={`font-medium px-2 py-1 rounded text-sm ${
+                                item.coverage_score >= 1000 ? 'bg-red-500/20 text-red-400' :
+                                item.coverage_score >= 5 ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
                               }`}>
                                 {item.coverage_score}
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              <div className="text-xs text-text-secondary max-w-xs truncate" title={item.field_type}>
-                                {item.field_type || 'N/A'}
+                              <div className="text-xs text-text-secondary space-y-1">
+                                <div className="font-medium text-white">{item.field_type || 'N/A'}</div>
+                                <div className="text-xs">{item.scoring_logic || 'N/A'}</div>
                               </div>
                             </td>
                             <td className="py-3 px-4">
-                              <div className="text-xs text-text-secondary max-w-xs truncate" title={item.scoring_logic}>
-                                {item.scoring_logic || 'N/A'}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="text-xs text-text-secondary max-w-xs truncate" title={item.reasoning}>
-                                {item.reasoning || 'N/A'}
-                              </div>
+                              <button 
+                                onClick={() => {
+                                  setEvidenceData({
+                                    title: `Reasoning: ${item.item_name}`,
+                                    evidence: [{ snippet: item.reasoning || 'No reasoning provided' }]
+                                  });
+                                  setShowEvidenceModal(true);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 text-xs underline cursor-pointer text-left"
+                              >
+                                {(item.reasoning || 'N/A').substring(0, 100)}{(item.reasoning || '').length > 100 ? '...' : ''}
+                              </button>
                             </td>
                           </>
                         ) : (
