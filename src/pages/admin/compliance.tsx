@@ -1287,9 +1287,9 @@ export default function CompliancePage() {
                           <>
                             <td className="py-3 px-4">
                               <span className={`font-medium px-2 py-1 rounded text-sm ${
-                                item.coverage_score >= 1000 ? 'bg-red-500/20 text-red-400' :
+                                item.coverage_score >= 1000 ? 'bg-green-500/20 text-green-400' :
                                 item.coverage_score >= 5 ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
+                                'bg-red-500/20 text-red-400'
                               }`}>
                                 {item.coverage_score}
                               </span>
