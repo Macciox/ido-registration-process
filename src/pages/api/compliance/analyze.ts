@@ -33,31 +33,28 @@ async function analyzeItemWithContent(
 
   // Use centralized prompt system for all template types
   let userPrompt: string;
-  try {
-    const promptId = templateType === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
-                    templateType === 'legal' ? 'LEGAL_ANALYSIS' : 'COMPLIANCE_ANALYSIS';
-    
-    // Legal prompts get requirements dynamically
-    if (templateType === 'legal') {
-      userPrompt = await renderPrompt(promptId, {
-        requirementsList: item.description, // Contains all 21 questions
-        documentContent: documentContent
-      });
-    } else {
+  
+  if (templateType === 'legal') {
+    // For legal templates, the prompt is already constructed with placeholders replaced
+    userPrompt = item.description;
+  } else {
+    try {
+      const promptId = templateType === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 'COMPLIANCE_ANALYSIS';
+      
       userPrompt = await renderPrompt(promptId, {
         requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
         documentContent: documentContent
       });
+    } catch (error: any) {
+      // Fallback to old system if centralized prompt fails
+      const promptTemplate = getPromptForTemplate(templateType);
+      userPrompt = formatPrompt(promptTemplate, {
+        category: item.category,
+        item_name: item.item_name,
+        description: item.description,
+        relevant_content: documentContent
+      });
     }
-  } catch (error: any) {
-    // Fallback to old system if centralized prompt fails
-    const promptTemplate = getPromptForTemplate(templateType);
-    userPrompt = formatPrompt(promptTemplate, {
-      category: item.category,
-      item_name: item.item_name,
-      description: item.description,
-      relevant_content: documentContent
-    });
   }
   
   console.log('Prompt length:', userPrompt.length);
@@ -227,21 +224,94 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (template.type === 'legal') {
         try {
           console.log('Analyzing all legal questions at once...');
-          // For legal templates, pass all items as requirements list
-          const requirementsList = `Section\tQuestion\tField Type\tScoring Logic\n` +
-            template.checker_items.map((item: any) => 
-              `${item.category}\t${item.item_name}\t${item.field_type || 'Yes/No'}\t${item.scoring_logic || 'Yes = 1000, No = 0'}`
-            ).join('\n');
+          
+          // Create requirements list in the format expected by the prompt
+          const requirementsList = template.checker_items.map((item: any, i: number) => 
+            `${i + 1}. ${item.item_name} | ${item.field_type || 'Yes/No'} | ${item.scoring_logic || 'Yes = 1000, No = 0'}`
+          ).join('\n');
+          
           console.log('Requirements list being sent to OpenAI:');
           console.log(requirementsList);
-          const pseudoItem = { category: 'Legal', item_name: 'All Questions', description: requirementsList };
-          console.log('First few items from template:');
-          template.checker_items.slice(0, 3).forEach((item: any, i: number) => {
-            console.log(`${i + 1}. ${item.item_name}`);
-            console.log(`   field_type: ${item.field_type}`);
-            console.log(`   scoring_logic: ${item.scoring_logic}`);
-          });
-          const analysis = await analyzeItemWithContent(pseudoItem, documentContent, template.type);
+          
+          // Use the legal prompt template with placeholders
+          const legalPromptTemplate = `You are a **MiCAR legal compliance expert**.  
+You will analyze a **LEGAL OPINION document** (full or in chunks) against a set of predefined **LEGAL QUESTIONS**.  
+
+Your task is to produce a **STRICT JSON array** (no extra text, no explanations outside JSON).  
+Each JSON object must correspond exactly to one row from the \`requirementsList\`, in the same order.  
+
+---
+
+## LEGAL QUESTIONS TEMPLATE (requirementsList)
+
+{{requirementsList}}
+
+---
+
+## DOCUMENT TO ANALYZE
+
+{{documentContent}}
+
+---
+
+## RULES FOR ANALYSIS
+1. **Follow order**: Output one JSON object per requirement, in the same order as in the \`requirementsList\`.  
+2. **Field type**:  
+   - Copy the \`"field_type"\` string **exactly as written** in the \`requirementsList\`.  
+   - Then append the chosen answer to it using the format:  
+     \`"field_type": "[Exact field type from requirementsList] → Selected: [Answer]"\`.  
+     Example:  
+     - Template: \`Dropdown: Access to services / Governance only / Investment returns / Other + Text field\`  
+     - Answer: \`Investment returns\`  
+     - Output: \`"field_type": "Dropdown: Access to services / Governance only / Investment returns / Other + Text field → Selected: Investment returns"\`  
+3. **Answer values**:  
+   - Must always be one of the options listed in the \`field_type\` from the template.  
+   - If "Other" is chosen, format as \`"Other - [short explanation]"\`.  
+   - If no relevant information is found in the document:  
+     - Use \`"Not sure"\` if it is listed in the \`field_type\` options.  
+     - Otherwise use \`"No evidence found"\`.  
+4. **Scoring logic**:  
+   - Copy the \`"scoring_logic"\` string **exactly as written** in the \`requirementsList\` (no rewriting).  
+5. **Risk score**:  
+   - If the \`"scoring_logic"\` contains numeric rules, set \`"risk_score"\` to the **exact numeric value** that corresponds to the chosen answer.  
+   - If \`"scoring_logic"\` = \`"Not scored"\`, then \`"risk_score"\` must be exactly \`"Not scored"\` (not 0).  
+   Example:
+   - If scoring_logic = "Yes = 1000, No = 0" and answer = "Yes", then risk_score = 1000
+   - If scoring_logic = "No = 5, Not sure = 3, Yes = 0" and answer = "Not sure", then risk_score = 3
+
+6. **Reasoning**: Write a short (1–3 sentences) legal analysis justifying the selected answer.  
+7. **Evidence snippets**: Always include verbatim quotes from the document that support the answer. If no relevant evidence is found, output \`["No evidence found"]\`.  
+8. **Contradictions**:  
+   - If conflicting evidence is found, select the answer that corresponds to the **highest risk score** according to the \`scoring_logic\`.  
+   - Clearly mention the contradiction in the \`"reasoning"\`.  
+9. **Output format**: Return only a valid JSON array. Do not add any text outside of the JSON.  
+
+---
+
+## JSON OUTPUT FORMAT
+[
+  {
+    "field_type": "[Exact field type from requirementsList] → Selected: [Answer]",
+    "scoring_logic": "[Exact scoring logic from requirementsList or 'Not scored']",
+    "risk_score": "[Exact score from scoring logic, or 'Not scored']",
+    "reasoning": "Short legal reasoning (1–3 sentences)",
+    "evidence_snippets": ["Exact quotes from legal opinion or 'No evidence found'"]
+  }
+]`;
+          
+          // Replace placeholders with actual content
+          const finalPrompt = legalPromptTemplate
+            .replace('{{requirementsList}}', requirementsList)
+            .replace('{{documentContent}}', documentContent);
+          
+          // Create pseudo item for the analysis function
+          const pseudoItem = { 
+            category: 'Legal', 
+            item_name: 'All Questions', 
+            description: finalPrompt 
+          };
+          
+          const analysis = await analyzeItemWithContent(pseudoItem, '', template.type);
           
           // Extract full legal results array
           const legalResults = (analysis as any).fullLegalResults || [];
