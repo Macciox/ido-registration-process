@@ -342,15 +342,40 @@ Each JSON object must correspond exactly to one row from the \`requirementsList\
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
             
-            // Validate scoring logic matches database - if not, recalculate
+            // Always recalculate score based on database scoring logic
             const dbScoringLogic = item.scoring_logic || 'Yes = 1000, No = 0';
-            if (scoringLogic !== dbScoringLogic && dbScoringLogic !== 'Not scored') {
-              console.log(`Scoring mismatch for ${item.item_name}. DB: ${dbScoringLogic}, OpenAI: ${scoringLogic}`);
-              // Try to recalculate score based on database scoring logic
-              const scoreMatch = dbScoringLogic.match(new RegExp(`${selectedAnswer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=\\s*(\\d+)`));
+            if (dbScoringLogic !== 'Not scored' && selectedAnswer) {
+              // Clean the selected answer (remove extra text after dash)
+              const cleanAnswer = selectedAnswer.split(' - ')[0].trim();
+              
+              // Try exact match first
+              let scoreMatch = dbScoringLogic.match(new RegExp(`${cleanAnswer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=\\s*(\\d+)`, 'i'));
+              
+              // Try partial matches for common cases
+              if (!scoreMatch) {
+                if (cleanAnswer.toLowerCase().includes('other')) {
+                  scoreMatch = dbScoringLogic.match(/Other\s*=\s*(\d+)/i);
+                } else if (cleanAnswer.toLowerCase().includes('access') || cleanAnswer.toLowerCase().includes('governance')) {
+                  scoreMatch = dbScoringLogic.match(/Access\/Governance\s*=\s*(\d+)/i);
+                } else if (cleanAnswer.toLowerCase().includes('investment')) {
+                  scoreMatch = dbScoringLogic.match(/Investment returns\s*=\s*(\d+)/i);
+                } else if (cleanAnswer.toLowerCase().includes('actively')) {
+                  scoreMatch = dbScoringLogic.match(/Actively marketing\s*=\s*(\d+)/i);
+                } else if (cleanAnswer.toLowerCase().includes('reverse')) {
+                  scoreMatch = dbScoringLogic.match(/Reverse\s*=\s*(\d+)/i);
+                } else if (cleanAnswer.toLowerCase().includes('planning')) {
+                  scoreMatch = dbScoringLogic.match(/Planning\s*=\s*(\d+)/i);
+                }
+              }
+              
               if (scoreMatch) {
-                riskScore = parseInt(scoreMatch[1]);
-                console.log(`Recalculated score for ${item.item_name}: ${riskScore}`);
+                const calculatedScore = parseInt(scoreMatch[1]);
+                if (calculatedScore !== riskScore) {
+                  console.log(`Score corrected for ${item.item_name}: ${riskScore} → ${calculatedScore} (Answer: "${cleanAnswer}", Logic: "${dbScoringLogic}")`);
+                  riskScore = calculatedScore;
+                }
+              } else {
+                console.log(`Could not match answer "${cleanAnswer}" in scoring logic "${dbScoringLogic}" for ${item.item_name}`);
               }
             }
             
