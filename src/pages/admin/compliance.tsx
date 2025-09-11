@@ -1111,22 +1111,32 @@ export default function CompliancePage() {
                                 <button
                                   onClick={async () => {
                                     try {
-                                      console.log('Loading analysis for checkId:', analysis.check_id);
+                                      console.log('🔍 Loading analysis for checkId:', analysis.check_id);
                                       const response = await fetch(`/api/compliance/get-analysis?checkId=${analysis.check_id}`);
                                       
+                                      console.log('📡 Response status:', response.status);
+                                      
                                       if (!response.ok) {
-                                        const errorData = await response.json();
-                                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                                        const errorText = await response.text();
+                                        console.error('❌ Response error:', errorText);
+                                        throw new Error(`HTTP ${response.status}: ${errorText}`);
                                       }
                                       
                                       const data = await response.json();
-                                      console.log('Loaded analysis data:', data);
-                                      console.log('Results array length:', data.results?.length);
-                                      console.log('First result:', data.results?.[0]);
+                                      console.log('✅ Loaded analysis data:', data);
+                                      console.log('📊 Results array length:', data.results?.length);
+                                      console.log('🎯 Template name:', data.templateName);
+                                      console.log('📋 First result:', data.results?.[0]);
+                                      
+                                      if (!data.results || data.results.length === 0) {
+                                        throw new Error('No results found in analysis');
+                                      }
+                                      
                                       setResults(data);
                                       setShowResults(true);
+                                      console.log('🎉 Results set and modal should show');
                                     } catch (error: any) {
-                                      console.error('Error loading analysis:', error);
+                                      console.error('💥 Error loading analysis:', error);
                                       showToast('Error loading analysis: ' + error.message, 'error');
                                     }
                                   }}
