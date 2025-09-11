@@ -402,13 +402,24 @@ ${documentContent}
           Math.round(results.reduce((sum, r) => sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0) / results.length)
       };
 
+      // Save analysis results to database
+      const { saveAnalysis } = await import('@/lib/analysis-utils');
+      const saveResult = await saveAnalysis(
+        documentId,
+        '', // No hash for direct analysis
+        `Document ${documentId}`,
+        templateId,
+        { results, summary },
+        false // Don't overwrite
+      );
+
       return res.status(200).json({
         success: true,
-        checkId: `temp-${Date.now()}`,
+        checkId: saveResult.checkId || `temp-${Date.now()}`,
         results,
         summary,
         templateName: template.name,
-        message: `Analysis completed for ${processedCount}/${template.checker_items.length} items (direct)`
+        message: `Analysis completed for ${processedCount}/${template.checker_items.length} items (saved)`
       });
     }
 
