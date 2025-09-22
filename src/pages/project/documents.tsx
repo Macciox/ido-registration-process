@@ -15,6 +15,7 @@ interface Document {
   owners_can_edit: boolean;
   owners_can_delete: boolean;
   is_public: boolean;
+  uploaded_by: string;
   created_at: string;
 }
 
