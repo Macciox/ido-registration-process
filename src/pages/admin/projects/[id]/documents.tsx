@@ -56,7 +56,7 @@ export default function ProjectDocumentsPage() {
     if (projectData) {
       setProject({
         ...projectData,
-        owner_email: Array.isArray(projectData.profiles) ? projectData.profiles[0]?.email : projectData.profiles?.email
+        owner_email: (projectData.profiles as any)?.email || 'Unknown'
       });
     }
     
