@@ -139,11 +139,20 @@ const ProjectSettings: React.FC = () => {
       console.log('Starting delete process...');
       setDeleting(true);
       
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       // Use API endpoint for deletion
       const response = await fetch(`/api/projects/${project.id}/delete`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ deleteDocuments })
       });

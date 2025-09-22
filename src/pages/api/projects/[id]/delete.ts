@@ -13,8 +13,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') {
+    const token = req.headers.authorization?.replace('Bearer ', '') || 
+                 req.cookies['sb-access-token'] || 
+                 req.cookies['supabase-auth-token'];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    // Check if user is admin
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || profile.role !== 'admin') {
       return res.status(401).json({ error: 'Unauthorized - Admin only' });
     }
 
