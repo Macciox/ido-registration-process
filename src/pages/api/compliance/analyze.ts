@@ -301,14 +301,18 @@ ${documentContent}
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
             
+            const status = riskScore === 'Not scored' ? 'MISSING' as const : 
+                          typeof riskScore === 'number' && riskScore >= 1000 ? 'FOUND' as const : 
+                          typeof riskScore === 'number' && riskScore > 0 ? 'NEEDS_CLARIFICATION' as const : 'MISSING' as const;
+            
+            const numericScore = riskScore === 'Not scored' ? 0 : typeof riskScore === 'number' ? riskScore : 0;
+            
             results.push({
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: riskScore === 'Not scored' ? 'MISSING' : 
-                     typeof riskScore === 'number' && riskScore >= 1000 ? 'FOUND' : 
-                     typeof riskScore === 'number' && riskScore > 0 ? 'NEEDS_CLARIFICATION' : 'MISSING',
-              coverage_score: riskScore,
+              status,
+              coverage_score: numericScore,
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
                 legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
@@ -329,7 +333,7 @@ ${documentContent}
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: 'NEEDS_CLARIFICATION',
+              status: 'NEEDS_CLARIFICATION' as const,
               coverage_score: 0,
               reasoning: `Analysis failed: ${error.message}`,
               evidence: [],
@@ -349,7 +353,7 @@ ${documentContent}
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: 'NEEDS_CLARIFICATION',
+              status: 'NEEDS_CLARIFICATION' as const,
               coverage_score: 0,
               reasoning: `Analysis failed: ${error.message}`,
               evidence: []
@@ -383,7 +387,7 @@ ${documentContent}
               item_id: item.id,
               item_name: item.item_name,
               category: item.category,
-              status: 'NEEDS_CLARIFICATION',
+              status: 'NEEDS_CLARIFICATION' as const,
               coverage_score: 0,
               reasoning: `Analysis failed: ${error.message}`,
               evidence: []
@@ -398,8 +402,8 @@ ${documentContent}
         clarification_items: results.filter(r => r.status === 'NEEDS_CLARIFICATION').length,
         missing_items: results.filter(r => r.status === 'MISSING').length,
         overall_score: template.type === 'legal' ? 
-          Math.round(100 - (results.reduce((sum, r) => sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0) / results.length)) :
-          Math.round(results.reduce((sum, r) => sum + (typeof r.coverage_score === 'number' ? r.coverage_score : 0), 0) / results.length)
+          Math.round(100 - (results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)) :
+          Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
       };
 
       // Save analysis results to database
@@ -541,7 +545,7 @@ ${documentContent}
           .insert({
             check_id: actualCheckId,
             item_id: item.id,
-            status: 'NEEDS_CLARIFICATION',
+            status: 'NEEDS_CLARIFICATION' as const,
             coverage_score: 0,
             reasoning: `Analysis failed: ${error.message}`,
           });
@@ -549,7 +553,7 @@ ${documentContent}
         results.push({
           item_id: item.id,
           item_name: item.item_name,
-          status: 'NEEDS_CLARIFICATION',
+          status: 'NEEDS_CLARIFICATION' as const,
           coverage_score: 0,
         });
       }
