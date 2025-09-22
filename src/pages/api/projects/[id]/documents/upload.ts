@@ -56,6 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const description = Array.isArray(fields.description) ? fields.description[0] : fields.description;
     const visibleToOwners = Array.isArray(fields.visible_to_owners) ? fields.visible_to_owners[0] === 'true' : false;
     const ownersCanUpload = Array.isArray(fields.owners_can_upload) ? fields.owners_can_upload[0] === 'true' : false;
+    const ownersCanView = Array.isArray(fields.owners_can_view) ? fields.owners_can_view[0] === 'true' : true;
+    const ownersCanEdit = Array.isArray(fields.owners_can_edit) ? fields.owners_can_edit[0] === 'true' : false;
+    const ownersCanDelete = Array.isArray(fields.owners_can_delete) ? fields.owners_can_delete[0] === 'true' : false;
+    const isPublic = Array.isArray(fields.is_public) ? fields.is_public[0] === 'true' : false;
 
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -94,7 +98,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         file_url: publicUrl,
         uploaded_by: user.id,
         visible_to_owners: visibleToOwners,
-        owners_can_upload: ownersCanUpload
+        owners_can_upload: ownersCanUpload,
+        owners_can_view: ownersCanView,
+        owners_can_edit: ownersCanEdit,
+        owners_can_delete: ownersCanDelete,
+        is_public: isPublic
       })
       .select()
       .single();
