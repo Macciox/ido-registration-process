@@ -178,17 +178,30 @@ const ProjectPage = () => {
                 </div>
                 <div className="flex space-x-4">
                   {isAdmin && (
-                    <button
-                      onClick={() => {
-                        setLoading(true);
-                        setTimeout(() => {
-                          window.location.href = `/projects/${id}/owners`;
-                        }, 100);
-                      }}
-                      className="btn-dark"
-                    >
-                      Manage Owners
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setLoading(true);
+                          setTimeout(() => {
+                            window.location.href = `/admin/projects/${id}/documents`;
+                          }, 100);
+                        }}
+                        className="btn-dark"
+                      >
+                        📄 Documents
+                      </button>
+                      <button
+                        onClick={() => {
+                          setLoading(true);
+                          setTimeout(() => {
+                            window.location.href = `/projects/${id}/owners`;
+                          }, 100);
+                        }}
+                        className="btn-dark"
+                      >
+                        👥 Manage Owners
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => {
@@ -199,7 +212,7 @@ const ProjectPage = () => {
                     }}
                     className="btn-light"
                   >
-                    Back to Dashboard
+                    ← Back to Dashboard
                   </button>
                 </div>
               </div>
