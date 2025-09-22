@@ -139,62 +139,18 @@ const ProjectSettings: React.FC = () => {
       console.log('Starting delete process...');
       setDeleting(true);
       
-      // Delete documents if requested
-      if (deleteDocuments && documents && documents.length > 0) {
-        console.log('Deleting project documents...');
-        
-        // Delete files from Supabase Storage
-        for (const doc of documents) {
-          if (doc.file_url && doc.file_url.includes('supabase')) {
-            try {
-              const pathMatch = doc.file_url.match(/projects\/[^?]+/);
-              if (pathMatch) {
-                const { error: storageError } = await supabase.storage
-                  .from('project-documents')
-                  .remove([pathMatch[0]]);
-                
-                if (storageError) {
-                  console.error('Error deleting file from storage:', storageError);
-                }
-              }
-            } catch (err) {
-              console.error('Error processing file deletion:', err);
-            }
-          }
-        }
-        
-        // Delete document records
-        const { error: docDeleteError } = await supabase
-          .from('project_documents')
-          .delete()
-          .eq('project_id', project.id);
-        
-        if (docDeleteError) {
-          console.error('Error deleting document records:', docDeleteError);
-        }
-      }
+      // Use API endpoint for deletion
+      const response = await fetch(`/api/projects/${project.id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deleteDocuments })
+      });
       
-      // Delete project owners from whitelist
-      console.log('Deleting project owners...');
-      const { error: ownersError } = await supabase
-        .from('projectowner_whitelist')
-        .delete()
-        .eq('project_id', project.id);
-      
-      if (ownersError) {
-        console.error('Error deleting project owners from whitelist:', ownersError);
-      }
-      
-      // Delete project
-      console.log('Deleting project...');
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', project.id);
-      
-      if (error) {
-        console.error('Project delete error:', error);
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Delete failed');
       }
       
       console.log('Project deleted successfully, redirecting...');
