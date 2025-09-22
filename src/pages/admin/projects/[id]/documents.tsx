@@ -43,24 +43,30 @@ export default function ProjectDocumentsPage() {
       return;
     }
 
-    // Fetch project details
+    // Fetch project details - simplified query first
     const { data: projectData, error } = await supabase
       .from('projects')
-      .select(`
-        id, 
-        name, 
-        owner_id,
-        profiles!projects_owner_id_fkey(email)
-      `)
+      .select('id, name, owner_id')
       .eq('id', id)
       .single();
+
+    // Get owner email separately if project found
+    let ownerEmail = 'Unknown';
+    if (projectData) {
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', projectData.owner_id)
+        .single();
+      ownerEmail = ownerProfile?.email || 'Unknown';
+    }
 
     console.log('Project query result:', { projectData, error, id });
 
     if (projectData) {
       setProject({
         ...projectData,
-        owner_email: (projectData.profiles as any)?.email || 'Unknown'
+        owner_email: ownerEmail
       });
     }
     
