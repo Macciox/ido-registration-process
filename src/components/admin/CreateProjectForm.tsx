@@ -24,11 +24,7 @@ const CreateProjectForm: React.FC = () => {
         .map(email => email.trim())
         .filter(email => email.length > 0);
       
-      if (emails.length === 0) {
-        setMessage({ text: 'Please enter at least one owner email', type: 'error' });
-        setLoading(false);
-        return;
-      }
+      // Project can be created without owners - they can be added later
       
       // Create the project
       const { data: projectData, error: projectError } = await supabase
@@ -41,57 +37,21 @@ const CreateProjectForm: React.FC = () => {
       
       if (projectError) throw projectError;
       
-      // Check if any email is already a project owner (but allow admins)
-      for (const email of emails) {
-        const { data: existingOwner } = await supabase
-          .from('projectowner_whitelist')
-          .select('id, project_id, projects!inner(name)')
-          .eq('email', email)
-          .single();
+      // Add owners only if emails are provided
+      if (emails.length > 0) {
+        const projectOwners = emails.map((email, index) => ({
+          project_id: projectData.id,
+          email,
+          status: 'pending',
+          is_primary: index === 0 && data.makeFirstPrimary
+        }));
         
-        if (existingOwner) {
-          // Check if user is admin
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('email', email)
-            .single();
-          
-          console.log('Profile check for', email, ':', { profile, profileError });
-          
-          // Also check admin_whitelist as fallback
-          const { data: adminWhitelist } = await supabase
-            .from('admin_whitelist')
-            .select('id')
-            .eq('email', email)
-            .single();
-          
-          console.log('Admin whitelist check for', email, ':', { adminWhitelist });
-          
-          const isAdmin = (profile && profile.role === 'admin') || adminWhitelist;
-          
-          if (!isAdmin) {
-            const projectName = (existingOwner.projects as any)?.name || 'Unknown Project';
-            throw new Error(`This user already owns project: "${projectName}". Each user can only own one project.`);
-          }
-          
-          console.log('Admin check passed for', email);
-        }
+        const { error: ownersError } = await supabase
+          .from('projectowner_whitelist')
+          .insert(projectOwners);
+        
+        if (ownersError) throw ownersError;
       }
-      
-      // Add all emails to projectowner_whitelist table with pending status
-      const projectOwners = emails.map((email, index) => ({
-        project_id: projectData.id,
-        email,
-        status: 'pending',
-        is_primary: index === 0 && data.makeFirstPrimary // First email is primary only if checkbox is checked
-      }));
-      
-      const { error: ownersError } = await supabase
-        .from('projectowner_whitelist')
-        .insert(projectOwners);
-      
-      if (ownersError) throw ownersError;
       
       setMessage({ text: 'Project created successfully', type: 'success' });
       reset(); // Clear the form
@@ -141,7 +101,7 @@ const CreateProjectForm: React.FC = () => {
             rows={4}
             className="form-input"
             placeholder="owner1@example.com, owner2@example.com"
-            {...register('ownerEmails', { required: 'At least one owner email is required' })}
+            {...register('ownerEmails')}
           />
           
           <div className="mt-3">
@@ -168,7 +128,7 @@ const CreateProjectForm: React.FC = () => {
           </div>
           
           <p className="text-sm text-gray-500 mt-1">
-            Enter multiple emails separated by commas or new lines
+            Enter multiple emails separated by commas or new lines. <strong>Optional:</strong> You can add owners later from project settings.
           </p>
           {errors.ownerEmails && (
             <p className="text-red-500 text-sm mt-1">
