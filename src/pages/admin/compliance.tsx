@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { LoadingButton, LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import ProjectSelector from '@/components/compliance/ProjectSelector';
 
 interface Template {
   id: string;
@@ -73,6 +74,8 @@ export default function CompliancePage() {
   const [evidenceData, setEvidenceData] = useState<{title: string, evidence: any[]}>({title: '', evidence: []});
   const [editingItem, setEditingItem] = useState<string>('');
   const [editValues, setEditValues] = useState<{[key: string]: any}>({});
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectName, setSelectedProjectName] = useState<string>('');
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -674,6 +677,14 @@ export default function CompliancePage() {
                     </p>
                   </div>
                 )}
+
+                <ProjectSelector 
+                  onProjectSelect={(projectId, projectName) => {
+                    setSelectedProjectId(projectId);
+                    setSelectedProjectName(projectName || '');
+                  }}
+                  selectedProjectId={selectedProjectId}
+                />
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
