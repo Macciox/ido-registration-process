@@ -10,7 +10,7 @@ interface Project {
   description?: string;
   owner_id: string;
   created_at: string;
-  profiles?: { email: string };
+  owner_email?: string;
 }
 
 export default function ProjectsList() {
@@ -55,7 +55,11 @@ export default function ProjectsList() {
       .order('created_at', { ascending: false });
 
     if (projectsData) {
-      setProjects(projectsData);
+      const mappedProjects = projectsData.map((project: any) => ({
+        ...project,
+        owner_email: project.profiles?.email || 'Unknown'
+      }));
+      setProjects(mappedProjects);
     }
     
     setLoading(false);
@@ -116,7 +120,7 @@ export default function ProjectsList() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {project.profiles?.email || 'Unknown'}
+                    {project.owner_email || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(project.created_at).toLocaleDateString()}
