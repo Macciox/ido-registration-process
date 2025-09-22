@@ -1425,9 +1425,9 @@ export default function CompliancePage() {
                               ) : (
                                 <span className={`font-medium px-1 py-1 rounded text-xs ${
                                   item.coverage_score === 'Not scored' ? 'bg-gray-500/20 text-gray-400' :
-                                  item.coverage_score >= 1000 ? 'bg-green-500/20 text-green-400' :
+                                  item.coverage_score >= 1000 ? 'bg-red-500/20 text-red-400' :
                                   (item.coverage_score === 3 || item.coverage_score === 5) ? 'bg-yellow-500/20 text-yellow-400' :
-                                  'bg-red-500/20 text-red-400'
+                                  'bg-green-500/20 text-green-400'
                                 }`}>
                                   {item.coverage_score}
                                 </span>

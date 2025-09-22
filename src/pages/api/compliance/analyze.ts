@@ -254,28 +254,40 @@ ${documentContent}
 
 === ANALYSIS INSTRUCTIONS ===
 
-**CRITICAL**: Answer "Yes" when you find ANY evidence about this topic in the document (whether positive or negative evidence).
+**STEP 1: Find Evidence**
+Look for ANY information in the document related to this question.
+
+**STEP 2: Interpret Risk Level**
+Based on what the document says, determine if this creates HIGH or LOW regulatory risk:
+
+**HIGH RISK scenarios (Answer "Yes" = 1000 points):**
+- Document confirms the token HAS characteristics that trigger regulations
+- Document says token IS a security/financial instrument
+- Document confirms regulatory requirements APPLY
+- Document shows compliance gaps or violations
+
+**LOW RISK scenarios (Answer "No" = 0 points):**
+- Document confirms the token does NOT have problematic characteristics
+- Document says token is NOT a security/financial instrument
+- Document confirms regulatory requirements do NOT apply
+- Document shows proper compliance or exemptions
 
 **Examples:**
-- Question "Rights similar to shares/bonds" + Document says "tokens are NOT securities" → Answer: "Yes" (found evidence)
-- Question "Registered legal entity" + Document says "company is incorporated" → Answer: "Yes" (found evidence)
-- Question "Website link" + Document contains "www.example.com" → Extract: "www.example.com"
+- Question "Rights similar to shares/bonds" + Document: "tokens do NOT provide rights to profits" → Answer: "No" (LOW risk = 0)
+- Question "Rights similar to shares/bonds" + Document: "tokens provide dividend rights" → Answer: "Yes" (HIGH risk = 1000)
+- Question "Single currency peg" + Document: "token is NOT pegged to USD" → Answer: "No" (LOW risk = 0)
+- Question "Registered legal entity" + Document: "company is incorporated in Malta" → Answer: "Yes" (HIGH risk = 1000)
 
-**Answer "No" ONLY when:**
-- Document contains absolutely NO information about this topic
-- You cannot find any relevant text
-
-**For scoring:**
-- Apply the exact scoring logic provided
-- If "Not scored", return "Not scored"
+**STEP 3: Handle Missing Information**
+If document contains NO information about this topic → Answer: "No" (assume low risk due to lack of evidence)
 
 **Return ONLY this JSON:**
 {
   "field_type": "${item.field_type || 'Yes/No'} → Selected: [Your Answer]",
   "scoring_logic": "${item.scoring_logic || 'Yes = 1000, No = 0'}",
-  "risk_score": [Apply scoring logic to get numeric value or "Not scored"],
-  "reasoning": "Why you selected this answer based on document evidence",
-  "evidence_snippets": ["Exact quotes from document that support your answer"]
+  "risk_score": [Apply scoring logic: Yes=1000, No=0, or "Not scored"],
+  "reasoning": "Explain what the document says and why this creates high/low risk",
+  "evidence_snippets": ["Exact quotes from document that support your risk assessment"]
 }`;
             
             const analysis = await analyzeItemWithContent({
