@@ -28,6 +28,8 @@ const ProjectDocuments: React.FC = () => {
     description: '',
     link_url: ''
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -72,22 +74,44 @@ const ProjectDocuments: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploading(true);
+    
     try {
-      const { error } = await supabase
-        .from('project_documents')
-        .insert({
-          project_id: projectId,
-          ...formData,
-          uploaded_by: user.id
+      if (selectedFile) {
+        // Upload file
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', selectedFile);
+        formDataUpload.append('document_type', formData.document_type);
+        formDataUpload.append('title', formData.title);
+        formDataUpload.append('description', formData.description);
+
+        const response = await fetch(`/api/projects/${projectId}/documents/upload`, {
+          method: 'POST',
+          body: formDataUpload,
         });
 
-      if (error) throw error;
+        if (!response.ok) throw new Error('Upload failed');
+      } else {
+        // Save link only
+        const { error } = await supabase
+          .from('project_documents')
+          .insert({
+            project_id: projectId,
+            ...formData,
+            uploaded_by: user.id
+          });
+
+        if (error) throw error;
+      }
 
       setFormData({ document_type: 'launchpad', title: '', description: '', link_url: '' });
+      setSelectedFile(null);
       setShowForm(false);
       await loadDocuments();
     } catch (err: any) {
       console.error('Error adding document:', err);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -172,6 +196,19 @@ const ProjectDocuments: React.FC = () => {
               </div>
               
               <div>
+                <label className="block text-sm font-medium mb-2">File Upload</label>
+                <input
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="sleek-input w-full"
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.png"
+                />
+                <p className="text-xs text-text-muted mt-1">Max 10MB. Supported: PDF, DOC, DOCX, TXT, JPG, PNG</p>
+              </div>
+              
+              <div className="text-center text-text-muted">OR</div>
+              
+              <div>
                 <label className="block text-sm font-medium mb-2">Link URL</label>
                 <input
                   type="url"
@@ -183,11 +220,21 @@ const ProjectDocuments: React.FC = () => {
               </div>
               
               <div className="flex gap-2">
-                <button type="submit" className="btn-dark">Add Document</button>
+                <button 
+                  type="submit" 
+                  className="btn-dark" 
+                  disabled={uploading || (!selectedFile && !formData.link_url)}
+                >
+                  {uploading ? 'Uploading...' : 'Add Document'}
+                </button>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
-                  className="btn-action neutral"
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedFile(null);
+                  }}
+                  className="btn-dark" 
+                  style={{ background: 'rgba(255, 255, 255, 0.1)' }}
                 >
                   Cancel
                 </button>
@@ -231,6 +278,17 @@ const ProjectDocuments: React.FC = () => {
                             <p className="text-text-secondary text-sm mb-2">{doc.description}</p>
                           )}
                           
+                          {doc.file_url && doc.file_url.includes('supabase') && (
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-sm mr-4"
+                            >
+                              📄 Download File
+                            </a>
+                          )}
+                          
                           {doc.link_url && (
                             <a
                               href={doc.link_url}
@@ -238,7 +296,7 @@ const ProjectDocuments: React.FC = () => {
                               rel="noopener noreferrer"
                               className="text-primary hover:underline text-sm"
                             >
-                              View Document →
+                              🔗 View Link →
                             </a>
                           )}
                           
@@ -249,7 +307,8 @@ const ProjectDocuments: React.FC = () => {
                         
                         <button
                           onClick={() => handleDelete(doc.id)}
-                          className="btn-action danger"
+                          className="btn-dark"
+                          style={{ background: 'rgba(240, 113, 97, 0.2)', color: '#F07161' }}
                         >
                           Delete
                         </button>
