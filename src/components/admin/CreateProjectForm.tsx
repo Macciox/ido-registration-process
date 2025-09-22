@@ -41,6 +41,28 @@ const CreateProjectForm: React.FC = () => {
       
       if (projectError) throw projectError;
       
+      // Check if any email is already a project owner (but allow admins)
+      for (const email of emails) {
+        const { data: existingOwner } = await supabase
+          .from('projectowner_whitelist')
+          .select('id, project_id, projects(name)')
+          .eq('email', email)
+          .single();
+        
+        if (existingOwner) {
+          // Check if user is admin
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('email', email)
+            .single();
+          
+          if (!profile || profile.role !== 'admin') {
+            throw new Error(`This user already owns project: "${existingOwner.projects?.name}". Each user can only own one project.`);
+          }
+        }
+      }
+      
       // Add all emails to projectowner_whitelist table with pending status
       const projectOwners = emails.map((email, index) => ({
         project_id: projectData.id,
