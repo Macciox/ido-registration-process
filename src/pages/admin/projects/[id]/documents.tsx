@@ -23,6 +23,7 @@ export default function ProjectDocumentsPage() {
   }, [id]);
 
   const fetchProject = async () => {
+    console.log('Fetching project with ID:', id);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       router.push('/login');
@@ -36,13 +37,14 @@ export default function ProjectDocumentsPage() {
       .eq('id', session.user.id)
       .single();
 
+    console.log('User profile:', profile);
     if (profile?.role !== 'admin') {
       router.push('/');
       return;
     }
 
     // Fetch project details
-    const { data: projectData } = await supabase
+    const { data: projectData, error } = await supabase
       .from('projects')
       .select(`
         id, 
@@ -52,6 +54,8 @@ export default function ProjectDocumentsPage() {
       `)
       .eq('id', id)
       .single();
+
+    console.log('Project query result:', { projectData, error, id });
 
     if (projectData) {
       setProject({
@@ -68,7 +72,13 @@ export default function ProjectDocumentsPage() {
   }
 
   if (!project) {
-    return <div className="p-6">Project not found</div>;
+    return (
+      <div className="p-6">
+        <div>Project not found</div>
+        <div className="text-sm text-gray-500 mt-2">Project ID: {id}</div>
+        <div className="text-sm text-gray-500">Check browser console for debug info</div>
+      </div>
+    );
   }
 
   return (
