@@ -51,16 +51,31 @@ const CreateProjectForm: React.FC = () => {
         
         if (existingOwner) {
           // Check if user is admin
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('email', email)
             .single();
           
-          if (!profile || profile.role !== 'admin') {
+          console.log('Profile check for', email, ':', { profile, profileError });
+          
+          // Also check admin_whitelist as fallback
+          const { data: adminWhitelist } = await supabase
+            .from('admin_whitelist')
+            .select('id')
+            .eq('email', email)
+            .single();
+          
+          console.log('Admin whitelist check for', email, ':', { adminWhitelist });
+          
+          const isAdmin = (profile && profile.role === 'admin') || adminWhitelist;
+          
+          if (!isAdmin) {
             const projectName = (existingOwner.projects as any)?.name || 'Unknown Project';
             throw new Error(`This user already owns project: "${projectName}". Each user can only own one project.`);
           }
+          
+          console.log('Admin check passed for', email);
         }
       }
       
