@@ -26,7 +26,9 @@ const ProjectDocuments: React.FC = () => {
     document_type: 'launchpad',
     title: '',
     description: '',
-    link_url: ''
+    link_url: '',
+    visible_to_owners: false,
+    owners_can_upload: false
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -92,11 +94,19 @@ const ProjectDocuments: React.FC = () => {
         formDataUpload.append('document_type', formData.document_type);
         formDataUpload.append('title', formData.title);
         formDataUpload.append('description', formData.description);
+        formDataUpload.append('visible_to_owners', formData.visible_to_owners.toString());
+        formDataUpload.append('owners_can_upload', formData.owners_can_upload.toString());
 
+        const { data: { session } } = await supabase.auth.getSession();
         const response = await fetch(`/api/projects/${projectId}/documents/upload`, {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`
+          },
           body: formDataUpload,
         });
+
+
 
         if (!response.ok) throw new Error('Upload failed');
       } else {
@@ -106,13 +116,22 @@ const ProjectDocuments: React.FC = () => {
           .insert({
             project_id: projectId,
             ...formData,
-            uploaded_by: user.id
+            uploaded_by: user.id,
+            visible_to_owners: formData.visible_to_owners,
+            owners_can_upload: formData.owners_can_upload
           });
 
         if (error) throw error;
       }
 
-      setFormData({ document_type: 'launchpad', title: '', description: '', link_url: '' });
+      setFormData({ 
+        document_type: 'launchpad', 
+        title: '', 
+        description: '', 
+        link_url: '',
+        visible_to_owners: false,
+        owners_can_upload: false
+      });
       setSelectedFile(null);
       setShowForm(false);
       await loadDocuments();
@@ -234,6 +253,38 @@ const ProjectDocuments: React.FC = () => {
                   className="sleek-input w-full"
                   placeholder="https://..."
                 />
+              </div>
+              
+              {/* Privacy Options */}
+              <div className="bg-bg-secondary p-4 rounded-lg border border-white/10">
+                <h4 className="text-sm font-medium text-white mb-3">🔒 Privacy Settings</h4>
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.visible_to_owners}
+                      onChange={(e) => setFormData({ ...formData, visible_to_owners: e.target.checked })}
+                      className="form-checkbox h-4 w-4 text-primary mr-3"
+                    />
+                    <div>
+                      <span className="text-white text-sm">Visible to Project Owners</span>
+                      <p className="text-text-secondary text-xs">Project owners can see and download this document</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.owners_can_upload}
+                      onChange={(e) => setFormData({ ...formData, owners_can_upload: e.target.checked })}
+                      className="form-checkbox h-4 w-4 text-primary mr-3"
+                    />
+                    <div>
+                      <span className="text-white text-sm">Project Owners Can Upload</span>
+                      <p className="text-text-secondary text-xs">Allow project owners to upload documents to this section</p>
+                    </div>
+                  </label>
+                </div>
               </div>
               
               <div className="flex gap-2">

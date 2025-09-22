@@ -21,8 +21,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    // Check if user is admin or project owner
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'project_owner')) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -38,6 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const documentType = Array.isArray(fields.document_type) ? fields.document_type[0] : fields.document_type;
     const title = Array.isArray(fields.title) ? fields.title[0] : fields.title;
     const description = Array.isArray(fields.description) ? fields.description[0] : fields.description;
+    const visibleToOwners = Array.isArray(fields.visible_to_owners) ? fields.visible_to_owners[0] === 'true' : false;
+    const ownersCanUpload = Array.isArray(fields.owners_can_upload) ? fields.owners_can_upload[0] === 'true' : false;
 
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -74,7 +92,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         title: title,
         description: description,
         file_url: publicUrl,
-        uploaded_by: user.id
+        uploaded_by: user.id,
+        visible_to_owners: visibleToOwners,
+        owners_can_upload: ownersCanUpload
       })
       .select()
       .single();

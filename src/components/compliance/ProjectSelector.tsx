@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface Project {
@@ -20,9 +20,24 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadProjects();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const loadProjects = async () => {
@@ -77,47 +92,80 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
           Associate with Project (Optional)
         </label>
         
-        <div className="space-y-2">
-          {/* No Project Option */}
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="project"
-              value=""
-              checked={selectedProjectId === null}
-              onChange={() => onProjectSelect(null)}
-              className="mr-2"
-            />
-            <span className="text-white">No project (General analysis)</span>
-          </label>
-
-          {/* Existing Projects */}
-          {projects.map((project) => (
-            <label key={project.id} className="flex items-center">
-              <input
-                type="radio"
-                name="project"
-                value={project.id}
-                checked={selectedProjectId === project.id}
-                onChange={() => onProjectSelect(project.id, project.name)}
-                className="mr-2"
-              />
-              <span className="text-white">{project.name}</span>
-            </label>
-          ))}
-
-          {/* New Project Option */}
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="project"
-              value="new"
-              checked={showNewProjectForm}
-              onChange={() => setShowNewProjectForm(true)}
-              className="mr-2"
-            />
-            <span className="text-white">Create new project</span>
-          </label>
+        <div className="relative" ref={dropdownRef}>
+          <div 
+            className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white cursor-pointer flex justify-between items-center"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <span>
+              {selectedProjectId === null ? 'No project (General analysis)' : 
+               projects.find(p => p.id === selectedProjectId)?.name || 'Select project...'}
+            </span>
+            <span className="text-gray-400">{isOpen ? '▲' : '▼'}</span>
+          </div>
+          
+          {isOpen && (
+            <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {/* Search input */}
+              <div className="p-2 border-b border-gray-600">
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 text-sm"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              
+              {/* No project option */}
+              <div 
+                className="p-3 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600"
+                onClick={() => {
+                  onProjectSelect(null);
+                  setIsOpen(false);
+                  setSearchTerm('');
+                }}
+              >
+                No project (General analysis)
+              </div>
+              
+              {/* Filtered projects */}
+              {projects
+                .filter(project => project.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map((project) => (
+                <div 
+                  key={project.id}
+                  className="p-3 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0"
+                  onClick={() => {
+                    onProjectSelect(project.id, project.name);
+                    setIsOpen(false);
+                    setSearchTerm('');
+                  }}
+                >
+                  {project.name}
+                </div>
+              ))}
+              
+              {/* Create new project option */}
+              <div 
+                className="p-3 hover:bg-gray-700 cursor-pointer text-green-400 border-t border-gray-600"
+                onClick={() => {
+                  setShowNewProjectForm(true);
+                  setIsOpen(false);
+                  setSearchTerm('');
+                }}
+              >
+                + Create new project
+              </div>
+              
+              {projects.filter(project => project.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && searchTerm && (
+                <div className="p-3 text-gray-400 text-center">
+                  No projects found
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
