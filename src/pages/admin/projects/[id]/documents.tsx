@@ -31,6 +31,14 @@ const ProjectDocuments: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (file && !formData.title) {
+      setFormData({ ...formData, title: file.name.replace(/\.[^/.]+$/, '') });
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -146,6 +154,15 @@ const ProjectDocuments: React.FC = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
+            <div className="flex items-center gap-4 mb-2">
+              <button
+                onClick={() => router.push(`/admin/projects/${projectId}/settings`)}
+                className="btn-dark" 
+                style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+              >
+                ← Back to Project
+              </button>
+            </div>
             <h1 className="text-2xl font-bold text-white">Project Documents</h1>
             <p className="text-text-secondary">{project?.name} - KYB & Legal Documents</p>
           </div>
@@ -199,7 +216,7 @@ const ProjectDocuments: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">File Upload</label>
                 <input
                   type="file"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  onChange={handleFileChange}
                   className="sleek-input w-full"
                   accept=".pdf,.doc,.docx,.txt,.jpg,.png"
                 />
