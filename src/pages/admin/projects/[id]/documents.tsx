@@ -154,24 +154,24 @@ const ProjectDocuments: React.FC = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <div className="flex items-center gap-4 mb-2">
-              <button
-                onClick={() => router.push(`/admin/projects/${projectId}/settings`)}
-                className="btn-dark" 
-                style={{ background: 'rgba(255, 255, 255, 0.1)' }}
-              >
-                ← Back to Project
-              </button>
-            </div>
             <h1 className="text-2xl font-bold text-white">Project Documents</h1>
             <p className="text-text-secondary">{project?.name} - KYB & Legal Documents</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="btn-dark"
-          >
-            Add Document
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push(`/admin/projects/${projectId}/settings`)}
+              className="btn-dark" 
+              style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+            >
+              ← Back to Project
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="btn-dark"
+            >
+              Add Document
+            </button>
+          </div>
         </div>
 
         {showForm && (
