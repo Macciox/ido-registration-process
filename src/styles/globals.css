@@ -273,6 +273,23 @@ body {
   color: var(--text-primary);
 }
 
+/* Force dark styling for all select elements */
+select {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+}
+
+select option {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Specific fix for sleek-input selects */
+.sleek-input option {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
 .form-container input::placeholder,
 .form-container textarea::placeholder {
   color: var(--text-muted);
