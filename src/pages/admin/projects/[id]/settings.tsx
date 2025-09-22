@@ -100,20 +100,81 @@ const ProjectSettings: React.FC = () => {
       return;
     }
     
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${project.name}"? This action cannot be undone.`
-    );
-    
-    if (!confirmed) {
-      console.log('Delete cancelled by user');
-      return;
-    }
-    
     try {
+      // Check for existing documents
+      const { data: documents, error: docsError } = await supabase
+        .from('project_documents')
+        .select('id, title, file_url')
+        .eq('project_id', project.id);
+      
+      if (docsError) {
+        console.error('Error checking documents:', docsError);
+      }
+      
+      let deleteDocuments = false;
+      
+      if (documents && documents.length > 0) {
+        const choice = window.confirm(
+          `This project has ${documents.length} document(s). Do you want to delete them too?\n\n` +
+          `Click OK to delete documents, Cancel to keep them.`
+        );
+        deleteDocuments = choice;
+      }
+      
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${project.name}"?\n\n` +
+        `${documents && documents.length > 0 ? 
+          (deleteDocuments ? 
+            `This will also delete ${documents.length} document(s).` : 
+            `${documents.length} document(s) will be kept.`
+          ) : 'No documents to handle.'}
+        \n\nThis action cannot be undone.`
+      );
+      
+      if (!confirmed) {
+        console.log('Delete cancelled by user');
+        return;
+      }
+      
       console.log('Starting delete process...');
       setDeleting(true);
       
-      // Delete project owners from whitelist first
+      // Delete documents if requested
+      if (deleteDocuments && documents && documents.length > 0) {
+        console.log('Deleting project documents...');
+        
+        // Delete files from Supabase Storage
+        for (const doc of documents) {
+          if (doc.file_url && doc.file_url.includes('supabase')) {
+            try {
+              const pathMatch = doc.file_url.match(/projects\/[^?]+/);
+              if (pathMatch) {
+                const { error: storageError } = await supabase.storage
+                  .from('project-documents')
+                  .remove([pathMatch[0]]);
+                
+                if (storageError) {
+                  console.error('Error deleting file from storage:', storageError);
+                }
+              }
+            } catch (err) {
+              console.error('Error processing file deletion:', err);
+            }
+          }
+        }
+        
+        // Delete document records
+        const { error: docDeleteError } = await supabase
+          .from('project_documents')
+          .delete()
+          .eq('project_id', project.id);
+        
+        if (docDeleteError) {
+          console.error('Error deleting document records:', docDeleteError);
+        }
+      }
+      
+      // Delete project owners from whitelist
       console.log('Deleting project owners...');
       const { error: ownersError } = await supabase
         .from('projectowner_whitelist')
@@ -122,9 +183,6 @@ const ProjectSettings: React.FC = () => {
       
       if (ownersError) {
         console.error('Error deleting project owners from whitelist:', ownersError);
-        // Continue anyway, might not exist
-      } else {
-        console.log('Project owners deleted successfully');
       }
       
       // Delete project
@@ -301,7 +359,7 @@ const ProjectSettings: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-medium text-red-400">Warning: This action cannot be undone</h3>
                   <p className="text-sm text-red-300 mt-1">
-                    Permanently delete this project and all associated data. All project information, owners, and settings will be removed.
+                    Permanently delete this project and all associated data. All project information, owners, and settings will be removed. You will be asked about handling any uploaded documents.
                   </p>
                 </div>
                 <button
