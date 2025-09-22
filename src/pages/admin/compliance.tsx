@@ -237,6 +237,9 @@ export default function CompliancePage() {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('templateId', selectedTemplate);
+    if (selectedProjectId) {
+      formData.append('projectId', selectedProjectId);
+    }
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -442,6 +445,7 @@ export default function CompliancePage() {
         body: JSON.stringify({
           url: url,
           templateId: selectedTemplate,
+          projectId: selectedProjectId,
           mode: analysisMode,
           whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSections.join('+') : undefined
         })
@@ -506,6 +510,7 @@ export default function CompliancePage() {
         body: JSON.stringify({
           documentId: selectedDocument,
           templateId: selectedTemplate,
+          projectId: selectedProjectId,
           whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSections.join('+') : undefined
         })
       });
@@ -722,6 +727,14 @@ export default function CompliancePage() {
               </form>
             ) : activeTab === 'existing' ? (
               <form onSubmit={handleAnalyzeExisting} className="space-y-6">
+                <ProjectSelector 
+                  onProjectSelect={(projectId, projectName) => {
+                    setSelectedProjectId(projectId);
+                    setSelectedProjectName(projectName || '');
+                  }}
+                  selectedProjectId={selectedProjectId}
+                />
+
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white">
                     Select Document
@@ -886,6 +899,14 @@ export default function CompliancePage() {
             ) : activeTab === 'url' ? (
               <div className="space-y-6">
                 <form onSubmit={handleAnalyzeURL} className="space-y-6">
+                  <ProjectSelector 
+                    onProjectSelect={(projectId, projectName) => {
+                      setSelectedProjectId(projectId);
+                      setSelectedProjectName(projectName || '');
+                    }}
+                    selectedProjectId={selectedProjectId}
+                  />
+
                   <div>
                     <label className="block text-sm font-medium mb-2 text-white">
                       Website URL

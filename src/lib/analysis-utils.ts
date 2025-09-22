@@ -58,7 +58,8 @@ export async function saveAnalysis(
   docName: string,
   templateId: string,
   analysisData: AnalysisData,
-  overwrite: boolean = false
+  overwrite: boolean = false,
+  projectId?: string
 ): Promise<{ success: boolean; checkId?: string; version?: number; message: string }> {
   
   try {
@@ -132,7 +133,8 @@ export async function saveAnalysis(
           overall_score: analysisData.summary.overall_score,
           found_items: analysisData.summary.found_items,
           clarification_items: analysisData.summary.clarification_items,
-          missing_items: analysisData.summary.missing_items
+          missing_items: analysisData.summary.missing_items,
+          project_id: projectId
         })
         .select('id')
         .single();
@@ -163,7 +165,8 @@ export async function saveAnalysis(
         clarification_items: analysisData.summary.clarification_items,
         missing_items: analysisData.summary.missing_items,
         not_applicable_items: analysisData.summary.not_applicable_items || 0,
-        applicable_items: analysisData.summary.applicable_items || analysisData.summary.found_items + analysisData.summary.clarification_items + analysisData.summary.missing_items
+        applicable_items: analysisData.summary.applicable_items || analysisData.summary.found_items + analysisData.summary.clarification_items + analysisData.summary.missing_items,
+        project_id: projectId
       })
       .select('id')
       .single();

@@ -15,6 +15,7 @@ interface AnalyzeRequest {
   check_id?: string;
   documentId?: string;
   templateId?: string;
+  projectId?: string;
   whitepaperSection?: string;
 }
 
@@ -181,7 +182,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { check_id, documentId, templateId, whitepaperSection }: AnalyzeRequest = req.body;
+    const { check_id, documentId, templateId, projectId, whitepaperSection }: AnalyzeRequest = req.body;
 
     // Handle both existing check analysis and new document analysis
     if (!check_id && (!documentId || !templateId)) {
@@ -414,7 +415,8 @@ ${documentContent}
         `Document ${documentId}`,
         templateId,
         { results, summary },
-        false // Don't overwrite
+        false, // Don't overwrite
+        projectId // Pass project_id
       );
 
       return res.status(200).json({
