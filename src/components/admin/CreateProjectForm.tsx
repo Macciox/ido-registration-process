@@ -45,7 +45,7 @@ const CreateProjectForm: React.FC = () => {
       for (const email of emails) {
         const { data: existingOwner } = await supabase
           .from('projectowner_whitelist')
-          .select('id, project_id, projects(name)')
+          .select('id, project_id, projects!inner(name)')
           .eq('email', email)
           .single();
         
@@ -58,7 +58,8 @@ const CreateProjectForm: React.FC = () => {
             .single();
           
           if (!profile || profile.role !== 'admin') {
-            throw new Error(`This user already owns project: "${existingOwner.projects?.name}". Each user can only own one project.`);
+            const projectName = (existingOwner.projects as any)?.name || 'Unknown Project';
+            throw new Error(`This user already owns project: "${projectName}". Each user can only own one project.`);
           }
         }
       }
