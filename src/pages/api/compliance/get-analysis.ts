@@ -52,6 +52,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     
     console.log('Found results:', results?.length || 0, 'items');
+    
+    // If no results found, check if analysis was saved properly
+    if (!results || results.length === 0) {
+      console.log('No results found for checkId:', checkId);
+      
+      // Try to get saved analysis from saved_analyses table
+      const { data: savedAnalysis, error: savedError } = await serviceClient
+        .from('saved_analyses')
+        .select('analysis_data')
+        .eq('check_id', checkId)
+        .single();
+      
+      if (savedAnalysis && savedAnalysis.analysis_data) {
+        console.log('Found saved analysis data');
+        const analysisData = savedAnalysis.analysis_data;
+        
+        return res.status(200).json({
+          checkId: check.id,
+          results: analysisData.results || [],
+          summary: analysisData.summary || {
+            found_items: 0,
+            clarification_items: 0,
+            missing_items: 0,
+            overall_score: 0
+          },
+          documentId: check.document_id,
+          templateId: check.template_id,
+          templateName: check.template_name,
+          status: check.status,
+          version: check.version,
+          created_at: check.created_at
+        });
+      }
+      
+      return res.status(404).json({ 
+        error: 'No results found in analysis',
+        details: 'This analysis may not have been completed or saved properly'
+      });
+    }
 
     // Format response like analyze-nosave API
     const formattedResults = (results || []).map(result => ({
