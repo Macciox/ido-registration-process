@@ -130,7 +130,13 @@ export default function ProjectsList() {
                       href={`/admin/projects/${project.id}/documents`}
                       className="text-blue-600 hover:text-blue-900"
                     >
-                      Manage Documents
+                      Documents
+                    </Link>
+                    <Link
+                      href={`/admin/projects/${project.id}/announcements`}
+                      className="text-purple-600 hover:text-purple-900"
+                    >
+                      Announcements
                     </Link>
                     <Link
                       href={`/admin/projects/${project.id}/settings`}
