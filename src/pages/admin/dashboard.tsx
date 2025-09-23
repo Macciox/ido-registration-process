@@ -155,13 +155,6 @@ const AdminDashboard: React.FC = () => {
                     </a>
                     
                     <a
-                      href="/project/announcements"
-                      className="px-4 py-2 text-white hover:text-primary text-sm font-medium transition-colors"
-                    >
-                      📅 Announcements
-                    </a>
-                    
-                    <a
                       href="/admin/tools"
                       className="px-4 py-2 text-white hover:text-primary text-sm font-medium transition-colors"
                     >

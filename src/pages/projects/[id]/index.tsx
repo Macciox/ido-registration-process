@@ -194,6 +194,17 @@ const ProjectPage = () => {
                         onClick={() => {
                           setLoading(true);
                           setTimeout(() => {
+                            window.location.href = `/admin/projects/${id}/announcements`;
+                          }, 100);
+                        }}
+                        className="btn-dark"
+                      >
+                        📅 Announcements
+                      </button>
+                      <button
+                        onClick={() => {
+                          setLoading(true);
+                          setTimeout(() => {
                             window.location.href = `/projects/${id}/owners`;
                           }, 100);
                         }}
