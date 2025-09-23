@@ -117,13 +117,7 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
     resource: ann
   }));
 
-  const handleEventDrop = async ({ event, start }: any) => {
-    const announcement = event.resource;
-    await saveAnnouncement({
-      ...announcement,
-      scheduled_date: start.toISOString()
-    });
-  };
+
 
   return (
     <div className="space-y-6">
@@ -193,10 +187,15 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
             events={calendarEvents}
             startAccessor="start"
             endAccessor="end"
-            onEventDrop={handleEventDrop}
-            draggableAccessor={() => true}
             views={['month', 'week', 'day']}
             defaultView="month"
+            onSelectEvent={(event) => {
+              const announcement = event.resource;
+              if (announcement.id) {
+                setEditingId(announcement.id);
+                setShowCalendar(false);
+              }
+            }}
           />
         </div>
       )}
