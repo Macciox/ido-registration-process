@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { defaultAnnouncements } from '@/data/defaultAnnouncements';
+import '@/styles/calendar.css';
 
 const localizer = momentLocalizer(moment);
 
@@ -91,23 +91,21 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
     setEditingId('new');
   };
 
-  const loadDefaultData = async () => {
-    try {
-      for (const announcement of defaultAnnouncements) {
-        await fetch(`/api/projects/${projectId}/announcements`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(announcement)
+  const clearAllAnnouncements = async () => {
+    if (confirm('Are you sure you want to delete all announcements?')) {
+      try {
+        await fetch(`/api/projects/${projectId}/announcements/clear`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
         });
+        fetchAnnouncements();
+      } catch (error) {
+        console.error('Error clearing announcements:', error);
       }
-      fetchAnnouncements();
-    } catch (error) {
-      console.error('Error loading default data:', error);
     }
   };
+
+
 
   const calendarEvents = announcements.map(ann => ({
     id: ann.id,
@@ -131,10 +129,10 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
             Add Announcement
           </button>
           <button
-            onClick={loadDefaultData}
-            className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+            onClick={clearAllAnnouncements}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
-            Load Default Schedule
+            Clear All
           </button>
           <button
             onClick={() => setShowCalendar(!showCalendar)}
