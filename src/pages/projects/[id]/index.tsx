@@ -188,7 +188,7 @@ const ProjectPage = () => {
                         }}
                         className="btn-dark"
                       >
-                        📄 Documents
+                        Documents
                       </button>
                       <button
                         onClick={() => {
@@ -199,7 +199,7 @@ const ProjectPage = () => {
                         }}
                         className="btn-dark"
                       >
-                        📅 Announcements
+                        Announcements
                       </button>
                       <button
                         onClick={() => {
@@ -210,7 +210,7 @@ const ProjectPage = () => {
                         }}
                         className="btn-dark"
                       >
-                        👥 Manage Owners
+                        Manage Owners
                       </button>
                     </>
                   )}

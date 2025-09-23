@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
+import Layout from '@/components/layout/Layout';
 import AnnouncementSchedule from '@/components/admin/AnnouncementSchedule';
 
 export default function ProjectAnnouncements() {
@@ -41,26 +42,34 @@ export default function ProjectAnnouncements() {
   };
 
   if (!project) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-blue-500 hover:underline mb-4"
-          >
-            ← Back to Project
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {project.name} - Announcement Schedule
-          </h1>
-        </div>
+    <Layout>
+      <div className="py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <button
+              onClick={() => router.back()}
+              className="text-primary hover:text-primary/80 mb-4 transition-colors"
+            >
+              ← Back to Project
+            </button>
+            <h1 className="text-3xl font-bold text-white">
+              {project.name} - Announcement Schedule
+            </h1>
+          </div>
 
-        <AnnouncementSchedule projectId={id as string} token={token} />
+          <AnnouncementSchedule projectId={id as string} token={token} />
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
