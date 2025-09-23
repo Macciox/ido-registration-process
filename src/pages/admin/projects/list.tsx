@@ -125,25 +125,29 @@ export default function ProjectsList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(project.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <Link
-                      href={`/admin/projects/${project.id}/documents`}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      Documents
-                    </Link>
-                    <Link
-                      href={`/admin/projects/${project.id}/announcements`}
-                      className="text-purple-600 hover:text-purple-900"
-                    >
-                      Announcements
-                    </Link>
-                    <Link
-                      href={`/admin/projects/${project.id}/settings`}
-                      className="text-green-600 hover:text-green-900"
-                    >
-                      Settings
-                    </Link>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <Link
+                        href={`/admin/projects/${project.id}/documents`}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Documents
+                      </Link>
+                      <span className="text-gray-300">|</span>
+                      <Link
+                        href={`/admin/projects/${project.id}/announcements`}
+                        className="text-purple-600 hover:text-purple-900"
+                      >
+                        Announcements
+                      </Link>
+                      <span className="text-gray-300">|</span>
+                      <Link
+                        href={`/admin/projects/${project.id}/settings`}
+                        className="text-green-600 hover:text-green-900"
+                      >
+                        Settings
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
