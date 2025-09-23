@@ -43,19 +43,19 @@ export default function ProjectOwnerAnnouncements() {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Announcement Schedule</h1>
-          <p>No project found. Please contact an administrator.</p>
+          <h1 className="text-3xl font-bold text-white mb-6">Announcement Schedule</h1>
+          <p className="text-text-secondary">No project found. Please contact an administrator.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        <h1 className="text-3xl font-bold text-white mb-6">
           {project.name} - Announcement Schedule
         </h1>
 

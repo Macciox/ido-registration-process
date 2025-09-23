@@ -122,23 +122,23 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Announcement Schedule</h2>
-        <div className="space-x-2">
+        <h2 className="text-2xl font-bold text-white">Announcement Schedule</h2>
+        <div className="flex gap-3">
           <button
             onClick={addNewRow}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
           >
             Add Announcement
           </button>
           <button
             onClick={loadDefaultData}
-            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
+            className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
           >
             Load Default Schedule
           </button>
           <button
             onClick={() => setShowCalendar(!showCalendar)}
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
           >
             {showCalendar ? 'Show Table' : 'Show Calendar'}
           </button>
@@ -146,20 +146,21 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
       </div>
 
       {!showCalendar ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-300">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border px-4 py-2">Phase</th>
-                <th className="border px-4 py-2">Post Name</th>
-                <th className="border px-4 py-2">Twitter</th>
-                <th className="border px-4 py-2">Telegram</th>
-                <th className="border px-4 py-2">Email</th>
-                <th className="border px-4 py-2">Date & Time</th>
-                <th className="border px-4 py-2">Notes</th>
-                <th className="border px-4 py-2">Actions</th>
-              </tr>
-            </thead>
+        <div className="sleek-card p-6">
+          <div className="overflow-x-auto">
+            <table className="sleek-table w-full">
+              <thead>
+                <tr>
+                  <th>Phase</th>
+                  <th>Post Name</th>
+                  <th>Twitter</th>
+                  <th>Telegram</th>
+                  <th>Email</th>
+                  <th>Date & Time</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
             <tbody>
               {announcements.map((ann, index) => (
                 <AnnouncementRow
@@ -177,26 +178,29 @@ export default function AnnouncementSchedule({ projectId, token }: AnnouncementS
                   onDelete={() => ann.id && deleteAnnouncement(ann.id)}
                 />
               ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
-        <div style={{ height: '600px' }}>
-          <Calendar
-            localizer={localizer}
-            events={calendarEvents}
-            startAccessor="start"
-            endAccessor="end"
-            views={['month', 'week', 'day']}
-            defaultView="month"
-            onSelectEvent={(event) => {
-              const announcement = event.resource;
-              if (announcement.id) {
-                setEditingId(announcement.id);
-                setShowCalendar(false);
-              }
-            }}
-          />
+        <div className="sleek-card p-6">
+          <div style={{ height: '600px' }}>
+            <Calendar
+              localizer={localizer}
+              events={calendarEvents}
+              startAccessor="start"
+              endAccessor="end"
+              views={['month', 'week', 'day']}
+              defaultView="month"
+              onSelectEvent={(event) => {
+                const announcement = event.resource;
+                if (announcement.id) {
+                  setEditingId(announcement.id);
+                  setShowCalendar(false);
+                }
+              }}
+            />
+          </div>
         </div>
       )}
     </div>
@@ -226,16 +230,18 @@ function AnnouncementRow({ announcement, isEditing, onSave, onEdit, onCancel, on
   if (!isEditing) {
     return (
       <tr>
-        <td className="border px-4 py-2">{announcement.phase}</td>
-        <td className="border px-4 py-2">{announcement.post_name}</td>
-        <td className="border px-4 py-2 text-center">{announcement.twitter ? '✓' : ''}</td>
-        <td className="border px-4 py-2 text-center">{announcement.telegram ? '✓' : ''}</td>
-        <td className="border px-4 py-2 text-center">{announcement.email ? '✓' : ''}</td>
-        <td className="border px-4 py-2">{moment(announcement.scheduled_date).format('DD/MM/YY - HH:mm UTC')}</td>
-        <td className="border px-4 py-2">{announcement.notes}</td>
-        <td className="border px-4 py-2">
-          <button onClick={onEdit} className="text-blue-500 hover:underline mr-2">Edit</button>
-          <button onClick={onDelete} className="text-red-500 hover:underline">Delete</button>
+        <td className="text-white">{announcement.phase}</td>
+        <td className="text-white font-medium">{announcement.post_name}</td>
+        <td className="text-center">{announcement.twitter ? <span className="text-primary">✓</span> : <span className="text-text-muted">-</span>}</td>
+        <td className="text-center">{announcement.telegram ? <span className="text-primary">✓</span> : <span className="text-text-muted">-</span>}</td>
+        <td className="text-center">{announcement.email ? <span className="text-primary">✓</span> : <span className="text-text-muted">-</span>}</td>
+        <td className="text-text-secondary">{moment(announcement.scheduled_date).format('DD/MM/YY - HH:mm UTC')}</td>
+        <td className="text-text-secondary">{announcement.notes}</td>
+        <td>
+          <div className="flex gap-2">
+            <button onClick={onEdit} className="text-primary hover:text-primary/80 transition-colors">Edit</button>
+            <button onClick={onDelete} className="text-red-400 hover:text-red-300 transition-colors">Delete</button>
+          </div>
         </td>
       </tr>
     );
@@ -243,62 +249,67 @@ function AnnouncementRow({ announcement, isEditing, onSave, onEdit, onCancel, on
 
   return (
     <tr>
-      <td className="border px-2 py-2">
+      <td>
         <input
           type="text"
           value={formData.phase}
           onChange={(e) => setFormData({ ...formData, phase: e.target.value })}
-          className="w-full p-1 border rounded"
+          className="w-full p-2 bg-white/10 border border-white/20 rounded text-white placeholder-text-muted"
         />
       </td>
-      <td className="border px-2 py-2">
+      <td>
         <input
           type="text"
           value={formData.post_name}
           onChange={(e) => setFormData({ ...formData, post_name: e.target.value })}
-          className="w-full p-1 border rounded"
+          className="w-full p-2 bg-white/10 border border-white/20 rounded text-white placeholder-text-muted"
         />
       </td>
-      <td className="border px-2 py-2 text-center">
+      <td className="text-center">
         <input
           type="checkbox"
           checked={formData.twitter}
           onChange={(e) => setFormData({ ...formData, twitter: e.target.checked })}
+          className="w-4 h-4 text-primary bg-white/10 border-white/20 rounded focus:ring-primary"
         />
       </td>
-      <td className="border px-2 py-2 text-center">
+      <td className="text-center">
         <input
           type="checkbox"
           checked={formData.telegram}
           onChange={(e) => setFormData({ ...formData, telegram: e.target.checked })}
+          className="w-4 h-4 text-primary bg-white/10 border-white/20 rounded focus:ring-primary"
         />
       </td>
-      <td className="border px-2 py-2 text-center">
+      <td className="text-center">
         <input
           type="checkbox"
           checked={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.checked })}
+          className="w-4 h-4 text-primary bg-white/10 border-white/20 rounded focus:ring-primary"
         />
       </td>
-      <td className="border px-2 py-2">
+      <td>
         <input
           type="datetime-local"
           value={moment(formData.scheduled_date).format('YYYY-MM-DDTHH:mm')}
           onChange={(e) => setFormData({ ...formData, scheduled_date: new Date(e.target.value).toISOString() })}
-          className="w-full p-1 border rounded"
+          className="w-full p-2 bg-white/10 border border-white/20 rounded text-white"
         />
       </td>
-      <td className="border px-2 py-2">
+      <td>
         <textarea
           value={formData.notes || ''}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          className="w-full p-1 border rounded"
+          className="w-full p-2 bg-white/10 border border-white/20 rounded text-white placeholder-text-muted"
           rows={2}
         />
       </td>
-      <td className="border px-2 py-2">
-        <button onClick={handleSave} className="text-green-500 hover:underline mr-2">Save</button>
-        <button onClick={onCancel} className="text-gray-500 hover:underline">Cancel</button>
+      <td>
+        <div className="flex gap-2">
+          <button onClick={handleSave} className="text-primary hover:text-primary/80 transition-colors">Save</button>
+          <button onClick={onCancel} className="text-text-muted hover:text-white transition-colors">Cancel</button>
+        </div>
       </td>
     </tr>
   );
