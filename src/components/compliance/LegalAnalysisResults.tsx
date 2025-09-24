@@ -94,7 +94,8 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
               {results.map((result, index) => {
                 const riskScore = result.coverage_score || 0;
                 const riskColor = riskScore >= 1000 ? 'text-red-600' : 
-                                 riskScore > 0 ? 'text-yellow-600' : 'text-green-600';
+                                 riskScore >= 3 ? 'text-yellow-600' : 
+                                 riskScore > 0 ? 'text-orange-600' : 'text-green-600';
                 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
@@ -151,8 +152,9 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
         <div className="text-sm text-blue-700 space-y-1">
           <p><strong>Risk Score:</strong> Higher scores indicate higher regulatory risk</p>
           <p><strong>0 points:</strong> Low risk - compliant or no regulatory concerns</p>
-          <p><strong>1-999 points:</strong> Medium risk - requires attention or clarification</p>
-          <p><strong>1000+ points:</strong> High risk - significant regulatory concerns</p>
+          <p><strong>1, 3, 5 points:</strong> Medium risk - requires attention or clarification</p>
+          <p><strong>1000 points:</strong> High risk - significant regulatory concerns</p>
+          <p><strong>"Not scored":</strong> Text fields for information only</p>
           <p><strong>Total Score:</strong> {totalRiskScore}/{maxPossibleScore} ({riskPercentage}% risk level)</p>
         </div>
       </div>
