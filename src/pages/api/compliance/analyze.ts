@@ -314,6 +314,8 @@ If document contains NO information about this topic → Answer: "No" (assume lo
               riskScore = parseInt(legalResult.risk_score) || 0;
             }
             
+            // Fix status logic: High risk score (1000) = regulatory concern = FOUND
+            // Low risk score (0) = no regulatory concern = MISSING (good)
             const status = riskScore === 'Not scored' ? 'MISSING' as const : 
                           typeof riskScore === 'number' && riskScore >= 1000 ? 'FOUND' as const : 
                           typeof riskScore === 'number' && riskScore > 0 ? 'NEEDS_CLARIFICATION' as const : 'MISSING' as const;
@@ -329,9 +331,11 @@ If document contains NO information about this topic → Answer: "No" (assume lo
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
                 legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-
+              // Legal-specific fields for database storage
+              field_type: fieldType,
               scoring_logic: legalResult.scoring_logic || item.scoring_logic,
-              selected_answer: selectedAnswer
+              selected_answer: selectedAnswer,
+              risk_score: numericScore
             });
             
             processedCount++;

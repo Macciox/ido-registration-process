@@ -189,7 +189,8 @@ export async function saveAnalysis(
       evidence_snippets: result.evidence?.map(e => e.snippet) || [],
       field_type: result.field_type || null,
       scoring_logic: result.scoring_logic || null,
-      selected_answer: result.selected_answer || null
+      selected_answer: result.selected_answer || null,
+      risk_score: (result as any).risk_score || 0
     }));
 
     const { error: resultsError } = await serviceClient
