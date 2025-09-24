@@ -26,7 +26,7 @@ const Dashboard: React.FC = () => {
         }
         setUser(currentUser);
         // Load projects but don't wait for it
-        loadProjects(currentUser.id);
+        loadProjects(currentUser.email);
       } catch (err) {
         console.error('Auth check error:', err);
         router.push('/login');
@@ -38,17 +38,16 @@ const Dashboard: React.FC = () => {
     checkAuth();
   }, [router]);
 
-  const loadProjects = async (userId: string) => {
+  const loadProjects = async (userEmail: string) => {
     try {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
-        .eq('owner_id', userId)
+        .eq('owner_email', userEmail)
         .order('created_at', { ascending: false });
       
       if (error) {
         console.error('Error loading projects:', error);
-        // Don't throw, just set empty array
         setProjects([]);
         return;
       }

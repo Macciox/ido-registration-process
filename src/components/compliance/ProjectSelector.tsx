@@ -28,7 +28,7 @@ export default function ProjectSelector({ onProjectSelect, selectedProjectId }: 
       const { data, error } = await supabase
         .from('projects')
         .select('id, name')
-        .eq('owner_id', user.id)
+        .eq('owner_email', user.email)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

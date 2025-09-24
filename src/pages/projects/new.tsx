@@ -28,7 +28,7 @@ const NewProject: React.FC = () => {
         .from('projects')
         .insert({
           name: formData.name,
-          owner_id: user.id
+          owner_email: user.email
         })
         .select()
         .single();
