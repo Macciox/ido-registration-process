@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { LoadingButton, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import ProjectSelector from '@/components/compliance/ProjectSelector';
+import LegalAnalysisResults from '@/components/compliance/LegalAnalysisResults';
 
 interface Template {
   id: string;
@@ -1238,24 +1239,32 @@ export default function CompliancePage() {
         {showResults && results && (
           <div className="sleek-card">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-white">Analysis Results</h2>
-                  {results.templateName && (
-                    <p className="text-sm text-text-secondary mt-1">
-                      📋 Template: <span className="text-primary font-medium">{results.templateName}</span>
-                      {results.version && <span className="ml-2">• Version {results.version}</span>}
-                      <span className="ml-2 text-xs text-gray-500">Debug: {JSON.stringify({templateName: results.templateName, isLegal: results.templateName?.toLowerCase().includes('legal')})}</span>
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowResults(false)}
-                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Close Results
-                </button>
-              </div>
+              {/* Use specialized component for legal analysis */}
+              {results.templateName?.toLowerCase().includes('legal') ? (
+                <LegalAnalysisResults 
+                  results={results.results || []}
+                  summary={results.summary || {}}
+                  templateName={results.templateName}
+                />
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Analysis Results</h2>
+                      {results.templateName && (
+                        <p className="text-sm text-text-secondary mt-1">
+                          📋 Template: <span className="text-primary font-medium">{results.templateName}</span>
+                          {results.version && <span className="ml-2">• Version {results.version}</span>}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowResults(false)}
+                      className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Close Results
+                    </button>
+                  </div>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
@@ -1720,6 +1729,24 @@ export default function CompliancePage() {
                   className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
                 >
                   Test Analysis
+                </button>
+              </div>
+                </>
+              )}
+              
+              {/* Common Action Buttons for both legal and non-legal */}
+              <div className="flex flex-wrap gap-3 mt-6">
+                <button 
+                  onClick={() => setShowSaveModal(true)}
+                  className="px-4 py-3 bg-primary hover:bg-primary/80 text-white rounded-lg font-medium transition-colors"
+                >
+                  💾 Save Analysis
+                </button>
+                <button 
+                  onClick={() => setShowResults(false)}
+                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Close Results
                 </button>
               </div>
             </div>

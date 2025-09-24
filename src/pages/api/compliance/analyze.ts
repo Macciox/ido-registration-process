@@ -330,7 +330,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
               item_name: item.item_name,
               category: item.category,
               status,
-              coverage_score: numericScore,
+              coverage_score: riskScore,
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
                 legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
