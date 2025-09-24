@@ -17,8 +17,19 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
   templateName
 }) => {
   const totalRiskScore = summary.overall_score;
-  const maxPossibleScore = results.length * 1000;
-  const riskPercentage = Math.round((totalRiskScore / maxPossibleScore) * 100);
+  
+  // Calculate real max possible score based on each item's scoring logic
+  const maxPossibleScore = results.reduce((total, result) => {
+    const scoringLogic = result.scoring_logic || '';
+    if (scoringLogic.includes('Not scored')) {
+      return total + 0; // Not scored items don't contribute to max
+    }
+    const numbers = scoringLogic.match(/\d+/g);
+    const maxForItem = numbers ? Math.max(...numbers.map(n => parseInt(n))) : 0;
+    return total + maxForItem;
+  }, 0);
+  
+  const riskPercentage = maxPossibleScore > 0 ? Math.round((totalRiskScore / maxPossibleScore) * 100) : 0;
 
   // Risk level classification
   const getRiskLevel = (score: number, maxScore: number) => {
@@ -33,26 +44,26 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+        <h2 className="text-xl font-semibold text-white mb-2">
           📋 Template: {templateName}
         </h2>
         
         {/* Risk Score Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className={`p-4 rounded-lg ${riskLevel.color}`}>
+          <div className={`p-4 rounded-lg bg-card-secondary border border-border ${riskLevel.color}`}>
             <div className="text-2xl font-bold">{totalRiskScore}/{maxPossibleScore}</div>
             <div className="text-sm">Total Risk Score</div>
             <div className="text-xs mt-1">{riskLevel.level}</div>
           </div>
           
-          <div className="p-4 rounded-lg bg-blue-50 text-blue-600">
+          <div className="p-4 rounded-lg bg-card-secondary border border-border text-blue-400">
             <div className="text-2xl font-bold">{riskPercentage}%</div>
             <div className="text-sm">Risk Percentage</div>
             <div className="text-xs mt-1">Lower is Better</div>
           </div>
           
-          <div className="p-4 rounded-lg bg-gray-50 text-gray-600">
+          <div className="p-4 rounded-lg bg-card-secondary border border-border text-text-secondary">
             <div className="text-2xl font-bold">{results.length}</div>
             <div className="text-sm">Total Questions</div>
             <div className="text-xs mt-1">MiCA Compliance</div>
@@ -90,7 +101,7 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {results.map((result, index) => {
                 const riskScore = result.coverage_score || 0;
                 const riskColor = riskScore >= 1000 ? 'text-red-600' : 
@@ -98,7 +109,7 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
                                  riskScore > 0 ? 'text-orange-600' : 'text-green-600';
                 
                 return (
-                  <tr key={index} className="hover:bg-gray-50">
+                  <tr key={index} className="hover:bg-card-secondary">
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {result.item_name}
                     </td>
@@ -129,11 +140,54 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {result.evidence && result.evidence.length > 0 ? (
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button 
+                          onClick={() => {
+                            const evidenceModal = document.createElement('div');
+                            evidenceModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                            evidenceModal.innerHTML = `
+                              <div class="bg-gray-900 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto border border-gray-600">
+                                <div class="flex justify-between items-center mb-4">
+                                  <h3 class="text-lg font-bold text-white">Evidence: ${result.item_name}</h3>
+                                  <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-300 text-xl">✕</button>
+                                </div>
+                                <div class="space-y-4">
+                                  ${result.evidence.map((ev, i) => `
+                                    <div class="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                                      <div class="text-sm text-blue-400 mb-2">Evidence ${i + 1}</div>
+                                      <div class="text-white whitespace-pre-wrap">${ev.snippet || ev}</div>
+                                    </div>
+                                  `).join('')}
+                                </div>
+                                <button onclick="this.closest('.fixed').remove()" class="mt-4 w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded">Close</button>
+                              </div>
+                            `;
+                            document.body.appendChild(evidenceModal);
+                          }}
+                          className="text-blue-400 hover:text-blue-300"
                           View ({result.evidence.length})
                         </button>
                       ) : (
-                        <span className="text-gray-400">None</span>
+                        <button 
+                          onClick={() => {
+                            // Show evidence modal with reasoning
+                            const evidenceModal = document.createElement('div');
+                            evidenceModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                            evidenceModal.innerHTML = `
+                              <div class="bg-gray-900 rounded-lg p-6 max-w-2xl w-full mx-4 border border-gray-600">
+                                <div class="flex justify-between items-center mb-4">
+                                  <h3 class="text-lg font-bold text-white">Evidence: ${result.item_name}</h3>
+                                  <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-300">✕</button>
+                                </div>
+                                <div class="text-white whitespace-pre-wrap">${result.reasoning || 'No evidence available'}</div>
+                                <button onclick="this.closest('.fixed').remove()" class="mt-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded">Close</button>
+                              </div>
+                            `;
+                            document.body.appendChild(evidenceModal);
+                          }}
+                          className="text-blue-400 hover:text-blue-300 text-sm underline"
+                        >
+                          View Reasoning
+                        </button>
                       )}
                     </td>
                   </tr>
