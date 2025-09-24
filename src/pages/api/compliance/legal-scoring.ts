@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: items } = await serviceClient
       .from('checker_items')
-      .select('id, item_name, scoring_logic, field_type')
+      .select('id, item_name, scoring_logic')
       .eq('template_id', legalTemplate.id)
       .order('sort_order');
 

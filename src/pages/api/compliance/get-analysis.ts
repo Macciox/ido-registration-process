@@ -104,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       manually_overridden: result.manually_overridden || false,
       evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet })),
       // Legal template fields
-      field_type: result.field_type,
+
       scoring_logic: result.scoring_logic,
       selected_answer: result.selected_answer
     }));

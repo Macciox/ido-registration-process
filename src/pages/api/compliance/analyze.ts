@@ -246,7 +246,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 === QUESTION TO ANALYZE ===
 QUESTION: "${item.item_name}"
-FIELD TYPE: ${item.field_type || 'Yes/No'}
+FIELD TYPE: Yes/No
 SCORING LOGIC: ${item.scoring_logic || 'Yes = 1000, No = 0'}
 
 === DOCUMENT CONTENT ===
@@ -283,7 +283,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
 
 **Return ONLY this JSON:**
 {
-  "field_type": "${item.field_type || 'Yes/No'} → Selected: [Your Answer]",
+  "field_type": "Yes/No → Selected: [Your Answer]",
   "scoring_logic": "${item.scoring_logic || 'Yes = 1000, No = 0'}",
   "risk_score": [Apply scoring logic: Yes=1000, No=0, or "Not scored"],
   "reasoning": "Explain what the document says and why this creates high/low risk",
@@ -300,7 +300,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
             const legalResult = (analysis as any).fullLegalResults?.[0] || {};
             
             // Extract selected answer
-            const fieldType = legalResult.field_type || '';
+            const fieldType = legalResult.field_type || 'Yes/No';
             let selectedMatch = fieldType.match(/Selected: ([^→]+)$/);
             const selectedAnswer = selectedMatch ? selectedMatch[1].trim() : '';
             
@@ -329,7 +329,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
               reasoning: legalResult.reasoning || 'No reasoning provided',
               evidence: legalResult.evidence_snippets ? 
                 legalResult.evidence_snippets.map((snippet: string) => ({ snippet, page: 1 })) : [],
-              field_type: fieldType,
+
               scoring_logic: legalResult.scoring_logic || item.scoring_logic,
               selected_answer: selectedAnswer
             });
@@ -350,7 +350,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
               coverage_score: 0,
               reasoning: `Analysis failed: ${error.message}`,
               evidence: [],
-              field_type: item.field_type || 'Yes/No',
+
               scoring_logic: item.scoring_logic || 'Yes = 1000, No = 0',
               selected_answer: ''
             });
