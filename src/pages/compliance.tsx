@@ -81,7 +81,7 @@ export default function CompliancePage() {
   useEffect(() => {
     const init = async () => {
       const currentUser = await getCurrentUser();
-      if (!currentUser || currentUser.role !== 'admin') {
+      if (!currentUser) {
         router.push('/login');
         return;
       }
@@ -553,16 +553,7 @@ export default function CompliancePage() {
     );
   }
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <Layout>
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-gray-600 mt-2">Admin access required</p>
-        </div>
-      </Layout>
-    );
-  }
+
 
   return (
     <Layout>
@@ -573,10 +564,10 @@ export default function CompliancePage() {
             <p className="text-text-secondary">AI-powered compliance analysis for documents</p>
           </div>
           <button 
-            onClick={() => router.push('/admin/tools')}
+            onClick={() => router.push('/dashboard')}
             className="btn-secondary"
           >
-            ← Back to Tools
+            ← Back to Dashboard
           </button>
         </div>
 
