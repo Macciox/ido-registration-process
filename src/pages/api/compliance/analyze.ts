@@ -242,12 +242,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log(`Analyzing legal item: ${item.item_name}`);
             
             // Create focused prompt for this specific legal question
+            const scoringLogic = item.scoring_logic || 'Not scored';
+            const isNotScored = scoringLogic.includes('Not scored');
+            
             const legalPrompt = `You are a MiCAR legal compliance expert. Analyze this legal opinion document for ONE specific question.
 
 === QUESTION TO ANALYZE ===
 QUESTION: "${item.item_name}"
-FIELD TYPE: Yes/No
-SCORING LOGIC: ${item.scoring_logic || 'Yes = 1000, No = 0'}
+FIELD TYPE: ${item.field_type || 'Yes/No'}
+SCORING LOGIC: ${scoringLogic}
 
 === DOCUMENT CONTENT ===
 ${documentContent}
@@ -283,9 +286,9 @@ If document contains NO information about this topic → Answer: "No" (assume lo
 
 **Return ONLY this JSON:**
 {
-  "field_type": "Yes/No → Selected: [Your Answer]",
-  "scoring_logic": "${item.scoring_logic || 'Yes = 1000, No = 0'}",
-  "risk_score": [Apply scoring logic: Yes=1000, No=0, or "Not scored"],
+  "field_type": "${item.field_type || 'Yes/No'} → Selected: [Your Answer]",
+  "scoring_logic": "${scoringLogic}",
+  "risk_score": ${isNotScored ? '"Not scored"' : '[Apply the exact scoring logic above]'},
   "reasoning": "Explain what the document says and why this creates high/low risk",
   "evidence_snippets": ["Exact quotes from document that support your risk assessment"]
 }`;
@@ -304,23 +307,23 @@ If document contains NO information about this topic → Answer: "No" (assume lo
             let selectedMatch = fieldType.match(/Selected: ([^→]+)$/);
             const selectedAnswer = selectedMatch ? selectedMatch[1].trim() : '';
             
-            // Parse risk score
-            let riskScore: number | string = 0;
-            if (legalResult.risk_score === 'Not scored') {
-              riskScore = 'Not scored';
+            // Parse risk score - handle "Not scored" items properly
+            let riskScore: number = 0;
+            
+            // Check if this item should not be scored
+            if (item.scoring_logic?.includes('Not scored') || legalResult.risk_score === 'Not scored') {
+              riskScore = 0; // Not scored items have 0 risk
             } else if (typeof legalResult.risk_score === 'number') {
               riskScore = legalResult.risk_score;
             } else {
-              riskScore = parseInt(legalResult.risk_score) || 0;
+              const parsed = parseInt(legalResult.risk_score);
+              riskScore = isNaN(parsed) ? 0 : parsed;
             }
             
-            // Fix status logic: High risk score (1000) = regulatory concern = FOUND
-            // Low risk score (0) = no regulatory concern = MISSING (good)
-            const status = riskScore === 'Not scored' ? 'MISSING' as const : 
-                          typeof riskScore === 'number' && riskScore >= 1000 ? 'FOUND' as const : 
-                          typeof riskScore === 'number' && riskScore > 0 ? 'NEEDS_CLARIFICATION' as const : 'MISSING' as const;
-            
-            const numericScore = riskScore === 'Not scored' ? 0 : typeof riskScore === 'number' ? riskScore : 0;
+            // Status for legal analysis: based on risk level
+            const status = riskScore >= 1000 ? 'FOUND' as const : 
+                          riskScore > 0 ? 'NEEDS_CLARIFICATION' as const : 
+                          'MISSING' as const;
             
             results.push({
               item_id: item.id,
@@ -335,7 +338,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
               field_type: fieldType,
               scoring_logic: legalResult.scoring_logic || item.scoring_logic,
               selected_answer: selectedAnswer,
-              risk_score: numericScore
+              risk_score: riskScore
             });
             
             processedCount++;
@@ -413,13 +416,16 @@ If document contains NO information about this topic → Answer: "No" (assume lo
         }
       }
 
-      // Calculate summary
+      // Calculate summary - for legal analysis, focus on total risk score
+      const totalRiskScore = results.reduce((sum, r) => sum + r.coverage_score, 0);
+      const maxPossibleScore = results.length * 1000; // Max risk per item is 1000
+      
       const summary = {
         found_items: results.filter(r => r.status === 'FOUND').length,
         clarification_items: results.filter(r => r.status === 'NEEDS_CLARIFICATION').length,
         missing_items: results.filter(r => r.status === 'MISSING').length,
-        overall_score: template.type === 'legal' ? 
-          Math.round(100 - (results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)) :
+        // For legal analysis: total risk score (lower is better)
+        overall_score: template.type === 'legal' ? totalRiskScore : 
           Math.round(results.reduce((sum, r) => sum + r.coverage_score, 0) / results.length)
       };
 
