@@ -16,7 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
   
   // Navigation handlers
   const navigateToDashboard = () => {
-    router.push('/admin/dashboard');
+    router.push('/dashboard');
   };
   
   const navigateToNewProject = () => {
@@ -24,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
   };
   
   const navigateToAdminSettings = () => {
-    router.push('/admin/dashboard?tab=settings');
+    router.push('/dashboard');
   };
   
   return (
@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
             <button 
               onClick={navigateToDashboard}
               className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/admin/dashboard') && !router.query.tab
+                isActive('/dashboard') && !router.query.tab
                   ? 'bg-primary text-white shadow-md' 
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                 <button 
                   onClick={navigateToAdminSettings}
                   className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    router.pathname === '/admin/dashboard' && router.query.tab === 'settings'
+                    router.pathname === '/dashboard'
                       ? 'bg-primary text-white shadow-md' 
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}

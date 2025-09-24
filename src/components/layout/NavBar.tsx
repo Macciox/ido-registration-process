@@ -28,8 +28,8 @@ const NavBar: React.FC<NavBarProps> = ({ user, loading, onLogout }) => {
                     Projects List
                   </Link>
                 )}
-                <Link href="/admin/dashboard" className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  router.pathname === '/admin/dashboard' ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-200'
+                <Link href="/dashboard" className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  router.pathname === '/dashboard' ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-200'
                 }`}>
                   Dashboard
                 </Link>

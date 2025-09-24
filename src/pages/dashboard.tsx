@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
           return;
         }
         setUser(currentUser);
+        // Load projects but don't wait for it
         loadProjects(currentUser.id);
       } catch (err) {
         console.error('Auth check error:', err);
@@ -46,10 +47,16 @@ const Dashboard: React.FC = () => {
         .eq('owner_id', userId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading projects:', error);
+        // Don't throw, just set empty array
+        setProjects([]);
+        return;
+      }
       setProjects(data || []);
     } catch (err) {
       console.error('Error loading projects:', err);
+      setProjects([]);
     }
   };
 

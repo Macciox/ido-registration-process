@@ -46,8 +46,8 @@ const AdminLoginForm: React.FC = () => {
         return;
       }
       
-      // Redirect to admin dashboard
-      window.location.href = '/admin/dashboard';
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error('Unexpected error:', err);
       setError('An unexpected error occurred');

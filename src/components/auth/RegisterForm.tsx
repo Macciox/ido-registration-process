@@ -27,6 +27,12 @@ const RegisterForm: React.FC = () => {
       return;
     }
 
+    // Check if email ends with @decubate
+    if (!email.endsWith('@decubate.com')) {
+      setError('Registration is restricted to @decubate.com email addresses only.');
+      return;
+    }
+
     setLoading(true);
 
     try {

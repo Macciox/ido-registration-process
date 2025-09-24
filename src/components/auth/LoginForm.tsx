@@ -186,12 +186,8 @@ const LoginForm: React.FC = () => {
         userRole = profileData.role;
       }
 
-      // Redirect based on user role
-      if (userRole === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      // Redirect to dashboard for all users
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'An error occurred during login');

@@ -63,7 +63,7 @@ const Header: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <a 
-              href="/admin/dashboard"
+              href="/dashboard"
               className="flex items-center gap-3 group"
             >
               <img 
