@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth';
 interface Project {
   id: string;
   name: string;
-  description?: string;
 }
 
 interface ProjectSelectorProps {
@@ -28,7 +27,7 @@ export default function ProjectSelector({ onProjectSelect, selectedProjectId }: 
 
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, description')
+        .select('id, name')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 

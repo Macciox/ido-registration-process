@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase';
 interface Project {
   id: string;
   name: string;
-  description?: string;
   created_at: string;
 }
 
@@ -125,10 +124,7 @@ const Dashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projects.map((project) => (
                   <div key={project.id} className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors">
-                    <h3 className="font-medium text-white mb-2">{project.name}</h3>
-                    {project.description && (
-                      <p className="text-text-secondary text-sm mb-3">{project.description}</p>
-                    )}
+                    <h3 className="font-medium text-white mb-3">{project.name}</h3>
                     <div className="flex gap-2">
                       <a
                         href={`/compliance?project=${project.id}`}

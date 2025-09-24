@@ -7,8 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 const NewProject: React.FC = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: '',
-    description: ''
+    name: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +28,6 @@ const NewProject: React.FC = () => {
         .from('projects')
         .insert({
           name: formData.name,
-          description: formData.description,
           owner_id: user.id
         })
         .select()
@@ -80,24 +78,13 @@ const NewProject: React.FC = () => {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => setFormData({ name: e.target.value })}
                   className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-text-muted focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter project name"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-text-muted focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Optional project description"
-                />
-              </div>
+
 
               <div className="flex gap-4">
                 <button
