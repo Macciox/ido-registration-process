@@ -1,0 +1,22 @@
+Section,Question,Field Type,Scoring Logic
+MiFID II - Financial Instrument,"Does the token grant any rights similar to shares, loans or bonds, such as dividends, voting power, or redemption rights?",Yes/No + Text field if Yes,"Yes = 1000, No = 0"
+MiFID II - Financial Instrument,Is the token structured in a way that derives its value from the price or performance of another asset or index (i.e. a derivative)?,Yes/No + Text field if Yes,"Yes = 1000, No = 0"
+MiFID II - Financial Instrument,Is the token part of a class of securities that are negotiable on financial or secondary markets?,Yes/No/Not sure,"Yes = 1000, Not sure = 5, No = 0"
+EMT/ART Qualification,"Is the token pegged to the value of a single official currency (e.g. EUR, USD)?",Yes/No,"Yes = 1000, No = 0"
+EMT/ART Qualification,"Does the token reference or track the value of a basket of assets, currencies, or other rights (e.g. BTC, gold, or a mix)?",Yes/No/Other + Text field,"Yes = 1000, Other = 5, No = 0"
+EMT/ART Qualification,"Are you using any terms like “stable”, “backed by X”, “interest”, or similar in your token name, branding, or marketing?",Yes/No/Other + Text field,"Yes = 5, Other = 3, No = 0"
+Utility Token Qualification,What is the main purpose of the token for its holders?,Dropdown: Access to services / Governance only / Investment returns / Other + Text field,"Investment returns = 5, Other = 3, Access/Governance = 0"
+Utility Token Qualification,"Are any staking, burning, or locking mechanisms included in the token’s design? If so, are these mechanisms linked to yield, return, or appreciation?",Yes/No/Other + Text field,"Yes = 3, Other = 3, No = 0"
+Utility Token Qualification,Is the token transferable and fungible across wallets and platforms?,Yes/No/Other + Text field,"No = 3, Other = 1, Yes = 0"
+Utility Token Qualification,"Does the token offer financial or economic incentives in exchange for holding, staking, or participating?",Yes/No/Other + Text field,"Yes = 5, Other = 3, No = 0"
+Whitepaper & Marketing,"Will the total public offering of the token in the EU be below €1,000,000 within a 12-month period?",Yes/No/Not sure,"No = 5, Not sure = 3, Yes = 0"
+Whitepaper & Marketing,"Have you announced, or do you plan to announce, a listing or application for trading of the token on any exchange within the EU?",Yes/No/Planning to/Not sure,"Yes = 5, Planning = 5, Not sure = 3, No = 0"
+Whitepaper & Marketing,Are you planning to offer this token to more than 150 persons per EU Member State?,Yes/No/Not sure,"Yes = 5, Not sure = 3, No = 0"
+Whitepaper & Marketing,Will a crypto-asset whitepaper be made available under MiCAR rules?,Yes/No/Not applicable,"No = 3, Not applicable = 0, Yes = 0"
+Whitepaper & Marketing,"Are your marketing materials (website, docs, social media) free from misleading, unclear, or overly promotional language that could imply guaranteed returns?",Yes/No/Not sure,"No = 5, Not sure = 3, Yes = 0"
+Whitepaper & Marketing,Provide a link to your main website or documentation.,Text field,Not scored
+Legal Entity,"Is the token issuer a registered legal person (company, foundation, etc.)?",Yes/No + Text field,"No = 1000, Yes = 0"
+Legal Entity,In which country is the issuer incorporated?,Text field,Not scored
+Legal Entity,"Are you actively marketing or promoting the token to EU-based users, or are you relying on reverse solicitation?",Dropdown: Actively marketing / Reverse solicitation / Not sure + Text field,"Actively marketing = 5, Not sure = 3, Reverse = 0"
+Governance / Misc.,"Does the token offer governance rights (e.g. DAO voting, protocol decisions)? If yes, are these rights only functional and non-financial?",Yes/No/Other + Text field,"Yes = 0, No = 0, Other = 3"
+Governance / Misc.,"Is the token offered 'for free' (e.g. via airdrop or reward) in exchange for user data, promotional activity, or other indirect consideration?",Yes/No/Other + Text field,"Yes = 5, Other = 3, No = 0"
