@@ -88,19 +88,56 @@ export default function CompliancePage() {
       }
       setUser(currentUser);
       setLoading(false);
-      fetchTemplates();
+      await fetchTemplates();
       fetchDocuments();
       fetchRecentUrls();
       fetchSavedAnalyses();
+      
+      // Preselect template based on URL parameter
+      const { tab } = router.query;
+      if (tab === 'whitepaper' || tab === 'legal') {
+        preselectTemplate(tab as string);
+      }
     };
     init();
   }, [router]);
+  
+  const preselectTemplate = (type: string) => {
+    // Wait for templates to be loaded
+    setTimeout(() => {
+      if (type === 'whitepaper') {
+        const whitepaperTemplate = templates.find(t => t.name.toLowerCase().includes('whitepaper'));
+        if (whitepaperTemplate) {
+          setSelectedTemplate(whitepaperTemplate.id);
+        }
+      } else if (type === 'legal') {
+        const legalTemplate = templates.find(t => t.name.toLowerCase().includes('legal'));
+        if (legalTemplate) {
+          setSelectedTemplate(legalTemplate.id);
+        }
+      }
+    }, 500);
+  };
 
   const fetchTemplates = async () => {
     try {
       const response = await fetch(`/api/compliance/templates?t=${Date.now()}`);
       const data = await response.json();
       setTemplates(data.templates || []);
+      
+      // Auto-preselect template after loading if URL param exists
+      const { tab } = router.query;
+      if (tab && (tab === 'whitepaper' || tab === 'legal')) {
+        setTimeout(() => {
+          if (tab === 'whitepaper') {
+            const whitepaperTemplate = data.templates?.find((t: any) => t.name.toLowerCase().includes('whitepaper'));
+            if (whitepaperTemplate) setSelectedTemplate(whitepaperTemplate.id);
+          } else if (tab === 'legal') {
+            const legalTemplate = data.templates?.find((t: any) => t.name.toLowerCase().includes('legal'));
+            if (legalTemplate) setSelectedTemplate(legalTemplate.id);
+          }
+        }, 100);
+      }
     } catch (error) {
       console.error('Error fetching templates:', error);
     }
@@ -622,9 +659,33 @@ export default function CompliancePage() {
             {activeTab === 'upload' ? (
               <form onSubmit={handleFileUpload} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-white">
-                    Select Compliance Template
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-white">
+                      Select Compliance Template
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const whitepaperTemplate = templates.find(t => t.name.toLowerCase().includes('whitepaper'));
+                          if (whitepaperTemplate) setSelectedTemplate(whitepaperTemplate.id);
+                        }}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
+                      >
+                        📄 Whitepaper
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const legalTemplate = templates.find(t => t.name.toLowerCase().includes('legal'));
+                          if (legalTemplate) setSelectedTemplate(legalTemplate.id);
+                        }}
+                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs transition-colors"
+                      >
+                        ⚖️ Legal
+                      </button>
+                    </div>
+                  </div>
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
