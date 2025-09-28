@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { search, minScore, maxScore, status } = req.query;
+    const { search, minScore, maxScore, status, templateType } = req.query;
     
     let analyses = await getLatestAnalyses();
     
@@ -37,6 +37,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       analyses = analyses.filter(analysis => 
         analysis.status === status.toString()
       );
+    }
+    
+    if (templateType) {
+      const type = templateType.toString().toLowerCase();
+      analyses = analyses.filter(analysis => {
+        const templateName = analysis.template_name?.toLowerCase() || '';
+        if (type === 'legal') {
+          return templateName.includes('legal');
+        } else if (type === 'whitepaper') {
+          return templateName.includes('whitepaper');
+        }
+        return true;
+      });
     }
     
     res.status(200).json({

@@ -155,6 +155,12 @@ export default function CompliancePage() {
       if (minScore) params.append('minScore', minScore);
       if (maxScore) params.append('maxScore', maxScore);
       if (statusFilter) params.append('status', statusFilter);
+      // Filter by analysis type
+      if (analysisType === 'legal') {
+        params.append('templateType', 'legal');
+      } else if (analysisType === 'whitepaper') {
+        params.append('templateType', 'whitepaper');
+      }
       
       const response = await fetch(`/api/analyses?${params}`);
       const data = await response.json();
@@ -171,7 +177,7 @@ export default function CompliancePage() {
       fetchSavedAnalyses();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, minScore, maxScore, statusFilter]);
+  }, [searchTerm, minScore, maxScore, statusFilter, analysisType]);
 
   const handleSaveAnalysis = async (overwrite: boolean) => {
     if (!results) return;
@@ -688,7 +694,7 @@ export default function CompliancePage() {
                     : 'bg-card-secondary text-text-secondary hover:bg-primary/20 hover:text-white'
                 }`}
               >
-                Saved Analyses ({savedAnalyses.length})
+                {analysisType === 'legal' ? '⚖️ Legal' : '📄 Whitepaper'} Analyses ({savedAnalyses.length})
               </button>
             </nav>
           </div>
