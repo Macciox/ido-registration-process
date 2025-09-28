@@ -27,41 +27,9 @@ const RegisterForm: React.FC = () => {
       return;
     }
 
-    // Check if email ends with @decubate
-    if (!email.endsWith('@decubate.com')) {
-      setError('Registration is restricted to @decubate.com email addresses only.');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // First check if email is in any whitelist
-      const { data: adminWhitelist } = await supabase
-        .from('admin_whitelist')
-        .select('id, status')
-        .eq('email', email)
-        .maybeSingle();
-      
-      const { data: projectOwners } = await supabase
-        .from('projectowner_whitelist')
-        .select('id, status, project_id')
-        .eq('email', email);
-      
-      console.log('Whitelist check:', { 
-        adminWhitelist, 
-        projectOwners,
-        email: email,
-        adminFound: !!adminWhitelist,
-        projectOwnersFound: projectOwners?.length || 0
-      });
-      
-      if (!adminWhitelist && (!projectOwners || projectOwners.length === 0)) {
-        setError('Registration is restricted. Your email is not in the allowed list.');
-        setLoading(false);
-        return;
-      }
-
       // Check if the user already exists
       const { data: existingProfile } = await supabase
         .from('profiles')
@@ -86,23 +54,6 @@ const RegisterForm: React.FC = () => {
 
       if (error) {
         throw error;
-      }
-
-      // Update whitelist status to pending verification
-      if (adminWhitelist) {
-        await supabase
-          .from('admin_whitelist')
-          .update({ status: 'pending_verification' })
-          .eq('id', adminWhitelist.id);
-      }
-      
-      if (projectOwners && projectOwners.length > 0) {
-        for (const owner of projectOwners) {
-          await supabase
-            .from('projectowner_whitelist')
-            .update({ status: 'pending_verification' })
-            .eq('id', owner.id);
-        }
       }
 
       setMessage('Registration successful! Check your email to confirm your account.');

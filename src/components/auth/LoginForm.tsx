@@ -28,14 +28,9 @@ const LoginForm: React.FC = () => {
         console.log('Current auth user:', authUser);
       }
 
-      // Debug: Check if email exists in admin_whitelist
-      const { data: adminCheck } = await supabase
-        .from('admin_whitelist')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-      
-      console.log('Admin whitelist check:', adminCheck);
+      // Check if user should be admin based on email domain
+      const isDecubateEmail = email.endsWith('@decubate.com');
+      console.log('Email domain check:', { email, isDecubateEmail });
 
       // Try to sign in
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -72,18 +67,8 @@ const LoginForm: React.FC = () => {
             if (matchingUser) {
               setDebugInfo(`User exists in auth.users but not in profiles. User ID: ${matchingUser.id}`);
               
-              // Try to create profile for this user
-              const { data: adminWhitelist } = await supabase
-                .from('admin_whitelist')
-                .select('id, status')
-                .eq('email', email)
-                .maybeSingle();
-                
-              // Determine role
-              let role = 'project_owner'; // Default role for new users
-              if (adminWhitelist && (adminWhitelist.status === 'registered' || adminWhitelist.status === 'pending_verification')) {
-                role = 'admin';
-              }
+              // Determine role based on email domain
+              let role = email.endsWith('@decubate.com') ? 'admin' : 'user';
               
               // Create profile
               const { data: newProfile, error: insertError } = await supabase
@@ -115,24 +100,8 @@ const LoginForm: React.FC = () => {
         return;
       }
 
-      // Update projectowner_whitelist status to 'registered' if user has verified email
-      if (data.user?.email_confirmed_at) {
-        try {
-          const { error: updateError } = await supabase
-            .from('projectowner_whitelist')
-            .update({ status: 'registered' })
-            .eq('email', email)
-            .in('status', ['pending_verification', 'pending']);
-          
-          if (updateError) {
-            console.error('Error updating projectowner_whitelist on login:', updateError);
-          } else {
-            console.log('Updated projectowner_whitelist status to registered for:', email);
-          }
-        } catch (err) {
-          console.error('Error in projectowner_whitelist update on login:', err);
-        }
-      }
+      // User successfully logged in
+      console.log('User logged in successfully:', email);
 
       // Check if the user has a profile
       const { data: profileData, error: profileError } = await supabase
@@ -146,19 +115,8 @@ const LoginForm: React.FC = () => {
       if (profileError || !profileData) {
         console.error('Profile error:', profileError);
         
-        // Check if the user is in admin_whitelist or projectowner_whitelist
-        const { data: adminWhitelist } = await supabase
-          .from('admin_whitelist')
-          .select('id, status')
-          .eq('email', email)
-          .maybeSingle();
-          
-        // Determine role
-        if (adminWhitelist && (adminWhitelist.status === 'registered' || adminWhitelist.status === 'pending_verification')) {
-          userRole = 'admin';
-        } else {
-          userRole = 'project_owner'; // Default role for non-admin users
-        }
+        // Determine role based on email domain
+        userRole = email.endsWith('@decubate.com') ? 'admin' : 'user';
         
         // Create profile if it doesn't exist
         if (data.user) {
