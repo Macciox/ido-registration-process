@@ -25,7 +25,7 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
       return total + 0; // Not scored items don't contribute to max
     }
     const numbers = scoringLogic.match(/\d+/g);
-    const maxForItem = numbers ? Math.max(...numbers.map(n => parseInt(n))) : 0;
+    const maxForItem = numbers ? Math.max(...numbers.map((n: string) => parseInt(n))) : 0;
     return total + maxForItem;
   }, 0);
   
