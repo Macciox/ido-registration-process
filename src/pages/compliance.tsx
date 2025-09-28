@@ -77,6 +77,7 @@ export default function CompliancePage() {
   const [editValues, setEditValues] = useState<{[key: string]: any}>({});
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<string>('');
+  const [analysisType, setAnalysisType] = useState<'legal' | 'whitepaper'>('legal');
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -93,10 +94,14 @@ export default function CompliancePage() {
       fetchRecentUrls();
       fetchSavedAnalyses();
       
-      // Preselect template based on URL parameter
+      // Preselect template and analysis type based on URL parameter
       const { tab } = router.query;
-      if (tab === 'whitepaper' || tab === 'legal') {
-        preselectTemplate(tab as string);
+      if (tab === 'whitepaper') {
+        setAnalysisType('whitepaper');
+        preselectTemplate('whitepaper');
+      } else if (tab === 'legal') {
+        setAnalysisType('legal');
+        preselectTemplate('legal');
       }
     };
     init();
@@ -601,12 +606,45 @@ export default function CompliancePage() {
             <h1 className="text-2xl font-bold text-white">MiCA Compliance Checker</h1>
             <p className="text-text-secondary">AI-powered compliance analysis for documents</p>
           </div>
-          <button 
-            onClick={() => router.push('/dashboard')}
-            className="btn-secondary"
-          >
-            ← Back to Dashboard
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Analysis Type Switch */}
+            <div className="flex bg-card-secondary rounded-lg p-1">
+              <button
+                onClick={() => {
+                  setAnalysisType('legal');
+                  const legalTemplate = templates.find(t => t.name.toLowerCase().includes('legal'));
+                  if (legalTemplate) setSelectedTemplate(legalTemplate.id);
+                }}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
+                  analysisType === 'legal'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-text-secondary hover:text-white'
+                }`}
+              >
+                ⚖️ Legal Opinion
+              </button>
+              <button
+                onClick={() => {
+                  setAnalysisType('whitepaper');
+                  const whitepaperTemplate = templates.find(t => t.name.toLowerCase().includes('whitepaper'));
+                  if (whitepaperTemplate) setSelectedTemplate(whitepaperTemplate.id);
+                }}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
+                  analysisType === 'whitepaper'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-text-secondary hover:text-white'
+                }`}
+              >
+                📄 Whitepaper
+              </button>
+            </div>
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="btn-secondary"
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
         </div>
 
         <div className="sleek-card">
@@ -659,33 +697,9 @@ export default function CompliancePage() {
             {activeTab === 'upload' ? (
               <form onSubmit={handleFileUpload} className="space-y-6">
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-medium text-white">
-                      Select Compliance Template
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const whitepaperTemplate = templates.find(t => t.name.toLowerCase().includes('whitepaper'));
-                          if (whitepaperTemplate) setSelectedTemplate(whitepaperTemplate.id);
-                        }}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
-                      >
-                        📄 Whitepaper
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const legalTemplate = templates.find(t => t.name.toLowerCase().includes('legal'));
-                          if (legalTemplate) setSelectedTemplate(legalTemplate.id);
-                        }}
-                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs transition-colors"
-                      >
-                        ⚖️ Legal
-                      </button>
-                    </div>
-                  </div>
+                  <label className="block text-sm font-medium mb-2 text-white">
+                    Select Compliance Template
+                  </label>
                   <select
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -693,11 +707,18 @@ export default function CompliancePage() {
                     required
                   >
                     <option value="" className="bg-card text-white">Choose template...</option>
-                    {templates.map((template) => (
-                      <option key={template.id} value={template.id} className="bg-card text-white">
-                        {template.name} ({template.checker_items?.length || 0} items)
-                      </option>
-                    ))}
+                    {templates
+                      .filter(template => 
+                        analysisType === 'legal' 
+                          ? template.name.toLowerCase().includes('legal')
+                          : template.name.toLowerCase().includes('whitepaper')
+                      )
+                      .map((template) => (
+                        <option key={template.id} value={template.id} className="bg-card text-white">
+                          {template.name} ({template.checker_items?.length || 0} items)
+                        </option>
+                      ))
+                    }
                   </select>
                 </div>
 

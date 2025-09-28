@@ -151,7 +151,7 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
                                   <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-300 text-xl">✕</button>
                                 </div>
                                 <div class="space-y-4">
-                                  ${result.evidence.map((ev, i) => `
+                                  ${result.evidence.map((ev: any, i: number) => `
                                     <div class="bg-gray-800 rounded-lg p-4 border border-gray-600">
                                       <div class="text-sm text-blue-400 mb-2">Evidence ${i + 1}</div>
                                       <div class="text-white whitespace-pre-wrap">${ev.snippet || ev}</div>
@@ -164,6 +164,7 @@ const LegalAnalysisResults: React.FC<LegalAnalysisResultsProps> = ({
                             document.body.appendChild(evidenceModal);
                           }}
                           className="text-blue-400 hover:text-blue-300"
+                        >
                           View ({result.evidence.length})
                         </button>
                       ) : (
