@@ -77,7 +77,7 @@ const Header: React.FC = () => {
           {!loading && user && (
             <div className="flex items-center">
               {/* Profile dropdown */}
-              <div className="relative" ref={profileMenuRef}>
+              <div className="relative" ref={profileMenuRef} style={{zIndex: 9998}}>
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 focus:outline-none transition-colors"
@@ -98,9 +98,11 @@ const Header: React.FC = () => {
                 
                 {isProfileMenuOpen && (
                     <div 
-                      className="fixed right-4 top-16 w-56 sleek-card p-2 z-[9999]" 
+                      className="absolute right-0 top-full mt-2 w-56 sleek-card p-2 z-[9999]" 
                       style={{
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+                        position: 'absolute',
+                        zIndex: 9999
                       }}
                     >
                       <div className="px-3 py-2 border-b border-white/10 mb-2">
