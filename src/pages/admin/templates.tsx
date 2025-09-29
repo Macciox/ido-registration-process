@@ -30,7 +30,7 @@ export default function TemplatesPage() {
   useEffect(() => {
     const init = async () => {
       const currentUser = await getCurrentUser();
-      if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+      if (!currentUser || (currentUser as any).user_metadata?.role !== 'admin') {
         router.push('/dashboard');
         return;
       }
