@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let promptsContent = fs.readFileSync(promptsPath, 'utf8');
 
     // Update the specific prompt
-    const promptRegex = new RegExp(`(${id}:\\s*`)(['"])(.*?)\\2`, 's');
+    const promptRegex = new RegExp(`(${id}:\\s*)(['"])(.*?)\\2`, 's');
     const match = promptsContent.match(promptRegex);
     
     if (match) {
