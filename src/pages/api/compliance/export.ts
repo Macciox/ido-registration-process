@@ -23,10 +23,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('compliance_checks')
       .select(`
         *,
-        check_results (
+        compliance_results (
           *,
-          checker_items (item_name, category),
-          compliance_evidences (snippet)
+          checker_items (item_name, category)
         )
       `)
       .eq('id', checkId)
@@ -38,17 +37,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const results = {
       checkId: checkData.id,
-      summary: checkData.summary || { found_items: 0, clarification_items: 0, missing_items: 0, overall_score: 0 },
-      results: checkData.check_results?.map((r: any) => ({
+      summary: {
+        found_items: checkData.found_items || 0,
+        clarification_items: checkData.clarification_items || 0,
+        missing_items: checkData.missing_items || 0,
+        overall_score: checkData.overall_score || 0
+      },
+      results: checkData.compliance_results?.map((r: any) => ({
         item_name: r.checker_items?.item_name || 'Unknown',
         category: r.checker_items?.category || 'Unknown',
         status: r.status,
         coverage_score: r.coverage_score,
         reasoning: r.reasoning,
-        evidence: r.compliance_evidences?.map((e: any) => e.snippet) || []
+        evidence: r.evidence_snippets || []
       })) || [],
       created_at: checkData.created_at,
-      completed_at: checkData.completed_at
+      template_name: checkData.template_name
     };
 
     if (format === 'json') {

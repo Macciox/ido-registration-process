@@ -1814,6 +1814,10 @@ export default function CompliancePage() {
                 </div>
               )}
 
+
+                </>
+              )}
+              
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 mt-6">
                 <button 
@@ -1823,41 +1827,16 @@ export default function CompliancePage() {
                   💾 Save Analysis
                 </button>
                 <button 
-                  onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=json`)}
+                  onClick={() => {
+                    if (results.checkId) {
+                      window.open(`/api/compliance/export?checkId=${results.checkId}&format=json`);
+                    } else {
+                      showToast('Please save the analysis first to export', 'warning');
+                    }
+                  }}
                   className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Export JSON
-                </button>
-                <button 
-                  onClick={() => window.open(`/api/compliance/export?checkId=${results.checkId}&format=pdf`)}
-                  className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Export PDF
-                </button>
-                <LoadingButton
-                  loading={regenerating}
-                  onClick={() => handleRegenerate()}
-                  className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  {regenerating ? 'Regenerating...' : '🔄 Regenerate Non-FOUND'}
-                </LoadingButton>
-                <button 
-                  onClick={() => testAnalysis()}
-                  className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Test Analysis
-                </button>
-              </div>
-                </>
-              )}
-              
-              {/* Common Action Buttons for both legal and non-legal */}
-              <div className="flex flex-wrap gap-3 mt-6">
-                <button 
-                  onClick={() => setShowSaveModal(true)}
-                  className="px-4 py-3 bg-primary hover:bg-primary/80 text-white rounded-lg font-medium transition-colors"
-                >
-                  💾 Save Analysis
+                  📄 Export JSON
                 </button>
                 <button 
                   onClick={() => setShowResults(false)}
