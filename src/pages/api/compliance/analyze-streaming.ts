@@ -175,6 +175,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       document = newDoc;
     }
 
+    if (!document) {
+      return res.status(500).json({ error: 'Failed to create document' });
+    }
+
     // Process website
     let processingResult = await processCrawledWebsite(document.id, url, 50);
     if (!processingResult.success) {
