@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
 import { withSecurity } from '@/middleware/security';
+import { sanitizeForLog } from '@/lib/sanitize';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,7 +27,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       console.log('Auth error:', authError);
       return res.status(401).json({ error: 'Invalid token' });
     }
-    console.log('User authenticated:', user.id);
+    console.log('User authenticated:', sanitizeForLog(user.id));
 
     const { data: documents, error } = await serviceClient
       .from('compliance_documents')

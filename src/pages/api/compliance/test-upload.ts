@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getCurrentUser } from '@/lib/auth';
 import formidable from 'formidable';
 import fs from 'fs';
+import { sanitizeFilePath } from '@/lib/sanitize';
 
 export const config = {
   api: {
@@ -30,7 +31,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 3. Read file
     const fileBuffer = fs.readFileSync(file.filepath);
-    const fileName = `test-${Date.now()}.pdf`;
+    const originalName = file.originalFilename || 'unknown.pdf';
+    const sanitizedName = sanitizeFilePath(originalName);
+    const fileName = `test-${Date.now()}-${sanitizedName}`;
 
     // 4. Upload to Supabase with service role
     const supabase = createClient(

@@ -6,6 +6,7 @@ import { getDocumentChunks } from '@/lib/pdf-processor';
 import { filterWhitepaperItems } from '@/lib/whitepaper-filter';
 import { renderPrompt } from '@/lib/prompts';
 import { COMPLIANCE_PROMPTS } from '@/lib/compliance/prompts';
+import { validateUrl, sanitizeForLog } from '@/lib/sanitize';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,6 +42,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid URL format' });
     }
 
+    // Security validation
+    if (!validateUrl(url)) {
+      return res.status(400).json({ error: 'URL not allowed for security reasons' });
+    }
+
     // Get template
     const { data: template } = await serviceClient
       .from('checker_templates')
@@ -65,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (existingDoc) {
       // Reuse existing document
       document = existingDoc;
-      console.log('Reusing existing document:', existingDoc.id, 'for URL:', url);
+      console.log('Reusing existing document:', existingDoc.id, 'for URL:', sanitizeForLog(url));
     } else {
       // Create new document record for URL
       const { data: newDoc, error: docError } = await serviceClient
@@ -85,11 +91,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       document = newDoc;
-      console.log('Created new document:', newDoc.id, 'for URL:', url);
+      console.log('Created new document:', newDoc.id, 'for URL:', sanitizeForLog(url));
     }
 
     // Process website: try crawler first, fallback to single page
-    console.log('Processing website:', url, 'for document:', document.id);
+    console.log('Processing website:', sanitizeForLog(url), 'for document:', document.id);
     
     // Always re-crawl to get latest content (even for existing documents)
     let processingResult = await processCrawledWebsite(document.id, url, 50); // Max 50 pages

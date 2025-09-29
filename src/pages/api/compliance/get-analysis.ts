@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 const serviceClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -96,17 +97,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const formattedResults = (results || []).map(result => ({
       result_id: result.id,
       item_id: result.item_id,
-      item_name: result.checker_items?.item_name || result.item_name || 'Unknown Item',
-      category: result.checker_items?.category || result.category || 'General',
+      item_name: sanitizeHtml(result.checker_items?.item_name || result.item_name || 'Unknown Item'),
+      category: sanitizeHtml(result.checker_items?.category || result.category || 'General'),
       status: result.status,
       coverage_score: result.coverage_score,
-      reasoning: result.reasoning,
+      reasoning: sanitizeHtml(result.reasoning || ''),
       manually_overridden: result.manually_overridden || false,
-      evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet })),
+      evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet: sanitizeHtml(snippet) })),
       // Legal template fields
-
-      scoring_logic: result.scoring_logic,
-      selected_answer: result.selected_answer
+      scoring_logic: sanitizeHtml(result.scoring_logic || ''),
+      selected_answer: sanitizeHtml(result.selected_answer || '')
     }));
 
     const summary = {
