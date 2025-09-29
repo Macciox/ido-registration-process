@@ -272,7 +272,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const startTime = Date.now();
         const maxProcessingTime = 420000; // 420 seconds
       
-      for (const [categoryIndex, category] of categories.entries()) {
+      for (let categoryIndex = 0; categoryIndex < categories.length; categoryIndex++) {
+        const category = categories[categoryIndex];
         // Check timeout before processing each category
         const elapsed = Date.now() - startTime;
         if (elapsed > maxProcessingTime) {
