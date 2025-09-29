@@ -98,10 +98,9 @@ const Header: React.FC = () => {
                 
                 {isProfileMenuOpen && (
                     <div 
-                      className="absolute right-0 top-full mt-2 w-56 sleek-card p-2" 
+                      className="fixed right-4 top-16 w-56 sleek-card p-2 z-[9999]" 
                       style={{
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-                        zIndex: 9999
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
                       }}
                     >
                       <div className="px-3 py-2 border-b border-white/10 mb-2">
