@@ -2,59 +2,78 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/lib/auth';
-import { COMPLIANCE_PROMPTS } from '@/lib/compliance/prompts';
+import { useToast } from '@/components/ui/Toast';
+
+interface Prompt {
+  id: string;
+  name: string;
+  content: string;
+  description: string;
+  variables: string[];
+}
 
 export default function PromptsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [prompts, setPrompts] = useState(COMPLIANCE_PROMPTS);
-  const [activeTab, setActiveTab] = useState('WHITEPAPER_ANALYSIS');
-  const [hasChanges, setHasChanges] = useState(false);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
     const init = async () => {
       const currentUser = await getCurrentUser();
-      if (!currentUser || currentUser.role !== 'admin') {
-        router.push('/login');
+      if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+        router.push('/dashboard');
         return;
       }
       setUser(currentUser);
       setLoading(false);
+      fetchPrompts();
     };
     init();
   }, [router]);
 
-  const handlePromptChange = (key: string, value: string) => {
-    setPrompts(prev => ({
-      ...prev,
-      [key]: value
-    }));
-    setHasChanges(true);
-  };
-
-  const savePrompts = async () => {
+  const fetchPrompts = async () => {
     try {
-      const response = await fetch('/api/compliance/update-prompts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(prompts),
-      });
-
-      if (response.ok) {
-        setHasChanges(false);
-        alert('Prompts saved successfully!');
-      } else {
-        throw new Error('Save error');
-      }
+      const response = await fetch('/api/admin/prompts');
+      const data = await response.json();
+      setPrompts(data.prompts || []);
     } catch (error) {
-      alert('Error saving prompts');
+      console.error('Error fetching prompts:', error);
+      showToast('Failed to fetch prompts', 'error');
     }
   };
 
-  const resetPrompts = () => {
-    setPrompts(COMPLIANCE_PROMPTS);
-    setHasChanges(false);
+  const savePrompt = async () => {
+    if (!editingPrompt) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch('/api/admin/update-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingPrompt.id,
+          content: editingPrompt.content,
+          description: editingPrompt.description
+        })
+      });
+
+      if (response.ok) {
+        showToast('Prompt updated successfully', 'success');
+        fetchPrompts();
+        setEditingPrompt(null);
+      } else {
+        throw new Error('Update failed');
+      }
+    } catch (error) {
+      showToast('Failed to update prompt', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -67,116 +86,172 @@ export default function PromptsPage() {
     );
   }
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <Layout>
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-gray-600 mt-2">Admin access required</p>
-        </div>
-      </Layout>
-    );
-  }
-
-  const tabs = [
-    { key: 'WHITEPAPER_ANALYSIS', label: 'Whitepaper Analysis' },
-    { key: 'LEGAL_ANALYSIS', label: 'Legal Analysis' },
-    { key: 'SYSTEM_PROMPT', label: 'System Prompt' }
-  ];
-
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Editor Prompt GPT-4</h1>
-            <p className="text-text-secondary">Edit prompts used by AI for document analysis</p>
+            <h1 className="text-2xl font-bold text-white">Prompt Management</h1>
+            <p className="text-text-secondary">Manage AI prompts for compliance analysis</p>
           </div>
-          <a href="/admin/tools" className="btn-secondary">
-            ← Back to Tools
-          </a>
+          <button 
+            onClick={() => router.push('/dashboard')}
+            className="btn-secondary"
+          >
+            ← Back to Dashboard
+          </button>
         </div>
-        
-        <div className="flex justify-between items-center">
-          <div className="space-x-4">
-            {hasChanges && (
-              <span className="text-orange-600 font-medium">Unsaved changes</span>
-            )}
-            <button
-              onClick={resetPrompts}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              Reset
-            </button>
-            <button
-              onClick={savePrompts}
-              disabled={!hasChanges}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              Save Prompts
-            </button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="sleek-card">
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-white mb-4">Prompts</h2>
+              <div className="space-y-2">
+                {prompts.map((prompt) => (
+                  <button
+                    key={prompt.id}
+                    onClick={() => setSelectedPrompt(prompt)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      selectedPrompt?.id === prompt.id
+                        ? 'bg-primary text-white'
+                        : 'bg-card-secondary text-text-secondary hover:bg-primary/20'
+                    }`}
+                  >
+                    <div className="font-medium">{prompt.name}</div>
+                    <div className="text-sm opacity-75">
+                      {prompt.variables?.length || 0} variables
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 sleek-card">
+            <div className="p-6">
+              {selectedPrompt ? (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-lg font-bold text-white">{selectedPrompt.name}</h2>
+                      <p className="text-text-secondary">{selectedPrompt.description}</p>
+                    </div>
+                    <button
+                      onClick={() => setEditingPrompt({...selectedPrompt})}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                    >
+                      Edit Prompt
+                    </button>
+                  </div>
+
+                  {selectedPrompt.variables?.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-white font-medium mb-2">Variables:</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPrompt.variables.map((variable) => (
+                          <span
+                            key={variable}
+                            className="px-2 py-1 bg-primary/20 text-primary rounded text-sm"
+                          >
+                            {variable}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-card-secondary rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-2">Prompt Content:</h3>
+                    <pre className="text-text-secondary text-sm whitespace-pre-wrap">
+                      {selectedPrompt.content}
+                    </pre>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-text-secondary">Select a prompt to view details</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="sleek-card">
-          <div className="border-b">
-            <nav className="flex space-x-8 px-6">
-              {tabs.map((tab) => (
+        {editingPrompt && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <h3 className="text-lg font-bold text-white mb-4">Edit Prompt: {editingPrompt.name}</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">Description</label>
+                  <input
+                    type="text"
+                    value={editingPrompt.description}
+                    onChange={(e) => setEditingPrompt({...editingPrompt, description: e.target.value})}
+                    className="w-full p-3 border border-border rounded-lg bg-card-secondary text-white"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-white">Prompt Content</label>
+                  <textarea
+                    value={editingPrompt.content}
+                    onChange={(e) => setEditingPrompt({...editingPrompt, content: e.target.value})}
+                    className="w-full p-3 border border-border rounded-lg bg-card-secondary text-white font-mono text-sm"
+                    rows={20}
+                  />
+                </div>
+
+                {editingPrompt.variables?.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-white">Available Variables:</label>
+                    <div className="flex flex-wrap gap-2">
+                      {editingPrompt.variables.map((variable) => (
+                        <span
+                          key={variable}
+                          className="px-2 py-1 bg-primary/20 text-primary rounded text-sm cursor-pointer"
+                          onClick={() => {
+                            const textarea = document.querySelector('textarea');
+                            if (textarea) {
+                              const cursorPos = textarea.selectionStart;
+                              const textBefore = editingPrompt.content.substring(0, cursorPos);
+                              const textAfter = editingPrompt.content.substring(cursorPos);
+                              setEditingPrompt({
+                                ...editingPrompt,
+                                content: textBefore + `{{${variable}}}` + textAfter
+                              });
+                            }
+                          }}
+                        >
+                          {variable} (click to insert)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 mt-6">
                 <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`py-4 px-2 border-b-2 font-medium text-sm ${
-                    activeTab === tab.key
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                  onClick={savePrompt}
+                  disabled={saving}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
                 >
-                  {tab.label}
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </button>
-              ))}
-            </nav>
-          </div>
-
-          <div className="p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2">
-                {tabs.find(t => t.key === activeTab)?.label}
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {activeTab === 'WHITEPAPER_ANALYSIS' && 'Prompt for MiCA whitepaper analysis. Use variables: {category}, {item_name}, {description}, {relevant_content}'}
-                {activeTab === 'LEGAL_ANALYSIS' && 'Prompt for legal document analysis. Use variables: {category}, {item_name}, {description}, {relevant_content}'}
-                {activeTab === 'SYSTEM_PROMPT' && 'System prompt to define general AI behavior'}
-              </p>
-            </div>
-
-            <textarea
-              value={prompts[activeTab as keyof typeof prompts]}
-              onChange={(e) => handlePromptChange(activeTab, e.target.value)}
-              className="w-full h-96 p-4 border rounded-lg font-mono text-sm"
-              placeholder="Enter the prompt..."
-            />
-
-            <div className="mt-4 text-sm text-gray-500">
-              <p><strong>Available variables:</strong></p>
-              <ul className="list-disc list-inside mt-2">
-                <li><code>{'{category}'}</code> - Category of the item to verify</li>
-                <li><code>{'{item_name}'}</code> - Name of the item to verify</li>
-                <li><code>{'{description}'}</code> - Description of the item</li>
-                <li><code>{'{relevant_content}'}</code> - Relevant document content</li>
-              </ul>
+                <button
+                  onClick={() => setEditingPrompt(null)}
+                  disabled={saving}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Important</h4>
-          <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• Prompts must return valid JSON with fields: status, coverage_score, reasoning, evidence_snippets</li>
-            <li>• Status must be: FOUND, NEEDS_CLARIFICATION, or MISSING</li>
-            <li>• Coverage_score must be a number from 0 to 100</li>
-            <li>• Changes apply immediately to new analyses</li>
-          </ul>
-        </div>
+        <ToastContainer />
       </div>
     </Layout>
   );

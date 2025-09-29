@@ -1068,20 +1068,74 @@ export default function CompliancePage() {
                     className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-white"
                   >
                     <option value="fast">🚀 Fast Mode - Single call for all items (GPT-4o-mini)</option>
-                    <option value="normal">🎯 Normal Mode - 1 call per item (GPT-4, more accurate)</option>
+                    <option value="normal">🎯 Normal Mode - 1 call per category (batch processing)</option>
                   </select>
                   <p className="text-xs text-text-secondary mt-1">
-                    💡 Fast mode is cheaper and faster. Normal mode is more accurate but takes longer.
+                    💡 Standard: Sequential processing. Parallel: All categories processed simultaneously (faster).
                   </p>
                 </div>
 
-                  <button
-                    type="submit"
-                    disabled={isUploading || !url || !selectedTemplate}
-                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUploading ? 'Analyzing Website...' : '🌐 Analyze Website'}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={isUploading || !url || !selectedTemplate}
+                      className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isUploading ? 'Analyzing...' : '🌐 Standard Analysis'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!url || !selectedTemplate) return;
+
+                        setIsUploading(true);
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const response = await fetch('/api/compliance/analyze-streaming', {
+                            method: 'POST',
+                            headers: { 
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${session?.access_token}`
+                            },
+                            body: JSON.stringify({
+                              url: url,
+                              templateId: selectedTemplate,
+                              projectId: selectedProjectId
+                            })
+                          });
+                          
+                          if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Streaming analysis failed');
+                          }
+                          
+                          const data = await response.json();
+                          
+                          console.log('🚀 Streaming analysis completed:', data);
+                          setResults({
+                            ...data,
+                            actualTemplateUsed: selectedTemplate
+                          });
+                          setShowResults(true);
+                          setUrl('');
+                          
+                          fetchRecentUrls();
+                          showToast(`Parallel analysis completed! ${data.processing?.categoriesProcessed || 0} categories processed.`, 'success');
+                        } catch (error: any) {
+                          console.error('Streaming analysis error:', error);
+                          showToast('Error in parallel analysis: ' + error.message, 'error');
+                          setShowResults(false);
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }}
+                      disabled={isUploading || !url || !selectedTemplate}
+                      className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isUploading ? 'Processing...' : '⚡ Parallel Analysis'}
+                    </button>
+                  </div>
                 </form>
 
                 {/* Recently Analyzed URLs */}

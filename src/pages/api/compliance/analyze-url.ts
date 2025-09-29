@@ -250,79 +250,92 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
     } else {
-      // Normal mode: 1 call per item
-      console.log(`\n=== NORMAL MODE: 1 CALL PER ITEM ===`);
+      // Batch mode: Group by category and process each category in one call
+      console.log(`\n=== BATCH MODE: 1 CALL PER CATEGORY ===`);
       console.log(`About to start processing ${itemsToAnalyze.length} items`);
       console.log(`Document content length: ${documentContent.length} chars`);
       console.log(`Template type: ${template.type}`);
       
-      try {
-        console.log('Starting for loop...');
-        const startTime = Date.now();
-      const maxProcessingTime = 280000; // 280 seconds (20s buffer before Vercel timeout)
+      // Group items by category
+      const itemsByCategory = itemsToAnalyze.reduce((acc: any, item: any) => {
+        const category = item.category || 'Uncategorized';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(item);
+        return acc;
+      }, {});
       
-      for (const [index, item] of itemsToAnalyze.entries()) {
-        // Check timeout before processing each item
+      const categories = Object.keys(itemsByCategory);
+      console.log(`Found ${categories.length} categories:`, categories.map(cat => `${cat} (${itemsByCategory[cat].length} items)`));
+      
+      try {
+        console.log('Starting category processing...');
+        const startTime = Date.now();
+        const maxProcessingTime = 420000; // 420 seconds
+      
+      for (const [categoryIndex, category] of categories.entries()) {
+        // Check timeout before processing each category
         const elapsed = Date.now() - startTime;
         if (elapsed > maxProcessingTime) {
           console.log(`\n=== TIMEOUT PROTECTION TRIGGERED ===`);
-          console.log(`Processed ${index}/${itemsToAnalyze.length} items in ${elapsed}ms`);
+          console.log(`Processed ${categoryIndex}/${categories.length} categories in ${elapsed}ms`);
           console.log('Stopping to avoid Vercel timeout');
           
-          // Add remaining items as NEEDS_CLARIFICATION
-          for (let i = index; i < itemsToAnalyze.length; i++) {
-            const remainingItem = itemsToAnalyze[i];
-            results.push({
-              result_id: `temp-${remainingItem.id}-${Date.now()}`,
-              item_id: remainingItem.id,
-              item_name: remainingItem.item_name,
-              category: remainingItem.category,
-              status: 'NEEDS_CLARIFICATION',
-              coverage_score: 0,
-              reasoning: 'Analysis stopped due to timeout protection',
-              manually_overridden: false,
-              evidence: []
+          // Add remaining categories as NEEDS_CLARIFICATION
+          for (let i = categoryIndex; i < categories.length; i++) {
+            const remainingCategory = categories[i];
+            const remainingItems = itemsByCategory[remainingCategory];
+            remainingItems.forEach((item: any) => {
+              results.push({
+                result_id: `temp-${item.id}-${Date.now()}`,
+                item_id: item.id,
+                item_name: item.item_name,
+                category: item.category,
+                status: 'NEEDS_CLARIFICATION',
+                coverage_score: 0,
+                reasoning: 'Analysis stopped due to timeout protection',
+                manually_overridden: false,
+                evidence: []
+              });
             });
           }
           break;
         }
         
+        const categoryItems = itemsByCategory[category];
+        
         try {
-          console.log(`\n=== PROCESSING ITEM ${index + 1}/${itemsToAnalyze.length} ===`);
-          console.log(`Item: ${item.item_name}`);
+          console.log(`\n=== PROCESSING CATEGORY ${categoryIndex + 1}/${categories.length} ===`);
+          console.log(`Category: ${category}`);
+          console.log(`Items in category: ${categoryItems.length}`);
           console.log(`Elapsed time: ${elapsed}ms`);
           
           if (documentContent.length < 100) {
             throw new Error('Document content too short for analysis');
           }
           
-          // Use centralized prompt system with SAME documentContent
+          // Create requirements list for this category
+          const requirementsList = categoryItems.map((item: any, idx: number) => 
+            `${idx + 1}. Requirement: ${item.item_name}\n   Description: ${item.description}`
+          ).join('\n\n');
+          
+          // Use centralized prompt system
           const promptId = template.type === 'whitepaper' ? 'WHITEPAPER_ANALYSIS' : 
                           template.type === 'legal' ? 'LEGAL_ANALYSIS' : 'WHITEPAPER_ANALYSIS';
           
           console.log(`Using prompt: ${promptId}`);
           console.log('About to render prompt...');
           
-          let itemPrompt;
-          if (template.type === 'legal') {
-            console.log('Rendering legal prompt...');
-            itemPrompt = await renderPrompt(promptId, {
-              documentContent: documentContent
-            });
-          } else {
-            console.log('Rendering whitepaper prompt...');
-            itemPrompt = await renderPrompt(promptId, {
-              requirementsList: `Category: ${item.category}\nItem: ${item.item_name}\nDescription: ${item.description}`,
-              documentContent: documentContent
-            });
-          }
+          const categoryPrompt = await renderPrompt(promptId, {
+            requirementsList: `Category: ${category}\n\n${requirementsList}`,
+            documentContent: documentContent
+          });
           
           console.log('Prompt rendered successfully');
 
-          console.log(`Sending request to OpenAI for item: ${item.item_name}`);
-          console.log(`Prompt length: ${itemPrompt.length} chars`);
+          console.log(`Sending request to OpenAI for category: ${category}`);
+          console.log(`Prompt length: ${categoryPrompt.length} chars`);
           console.log('\n=== PROMPT SENT TO OPENAI ===');
-          console.log(itemPrompt.substring(0, 2000) + '...');
+          console.log(categoryPrompt.substring(0, 2000) + '...');
           console.log('=== END PROMPT ===\n');
           
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -335,10 +348,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               model: 'gpt-4o-mini',
               messages: [
                 { role: 'system', content: COMPLIANCE_PROMPTS.SYSTEM_PROMPT },
-                { role: 'user', content: itemPrompt }
+                { role: 'user', content: categoryPrompt }
               ],
               temperature: 0.1,
-              max_tokens: 1000,
+              max_tokens: 4000, // Increased for multiple items
             }),
           });
 
@@ -348,33 +361,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const data = await response.json();
             const content = data.choices[0]?.message?.content;
             
-            console.log(`OpenAI response received for ${item.item_name}`);
+            console.log(`OpenAI response received for category ${category}`);
             console.log(`Response length: ${content?.length} chars`);
             console.log(`Raw response content:`, content?.substring(0, 500) + '...');
             
             try {
-              const parsed = JSON.parse(content);
-              console.log(`JSON parsed successfully for ${item.item_name}`);
+              const jsonMatch = content?.match(/\[[\s\S]*\]/);
               
-              // Handle both array and object responses
-              const result = Array.isArray(parsed) ? parsed[0] : parsed;
-              console.log(`Parsed status: ${result.status}`);
-              
-              results.push({
-                result_id: `temp-${item.id}-${Date.now()}`,
-                item_id: item.id,
-                item_name: item.item_name,
-                category: item.category,
-                status: result.status,
-                coverage_score: result.coverage_score,
-                reasoning: result.reasoning,
-                manually_overridden: false,
-                evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
-              });
-              
-              console.log(`Successfully added result for ${item.item_name}`);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                console.log(`JSON parsed successfully for category ${category}`);
+                console.log(`Parsed results count: ${parsed.length}`);
+                
+                // Map results to items
+                parsed.forEach((result: any, idx: number) => {
+                  const item = categoryItems[idx];
+                  if (item) {
+                    results.push({
+                      result_id: `temp-${item.id}-${Date.now()}`,
+                      item_id: item.id,
+                      item_name: item.item_name,
+                      category: item.category,
+                      status: result.status,
+                      coverage_score: result.coverage_score,
+                      reasoning: result.reasoning,
+                      manually_overridden: false,
+                      evidence: (result.evidence_snippets || []).map((snippet: string) => ({ snippet }))
+                    });
+                  }
+                });
+                
+                console.log(`Successfully added ${parsed.length} results for category ${category}`);
+              } else {
+                throw new Error('No JSON array in response');
+              }
             } catch (parseError) {
-              console.error(`JSON parse error for ${item.item_name}:`, parseError);
+              console.error(`JSON parse error for category ${category}:`, parseError);
               console.error(`Content that failed to parse:`, content);
               throw parseError;
             }
@@ -383,35 +405,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             throw new Error(`GPT API error: ${response.status} - ${errorText}`);
           }
         } catch (error) {
-          console.error(`\n=== ERROR PROCESSING ITEM ${index + 1} ===`);
-          console.error(`Item: ${item.item_name}`);
+          console.error(`\n=== ERROR PROCESSING CATEGORY ${categoryIndex + 1} ===`);
+          console.error(`Category: ${category}`);
           console.error(`Error:`, error);
           console.error(`Stack:`, error instanceof Error ? error.stack : 'No stack trace');
           
-          results.push({
-            result_id: `temp-${item.id}-${Date.now()}`,
-            item_id: item.id,
-            item_name: item.item_name,
-            category: item.category,
-            status: 'NEEDS_CLARIFICATION',
-            coverage_score: 0,
-            reasoning: `Analysis failed: ${error}`,
-            manually_overridden: false,
-            evidence: []
+          // Add all items in this category as failed
+          categoryItems.forEach((item: any) => {
+            results.push({
+              result_id: `temp-${item.id}-${Date.now()}`,
+              item_id: item.id,
+              item_name: item.item_name,
+              category: item.category,
+              status: 'NEEDS_CLARIFICATION',
+              coverage_score: 0,
+              reasoning: `Category analysis failed: ${error}`,
+              manually_overridden: false,
+              evidence: []
+            });
           });
         }
         
-        // Rate limiting between items
-        console.log(`Waiting 500ms before next item...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log(`Ready to process next item (${index + 2}/${itemsToAnalyze.length})`);
+        // Rate limiting between categories
+        console.log(`Waiting 1000ms before next category...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log(`Ready to process next category (${categoryIndex + 2}/${categories.length})`);
       }
       
-        console.log(`\n=== NORMAL MODE COMPLETED ===`);
-        console.log(`Processed ${results.length} items total`);
+        console.log(`\n=== BATCH MODE COMPLETED ===`);
+        console.log(`Processed ${categories.length} categories with ${results.length} items total`);
         console.log(`Total processing time: ${Date.now() - startTime}ms`);
       } catch (fatalError) {
-        console.error(`\n=== FATAL ERROR IN NORMAL MODE ===`);
+        console.error(`\n=== FATAL ERROR IN BATCH MODE ===`);
         console.error('Fatal error:', fatalError);
         console.error('Stack:', fatalError instanceof Error ? fatalError.stack : 'No stack trace');
         
