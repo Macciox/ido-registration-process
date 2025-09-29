@@ -120,7 +120,7 @@ const Header: React.FC = () => {
                         Settings
                       </button>
                       
-                      {user.role === 'admin' && (
+                      {(user as any).role === 'admin' && (
                         <>
                           <button
                             onClick={() => navigateTo('/admin/templates')}

@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const user = await getCurrentUser();
-    if (!user || (user as any).user_metadata?.role !== 'admin') {
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
 

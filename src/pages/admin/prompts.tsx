@@ -25,7 +25,7 @@ export default function PromptsPage() {
   useEffect(() => {
     const init = async () => {
       const currentUser = await getCurrentUser();
-      if (!currentUser || (currentUser as any).user_metadata?.role !== 'admin') {
+      if (!currentUser || currentUser.role !== 'admin') {
         router.push('/dashboard');
         return;
       }
