@@ -33,5 +33,6 @@ function extractVariables(content: string): string[] {
   const matches = content.match(/\{\{(\w+)\}\}/g);
   if (!matches) return [];
   
-  return [...new Set(matches.map(match => match.replace(/[{}]/g, '')))];
+  const variables = matches.map(match => match.replace(/[{}]/g, ''));
+  return Array.from(new Set(variables));
 }
