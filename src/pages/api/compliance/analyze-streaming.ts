@@ -119,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { url, templateId } = req.body;
+  const { url, templateId, whitepaperSection } = req.body;
 
   if (!url || !templateId) {
     return res.status(400).json({ error: 'URL and template ID required' });
@@ -196,8 +196,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `[Excerpt ${i + 1}]\n${chunk.content}`
     ).join('\n\n');
 
+    // Filter items based on whitepaper sections if specified
+    let filteredItems = template.checker_items;
+    if (whitepaperSection && template.name?.toLowerCase().includes('whitepaper')) {
+      const selectedSections = whitepaperSection.split('+');
+      console.log('Filtering whitepaper sections:', selectedSections);
+      
+      filteredItems = template.checker_items.filter((item: any) => {
+        const itemName = item.item_name?.toLowerCase() || '';
+        const category = item.category?.toLowerCase() || '';
+        
+        // Always include sections D-I (they are always included)
+        if (category.includes('part d') || category.includes('part e') || 
+            category.includes('part f') || category.includes('part g') || 
+            category.includes('part h') || category.includes('part i')) {
+          return true;
+        }
+        
+        // Include selected sections A, B, C
+        if (selectedSections.includes('A') && (category.includes('part a') || itemName.includes('offeror'))) {
+          return true;
+        }
+        if (selectedSections.includes('B') && (category.includes('part b') || itemName.includes('issuer'))) {
+          return true;
+        }
+        if (selectedSections.includes('C') && (category.includes('part c') || itemName.includes('trading platform'))) {
+          return true;
+        }
+        
+        return false;
+      });
+      
+      console.log(`Filtered from ${template.checker_items.length} to ${filteredItems.length} items`);
+    }
+
     // Group items by category
-    const itemsByCategory = template.checker_items.reduce((acc: any, item: any) => {
+    const itemsByCategory = filteredItems.reduce((acc: any, item: any) => {
       const category = item.category || 'Uncategorized';
       if (!acc[category]) acc[category] = [];
       acc[category].push(item);

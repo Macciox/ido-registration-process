@@ -235,9 +235,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Process legal templates with individual calls for each question
       if (template.type === 'legal') {
         try {
-          console.log('Analyzing legal questions individually (21 separate calls)...');
+          console.log(`Analyzing legal questions individually (${filteredItems.length} separate calls)...`);
         
-        for (const item of template.checker_items) {
+        for (const item of filteredItems) {
           try {
             console.log(`Analyzing legal item: ${item.item_name}`);
             
@@ -368,7 +368,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
           console.error('Failed to analyze legal document:', error);
           
           // Add error result for all items
-          for (const item of template.checker_items) {
+          for (const item of filteredItems) {
             results.push({
               item_id: item.id,
               item_name: item.item_name,
@@ -382,7 +382,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
         }
       } else {
         // Process each item individually for non-legal templates
-        for (const item of template.checker_items) {
+        for (const item of filteredItems) {
           try {
             console.log(`Analyzing item: ${item.item_name}`);
             const analysis = await analyzeItemWithContent(item, documentContent, template.type);
@@ -447,7 +447,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
         results,
         summary,
         templateName: template.name,
-        message: `Analysis completed for ${processedCount}/${template.checker_items.length} items (saved)`
+        message: `Analysis completed for ${processedCount}/${filteredItems.length} items (saved)`
       });
     }
 
