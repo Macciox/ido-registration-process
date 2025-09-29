@@ -253,7 +253,9 @@ export async function getLatestAnalyses(): Promise<any[]> {
         missing_items,
         status,
         created_at,
-        template_name
+        template_name,
+        project_id,
+        projects(name)
       )
     `);
 
@@ -285,7 +287,9 @@ export async function getLatestAnalyses(): Promise<any[]> {
           missing_items: check.missing_items,
           status: check.status,
           analysis_created_at: check.created_at,
-          template_name: check.template_name
+          template_name: check.template_name,
+          project_id: check.project_id,
+          project_name: check.projects?.name || null
         });
       });
   });

@@ -66,6 +66,7 @@ export default function CompliancePage() {
   const [minScore, setMinScore] = useState('');
   const [maxScore, setMaxScore] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [projectFilter, setProjectFilter] = useState('');
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [deletingAnalysis, setDeletingAnalysis] = useState<string>('');
   const [regenerating, setRegenerating] = useState(false);
@@ -155,6 +156,7 @@ export default function CompliancePage() {
       if (minScore) params.append('minScore', minScore);
       if (maxScore) params.append('maxScore', maxScore);
       if (statusFilter) params.append('status', statusFilter);
+      if (projectFilter) params.append('projectFilter', projectFilter);
       // Filter by analysis type
       if (analysisType === 'legal') {
         params.append('templateType', 'legal');
@@ -177,7 +179,7 @@ export default function CompliancePage() {
       fetchSavedAnalyses();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, minScore, maxScore, statusFilter, analysisType]);
+  }, [searchTerm, minScore, maxScore, statusFilter, projectFilter, analysisType]);
 
   const handleSaveAnalysis = async (overwrite: boolean) => {
     if (!results) return;
@@ -495,7 +497,6 @@ export default function CompliancePage() {
           url: url,
           templateId: selectedTemplate,
           projectId: selectedProjectId,
-          mode: analysisMode,
           whitepaperSection: templates.find(t => t.id === selectedTemplate)?.name?.includes('Whitepaper') ? whitepaperSections.join('+') : undefined
         })
       });
@@ -1144,7 +1145,7 @@ export default function CompliancePage() {
                   <h3 className="text-lg font-medium text-white">Saved Analyses</h3>
                   
                   {/* Search and Filters */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <input
                       type="text"
                       placeholder="Search by name, hash, or version..."
@@ -1176,6 +1177,15 @@ export default function CompliancePage() {
                       <option value="in-progress">In Progress</option>
                       <option value="archived">Archived</option>
                     </select>
+                    <select
+                      value={projectFilter}
+                      onChange={(e) => setProjectFilter(e.target.value)}
+                      className="px-3 py-2 bg-card-secondary border border-border rounded-lg text-white"
+                    >
+                      <option value="">All Analyses</option>
+                      <option value="standalone">📄 Standalone Only</option>
+                      <option value="project">📁 Project Assigned Only</option>
+                    </select>
                   </div>
                 </div>
                 {savedAnalyses.length === 0 ? (
@@ -1190,7 +1200,7 @@ export default function CompliancePage() {
                         <tr className="border-b border-border">
                           <th className="text-left py-3 px-4 text-white font-medium">Document</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Template</th>
-                          <th className="text-left py-3 px-4 text-white font-medium">Hash</th>
+                          <th className="text-left py-3 px-4 text-white font-medium">Project</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Score</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Version</th>
                           <th className="text-left py-3 px-4 text-white font-medium">Date</th>
@@ -1220,9 +1230,19 @@ export default function CompliancePage() {
                               </div>
                             </td>
                             <td className="py-3 px-4">
-                              <code className="text-xs text-text-secondary bg-card-secondary px-2 py-1 rounded">
-                                {analysis.doc_hash?.substring(0, 12)}...
-                              </code>
+                              <div className="text-white text-sm">
+                                {analysis.project_name ? (
+                                  <div>
+                                    <div className="font-medium text-blue-400">📁 {analysis.project_name}</div>
+                                    <div className="text-xs text-text-secondary">Assigned to project</div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <div className="font-medium text-gray-400">📄 Standalone</div>
+                                    <div className="text-xs text-text-secondary">Not assigned to project</div>
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center">

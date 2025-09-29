@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { search, minScore, maxScore, status, templateType } = req.query;
+    const { search, minScore, maxScore, status, templateType, projectFilter } = req.query;
     
     let analyses = await getLatestAnalyses();
     
@@ -37,6 +37,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       analyses = analyses.filter(analysis => 
         analysis.status === status.toString()
       );
+    }
+    
+    if (projectFilter) {
+      const filter = projectFilter.toString().toLowerCase();
+      if (filter === 'standalone') {
+        analyses = analyses.filter(analysis => !analysis.project_id);
+      } else if (filter === 'project') {
+        analyses = analyses.filter(analysis => analysis.project_id);
+      }
     }
     
     if (templateType) {
