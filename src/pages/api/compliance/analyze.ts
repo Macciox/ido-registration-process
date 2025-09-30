@@ -230,14 +230,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Document content length:', documentContent.length);
       console.log('Document content preview:', documentContent.substring(0, 1000) + '...');
       console.log('Template type:', template.type);
-      console.log('Number of items to analyze:', template.checker_items.length);
+      // Filter items based on whitepaper sections if specified
+      let itemsToProcess = template.checker_items;
+      if (whitepaperSection && template.name?.toLowerCase().includes('whitepaper')) {
+        const selectedSections = whitepaperSection.split('+');
+        console.log('Filtering whitepaper sections:', selectedSections);
+        
+        itemsToProcess = template.checker_items.filter((item: any) => {
+          const itemName = item.item_name?.toLowerCase() || '';
+          const category = item.category?.toLowerCase() || '';
+          
+          // Always include sections D-I (they are always included)
+          if (category.includes('part d') || category.includes('part e') || 
+              category.includes('part f') || category.includes('part g') || 
+              category.includes('part h') || category.includes('part i')) {
+            return true;
+          }
+          
+          // Include selected sections A, B, C
+          if (selectedSections.includes('A') && (category.includes('part a') || itemName.includes('offeror'))) {
+            return true;
+          }
+          if (selectedSections.includes('B') && (category.includes('part b') || itemName.includes('issuer'))) {
+            return true;
+          }
+          if (selectedSections.includes('C') && (category.includes('part c') || itemName.includes('trading platform'))) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        console.log(`Filtered from ${template.checker_items.length} to ${itemsToProcess.length} items`);
+      }
+
+      console.log('Number of items to analyze:', itemsToProcess.length);
 
       // Process legal templates with individual calls for each question
       if (template.type === 'legal') {
         try {
-          console.log(`Analyzing legal questions individually (${filteredItems.length} separate calls)...`);
+          console.log(`Analyzing legal questions individually (${itemsToProcess.length} separate calls)...`);
         
-        for (const item of filteredItems) {
+        for (const item of itemsToProcess) {
           try {
             console.log(`Analyzing legal item: ${item.item_name}`);
             
@@ -368,7 +402,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
           console.error('Failed to analyze legal document:', error);
           
           // Add error result for all items
-          for (const item of filteredItems) {
+          for (const item of itemsToProcess) {
             results.push({
               item_id: item.id,
               item_name: item.item_name,
@@ -382,7 +416,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
         }
       } else {
         // Process each item individually for non-legal templates
-        for (const item of filteredItems) {
+        for (const item of itemsToProcess) {
           try {
             console.log(`Analyzing item: ${item.item_name}`);
             const analysis = await analyzeItemWithContent(item, documentContent, template.type);
@@ -447,7 +481,7 @@ If document contains NO information about this topic → Answer: "No" (assume lo
         results,
         summary,
         templateName: template.name,
-        message: `Analysis completed for ${processedCount}/${filteredItems.length} items (saved)`
+        message: `Analysis completed for ${processedCount}/${itemsToProcess.length} items (saved)`
       });
     }
 
