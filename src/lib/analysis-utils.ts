@@ -59,7 +59,8 @@ export async function saveAnalysis(
   templateId: string,
   analysisData: AnalysisData,
   overwrite: boolean = false,
-  projectId?: string
+  projectId?: string,
+  specificCheckId?: string
 ): Promise<{ success: boolean; checkId?: string; version?: number; message: string }> {
   
   try {
@@ -90,12 +91,20 @@ export async function saveAnalysis(
   let version: number;
 
   if (existingChecks && existingChecks.length > 0) {
-    const latestCheck = existingChecks[0];
+    let targetCheck = existingChecks[0]; // Default to latest
+    
+    // If specific check ID provided, find that version
+    if (specificCheckId && overwrite) {
+      const specificCheck = existingChecks.find(check => check.id === specificCheckId);
+      if (specificCheck) {
+        targetCheck = specificCheck;
+      }
+    }
     
     if (overwrite) {
-      // Update existing analysis
-      checkId = latestCheck.id;
-      version = latestCheck.version;
+      // Update existing analysis (either latest or specific version)
+      checkId = targetCheck.id;
+      version = targetCheck.version;
       
       // Update compliance_checks
       await serviceClient

@@ -13,7 +13,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       docName, 
       templateId,
       analysisResults, 
-      overwrite = false 
+      overwrite = false,
+      specificCheckId
     } = req.body;
 
     if (!docId || !docName || !templateId || !analysisResults) {
@@ -38,7 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       docName,
       templateId,
       analysisData,
-      overwrite
+      overwrite,
+      undefined, // projectId
+      specificCheckId // Pass specific check ID to overwrite
     );
 
     if (result.success) {

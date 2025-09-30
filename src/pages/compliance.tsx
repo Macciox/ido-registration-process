@@ -79,6 +79,7 @@ export default function CompliancePage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<string>('');
   const [analysisType, setAnalysisType] = useState<'legal' | 'whitepaper'>('legal');
+  const [selectedVersionToOverwrite, setSelectedVersionToOverwrite] = useState<string | null>(null);
   const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
@@ -181,7 +182,7 @@ export default function CompliancePage() {
     return () => clearTimeout(timer);
   }, [searchTerm, minScore, maxScore, statusFilter, projectFilter, analysisType]);
 
-  const handleSaveAnalysis = async (overwrite: boolean) => {
+  const handleSaveAnalysis = async (overwrite: boolean, specificCheckId?: string) => {
     if (!results) return;
     
     setSaving(true);
@@ -207,7 +208,8 @@ export default function CompliancePage() {
             results: results.results,
             summary: results.summary
           },
-          overwrite: overwrite
+          overwrite: overwrite,
+          specificCheckId: specificCheckId // Pass the specific version to overwrite
         })
       });
 
@@ -1872,36 +1874,89 @@ export default function CompliancePage() {
         {/* Save Analysis Modal */}
         {showSaveModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-gray-600" style={{backgroundColor: '#111827', borderColor: '#4b5563'}}>
+            <div className="bg-gray-900 rounded-lg p-6 max-w-2xl w-full mx-4 border-2 border-gray-600" style={{backgroundColor: '#111827', borderColor: '#4b5563'}}>
               <h3 className="text-lg font-bold text-white mb-4">Save Analysis</h3>
-              <p className="text-text-secondary mb-6">
-                How would you like to save this analysis?
-              </p>
               
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => handleSaveAnalysis(false)}
-                  disabled={saving}
-                  className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : '✨ Save as New Version'}
-                </button>
+              <div className="space-y-4">
+                {/* Existing Analyses for this Document/Template */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Existing Analyses for this Document + Template
+                  </label>
+                  <div className="max-h-32 overflow-y-auto bg-card-secondary rounded-lg p-3">
+                    {savedAnalyses
+                      .filter(analysis => 
+                        analysis.document_id === (results?.documentId || selectedDocument) &&
+                        analysis.template_name === results?.templateName
+                      )
+                      .length > 0 ? (
+                      <div className="space-y-2">
+                        {savedAnalyses
+                          .filter(analysis => 
+                            analysis.document_id === (results?.documentId || selectedDocument) &&
+                            analysis.template_name === results?.templateName
+                          )
+                          .map(analysis => (
+                            <div key={analysis.check_id} className="flex items-center justify-between p-2 bg-card rounded">
+                              <div>
+                                <span className="text-white font-medium">v{analysis.version}</span>
+                                <span className="text-text-secondary text-sm ml-2">
+                                  Score: {analysis.overall_score}% • {new Date(analysis.analysis_created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedVersionToOverwrite(analysis.check_id);
+                                }}
+                                className={`px-3 py-1 rounded text-sm transition-colors ${
+                                  selectedVersionToOverwrite === analysis.check_id
+                                    ? 'bg-orange-600 text-white'
+                                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                                }`}
+                              >
+                                {selectedVersionToOverwrite === analysis.check_id ? 'Selected for Overwrite' : 'Select to Overwrite'}
+                              </button>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    ) : (
+                      <p className="text-text-secondary text-sm">No existing analyses found for this document + template combination</p>
+                    )}
+                  </div>
+                </div>
                 
-                <button
-                  onClick={() => handleSaveAnalysis(true)}
-                  disabled={saving}
-                  className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : '🔄 Overwrite Existing'}
-                </button>
-                
-                <button
-                  onClick={() => setShowSaveModal(false)}
-                  disabled={saving}
-                  className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
+                {/* Save Options */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => handleSaveAnalysis(false)}
+                    disabled={saving}
+                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : '✨ Save as New Version'}
+                  </button>
+                  
+                  {selectedVersionToOverwrite && (
+                    <button
+                      onClick={() => handleSaveAnalysis(true, selectedVersionToOverwrite)}
+                      disabled={saving}
+                      className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                      {saving ? 'Saving...' : `🔄 Overwrite Selected Version`}
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={() => {
+                      setShowSaveModal(false);
+                      setSelectedVersionToOverwrite(null);
+                    }}
+                    disabled={saving}
+                    className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
