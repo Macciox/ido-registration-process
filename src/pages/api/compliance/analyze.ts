@@ -239,22 +239,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         itemsToProcess = template.checker_items.filter((item: any) => {
           const itemName = item.item_name?.toLowerCase() || '';
           const category = item.category?.toLowerCase() || '';
+          const description = item.description?.toLowerCase() || '';
           
           // Always include sections D-I (they are always included)
           if (category.includes('part d') || category.includes('part e') || 
               category.includes('part f') || category.includes('part g') || 
-              category.includes('part h') || category.includes('part i')) {
+              category.includes('part h') || category.includes('part i') ||
+              category.includes('section d') || category.includes('section e') ||
+              category.includes('section f') || category.includes('section g') ||
+              category.includes('section h') || category.includes('section i')) {
             return true;
           }
           
-          // Include selected sections A, B, C
-          if (selectedSections.includes('A') && (category.includes('part a') || itemName.includes('offeror'))) {
+          // Include selected sections A, B, C only if explicitly selected
+          if (selectedSections.includes('A') && 
+              (category.includes('part a') || category.includes('section a') ||
+               itemName.includes('offeror') || description.includes('offeror'))) {
             return true;
           }
-          if (selectedSections.includes('B') && (category.includes('part b') || itemName.includes('issuer'))) {
+          if (selectedSections.includes('B') && 
+              (category.includes('part b') || category.includes('section b') ||
+               itemName.includes('issuer') || description.includes('issuer'))) {
             return true;
           }
-          if (selectedSections.includes('C') && (category.includes('part c') || itemName.includes('trading platform'))) {
+          if (selectedSections.includes('C') && 
+              (category.includes('part c') || category.includes('section c') ||
+               itemName.includes('trading platform') || description.includes('trading platform'))) {
             return true;
           }
           
