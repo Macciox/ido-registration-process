@@ -126,7 +126,7 @@ export async function saveAnalysis(
         
     } else {
       // Create new version
-      version = latestCheck.version + 1;
+      version = targetCheck.version + 1;
       console.log('Creating new version:', version, 'for document:', docId);
       
       const { data: newCheck, error: insertError } = await serviceClient
