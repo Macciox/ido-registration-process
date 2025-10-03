@@ -237,41 +237,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('Filtering whitepaper sections:', selectedSections);
         
         itemsToProcess = template.checker_items.filter((item: any) => {
-          const itemName = item.item_name?.toLowerCase() || '';
           const category = item.category?.toLowerCase() || '';
-          const description = item.description?.toLowerCase() || '';
           
           // Always include sections D-I (they are always included)
           if (category.includes('part d') || category.includes('part e') || 
               category.includes('part f') || category.includes('part g') || 
-              category.includes('part h') || category.includes('part i') ||
-              category.includes('section d') || category.includes('section e') ||
-              category.includes('section f') || category.includes('section g') ||
-              category.includes('section h') || category.includes('section i')) {
+              category.includes('part h') || category.includes('part i')) {
             return true;
           }
           
-          // Include selected sections A, B, C only if explicitly selected
-          if (selectedSections.includes('A') && 
-              (category.includes('part a') || category.includes('section a') ||
-               itemName.includes('offeror') || description.includes('offeror'))) {
+          // Only include A, B, C sections if explicitly selected
+          // Part A: Offeror Information
+          if (category.includes('part a:') && selectedSections.includes('A')) {
             return true;
           }
-          if (selectedSections.includes('B') && 
-              (category.includes('part b') || category.includes('section b') ||
-               itemName.includes('issuer') || description.includes('issuer'))) {
+          
+          // Part B: Issuer Information  
+          if (category.includes('part b:') && selectedSections.includes('B')) {
             return true;
           }
-          if (selectedSections.includes('C') && 
-              (category.includes('part c') || category.includes('section c') ||
-               itemName.includes('trading platform') || description.includes('trading platform'))) {
+          
+          // Part C: Trading Platform Operator
+          if (category.includes('part c:') && selectedSections.includes('C')) {
             return true;
+          }
+          
+          // Exclude all other A, B, C items if not selected
+          if (category.includes('part a:') || category.includes('part b:') || category.includes('part c:')) {
+            return false;
           }
           
           return false;
         });
         
         console.log(`Filtered from ${template.checker_items.length} to ${itemsToProcess.length} items`);
+        console.log('Selected sections:', selectedSections);
+        console.log('Remaining categories:', itemsToProcess.map(item => item.category));
       }
 
       console.log('Number of items to analyze:', itemsToProcess.length);
